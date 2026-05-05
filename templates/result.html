@@ -1,0 +1,1062 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kết quả - {{ thong_tin.tieu_de }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+
+    <!-- Phông chữ -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
+            --font-ui: 'Inter', sans-serif;
+            --font-body: 'Times New Roman', Times, serif;
+            --color-primary: #15803d;
+            --color-text: #000000;
+        }
+
+        body {
+            font-family: var(--font-ui);
+            background-color: #f1f5f9;
+            color: var(--color-text);
+        }
+
+        .academic-paper {
+            font-family: var(--font-body);
+            background-color: #fff;
+            max-width: 21cm; /* A4 Width */
+            margin: 0 auto;
+            color: #000;
+        }
+
+        .book-content {
+            font-family: var(--font-body);
+            line-height: 1.5;
+            font-size: 13pt;
+            text-align: justify;
+        }
+        
+        .book-content p {
+            text-indent: 1.25em; /* Chuẩn thụt đầu dòng học thuật */
+            margin-bottom: 1.25rem;
+            line-height: 1.7; /* Tăng độ giãn dòng để dễ đọc hơn */
+            text-align: justify;
+        }
+
+        /* Sticky Sidebar TOC */
+        .sidebar-toc {
+            position: sticky;
+            top: 2rem;
+            height: calc(100vh - 4rem);
+            overflow-y: auto;
+            padding-right: 1rem;
+            border-right: 1px solid var(--glass-border);
+        }
+
+        .nav-toc .nav-link {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            padding: 0.25rem 0 0.25rem 1rem;
+            border-left: 2px solid transparent;
+        }
+
+        .nav-toc .nav-link:hover {
+            color: var(--primary);
+        }
+
+        .nav-toc .nav-link.active {
+            color: var(--primary);
+            font-weight: 600;
+            border-left-color: var(--primary);
+        }
+
+        .nav-toc .nav-link.sub-link {
+            padding-left: 2rem;
+            font-size: 0.82rem;
+        }
+
+        /* Chapter/Section anchors for ScrollSpy */
+        .chapter-anchor,
+        .section-anchor {
+            scroll-margin-top: 5rem;
+            /* Offset for sticky header if any */
+        }
+
+        .source-card {
+            transition: transform 0.2s;
+        }
+        .source-card:hover {
+            transform: translateY(-2px);
+        }
+
+        /* V37: APA Inline Citation Style */
+        .citation-apa {
+            font-family: var(--font-body);
+            font-size: inherit;
+            color: #15803d;
+            white-space: nowrap;
+        }
+        .citation-apa a {
+            color: inherit;
+            text-decoration: none;
+        }
+        .citation-apa a:hover {
+            text-decoration: underline;
+            color: #0d6efd;
+        }
+
+        /* APA Reference List */
+        .apa-reference {
+            text-indent: -2em;
+            padding-left: 2em;
+            margin-bottom: 0.8rem;
+            line-height: 1.8;
+            font-family: var(--font-body);
+            font-size: 12pt;
+            text-align: left; /* FIX: Override justify to prevent massive spacing */
+            word-wrap: break-word;
+            word-break: break-word;
+        }
+
+        /* Dark sidebar labels */
+        .sidebar-toc h6 { color: var(--text-muted) !important; }
+        .sidebar-toc .text-dark { color: var(--text-primary) !important; }
+        .sidebar-toc .text-muted { color: var(--text-dim) !important; }
+        .sidebar-toc a { color: var(--text-secondary); }
+        .sidebar-toc a:hover { color: var(--primary); }
+        .sidebar-toc a.fw-bold { color: var(--text-primary); }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+
+            .sidebar-toc {
+                display: none;
+            }
+
+            .col-lg-9 {
+                width: 100% !important;
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+
+            .book-content {
+                text-align: justify;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Thanh điều hướng -->
+    <nav class="navbar navbar-expand-lg no-print sticky-top">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('trang_chu') }}">
+                <i class="fa-solid fa-book-open me-2"></i>
+                <span>Giáo Trình AI</span>
+            </a>
+            <div class="d-flex align-items-center gap-3">
+                <a href="{{ url_for('profile') }}" class="btn d-flex align-items-center" style="background: var(--bg-surface-1); border-radius: 10px; border: 1px solid var(--glass-border); padding: 4px 12px; text-decoration: none;">
+                    <i class="fa-solid fa-circle-user fs-5 text-primary me-2"></i>
+                    <div class="text-start">
+                        <div style="font-size: 0.6rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Token</div>
+                        <div style="font-size: 0.9rem; color: var(--text-primary); font-weight: 700; line-height: 1;">{{ current_user.token }}</div>
+                    </div>
+                </a>
+                <span class="badge bg-primary d-none d-md-inline-block" style="font-size:0.72rem;">{{ thong_tin.tieu_de }}</span>
+                <a href="{{ url_for('trang_tao_giao_trinh') }}" class="btn btn-primary btn-sm">
+                    <i class="fa-solid fa-plus me-1"></i>Tạo mới
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4 mt-4">
+        {% if thong_tin.trang_thai == 'that_bai' %}
+        <div class="alert alert-danger mx-auto" style="max-width: 800px;">
+            <h4 class="alert-heading">Rất tiếc, đã xảy ra lỗi!</h4>
+            <p>{{ thong_tin.loi }}</p>
+            <hr>
+            <p class="mb-0 small">{{ thong_tin.chi_tiet }}</p>
+        </div>
+        {% else %}
+
+        <div class="row">
+            <!-- CỘT BÊN TRÁI: Mục lục -->
+            <div class="col-lg-3 d-none d-lg-block no-print">
+                <nav class="sidebar-toc" id="toc-nav">
+                    <h6 class="text-uppercase text-secondary fw-bold mb-3 ls-1 small pt-2">Mục Lục</h6>
+                    <div class="nav-toc" style="font-family: 'Times New Roman', serif;">
+                        {% if book and book.chapters %}
+                        <ul class="list-unstyled ps-0">
+                        {% for chapter in book.chapters %}
+                        {% set c_idx = loop.index %}
+                            <li class="mb-2">
+                                <a class="text-dark text-decoration-none fw-bold" href="#chap-{{ c_idx }}">
+                                    Chương {{ c_idx }}. {{ chapter.title }}
+                                </a>
+                                <ul class="list-unstyled ps-3 mt-1 border-start ms-2">
+                                    {% for section in chapter.sections %}
+                                    {% set s_idx = loop.index %}
+                                    <li>
+                                        <a class="text-muted text-decoration-none small" href="#sec-{{ c_idx }}-{{ s_idx }}">
+                                            {{ c_idx }}.{{ s_idx }}. {{ section.title }}
+                                        </a>
+                                        <!-- V39: Level-3 TOC entries -->
+                                        <ul class="list-unstyled ps-3 mt-1 toc-level3" id="toc-l3-{{ c_idx }}-{{ s_idx }}">
+                                        </ul>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        {% endfor %}
+                        </ul>
+                        {% endif %}
+                        <a class="text-dark fw-bold text-decoration-none d-block mt-3" href="#references-section">
+                            <i class="fa-solid fa-book me-2"></i> Tài liệu tham khảo
+                        </a>
+                    </div>
+                </nav>
+            </div>
+
+            <!-- PHẦN NỘI DUNG CHÍNH -->
+            <div class="col-lg-6 col-12 mx-auto">
+                <div class="academic-paper p-5 mb-5 shadow-sm border animate-fade-in-up">
+                    <!-- Phần tiêu đề đầu trang -->
+                    <div class="text-center mb-5 pb-4 border-bottom">
+                        <h5 class="text-muted text-uppercase small mb-2" style="font-family: var(--font-ui);">Giáo trình Đại học</h5>
+                        <h1 class="display-5 fw-bold text-dark mb-3 text-uppercase" style="font-family: var(--font-body);">{{ thong_tin.tieu_de }}</h1>
+                        <p class="text-muted fst-italic" style="font-family: var(--font-body);">Biên soạn tự động bởi Hệ thống AI Data Aggregator</p>
+                        <div class="mt-3 no-print d-flex justify-content-center gap-2 flex-wrap">
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success px-3 py-2 rounded-pill">
+                                <i class="fa-solid fa-circle-check me-1"></i> Hoàn thành
+                            </span>
+                            {% if thong_tin.curriculum_level %}
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-3 py-2 rounded-pill">
+                                <i class="fa-solid fa-layer-group me-1"></i> Level: {{ thong_tin.curriculum_level }}
+                            </span>
+                            {% endif %}
+                            {% if thong_tin.tong_chuong %}
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary px-3 py-2 rounded-pill">
+                                <i class="fa-solid fa-list-ol me-1"></i> {{ thong_tin.tong_chuong }} Chương
+                            </span>
+                            {% endif %}
+                            {% if thong_tin.terms_count %}
+                            <span class="badge bg-info bg-opacity-10 text-info border border-info px-3 py-2 rounded-pill">
+                                <i class="fa-solid fa-tags me-1"></i> {{ thong_tin.terms_count }} Core Terms
+                            </span>
+                            {% endif %}
+                            {% if thong_tin.domain_label %}
+                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning px-3 py-2 rounded-pill">
+                                <i class="fa-solid fa-graduation-cap me-1"></i> {{ thong_tin.domain_label }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Nội dung sách -->
+                    {% if book %}
+
+                    <!-- === VIEW: NỘI DUNG (mặc định) === -->
+                    <div id="view-content" class="view-panel">
+                    <div class="book-content" data-bs-spy="scroll" data-bs-target="#toc-nav"
+                        data-bs-root-margin="0px 0px -40%" data-bs-smooth-scroll="true">
+                        {% for chapter in book.chapters %}
+                        {% set c_idx = loop.index %}
+
+                        <!-- Chương -->
+                        <div id="chap-{{ c_idx }}" class="chapter-anchor mb-5 mt-5 pt-3">
+                            <h2 class="fw-bold text-primary mb-4 pb-2 border-bottom border-2 border-primary term-traceable" style="cursor: pointer;" title="Click để xem thuật ngữ nguồn">
+                                <i class="fa-solid fa-dna me-2" style="font-size: 0.6em; opacity: 0.4;"></i>Chương {{ c_idx }}: {{ chapter.title }}
+                            </h2>
+
+                            <!-- Các mục -->
+                            {% for section in chapter.sections %}
+                            {% set s_idx = loop.index %}
+                            <div id="sec-{{ c_idx }}-{{ s_idx }}" class="section-anchor mb-4">
+                                <h4 class="fw-bold text-dark mt-4 mb-3 term-traceable" style="cursor: pointer;" title="Click để xem thuật ngữ nguồn">
+                                    <i class="fa-solid fa-dna me-2" style="font-size: 0.55em; opacity: 0.3;"></i>{{ c_idx }}.{{ s_idx }}. {{ section.title }}
+                                </h4>
+                                <div class="content mt-3 text-justify" data-chapter="{{ c_idx }}" data-section="{{ s_idx }}">
+                                    <!-- Use markdown parser instead of naive loop -->
+                                    {{ section.content | markdown | safe }}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- V37: Khu vực Tài liệu tham khảo (APA 7th Edition) -->
+                    <div id="references-section" class="mt-5 pt-5 border-top">
+                        <h3 class="fw-bold mb-4">
+                            <i class="fa-solid fa-book me-2 text-secondary"></i> Tài liệu tham khảo
+                        </h3>
+                        <p class="text-muted small mb-4" style="font-family: var(--font-ui);">
+                            <i class="fa-solid fa-circle-info me-1"></i>
+                            Định dạng trích dẫn: APA 7th Edition · {{ references|length }} nguồn
+                        </p>
+
+                        {% if references %}
+                        <div class="ps-0">
+                            {% for ref in references|sort(attribute='id') %}
+                            <div class="apa-reference" id="ref-item-{{ ref.id }}">
+                                <span class="fw-bold text-primary">{{ ref.id }}.</span> 
+                                {{ ref.title }}. ({{ ref.year }}{% if ref.access_date %}, {{ ref.access_date }}{% endif %}). 
+                                In <em>Wikipedia, The Free Encyclopedia</em>. 
+                                <a href="{{ ref.url }}" target="_blank" class="text-break text-decoration-none border-bottom border-primary">{{ ref.url }}</a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted">Không có dữ liệu nguồn chi tiết.</p>
+                        {% endif %}
+                    </div>
+                    </div> <!-- end #view-content -->
+
+                    <!-- === VIEW: TÓM TẮT === -->
+                    <div id="view-summaries" class="view-panel" style="display:none;">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h3 class="fw-bold mb-0">
+                                <i class="fa-solid fa-lightbulb text-success me-2"></i>Tóm tắt các chương
+                            </h3>
+                            <a href="/tai/summary/{{ ma_cv }}" class="btn btn-success btn-sm no-print">
+                                <i class="fa-solid fa-download me-1"></i> Xuất file (.docx)
+                            </a>
+                        </div>
+                        {% if book %}
+                        {% for chapter in book.chapters %}
+                        {% set c_idx = loop.index %}
+                        <div class="card mb-3 border-start border-4 border-success">
+                            <div class="card-body">
+                                <h5 class="card-title fw-bold text-primary mb-3">
+                                    Chương {{ c_idx }}: {{ chapter.title }}
+                                </h5>
+                                {% if chapter.summary %}
+                                <p class="card-text" style="line-height: 1.8; font-family: var(--font-body);">{{ chapter.summary }}</p>
+                                {% else %}
+                                <p class="text-muted fst-italic">Chưa có tóm tắt cho chương này.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+
+                    <!-- === VIEW: BẢNG THUẬT NGỮ === -->
+                    <div id="view-glossary" class="view-panel" style="display:none;">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h3 class="fw-bold mb-0">
+                                <i class="fa-solid fa-spell-check text-info me-2"></i>Bảng thuật ngữ toàn tập
+                            </h3>
+                            <a href="/tai/glossary/{{ ma_cv }}" class="btn btn-info btn-sm text-white no-print">
+                                <i class="fa-solid fa-download me-1"></i> Xuất file (.docx)
+                            </a>
+                        </div>
+                        
+                        <!-- V41: Hiển thị TOÀN BỘ thuật ngữ từ extracted_terms (ctx.terms) -->
+                        {% set terms_to_show = extracted_terms if extracted_terms else glossary %}
+                        {% if terms_to_show %}
+                        <div class="row g-3">
+                            {% for item in terms_to_show %}
+                            <div class="col-md-6">
+                                <div class="p-3 bg-light rounded border-start border-3 border-info h-100" style="transition: box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
+                                    <div class="fw-bold text-dark" style="font-size: 0.95rem;">{{ item.term }}</div>
+                                    <div class="text-muted" style="font-size: 0.88rem; line-height: 1.6;">{{ item.definition if item.definition else item.meaning }}</div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="text-muted text-center mt-4" style="font-size:0.85rem;">
+                            <i class="fa-solid fa-circle-info me-1"></i> Tổng cộng {{ terms_to_show|length }} thuật ngữ trong toàn bộ giáo trình
+                        </div>
+                        {% else %}
+                        <p class="text-muted text-center py-5">Chưa có dữ liệu bảng thuật ngữ.</p>
+                        {% endif %}
+                    </div>
+
+                </div>
+
+                <footer class="footer no-print">
+                    <div class="d-flex justify-content-center gap-4 mb-2">
+                        <a href="#">Chính sách</a>
+                        <a href="#">Điều khoản</a>
+                    </div>
+                    <p>&copy; 2026 GIÁO TRÌNH AI — Hệ thống biên soạn giáo trình tự động</p>
+                </footer>
+            </div>
+
+            <!-- CỘT BÊN PHẢI: Tải xuống & Chế độ xem -->
+            <div class="col-lg-3 d-none d-lg-block no-print">
+                <div class="sticky-top pt-2" style="top: 80px;">
+                    <div class="p-4 bg-light rounded shadow-sm border mb-4">
+                        <h6 class="text-uppercase text-secondary fw-bold mb-3 small"><i class="fa-solid fa-download me-2"></i>Tải xuống giáo trình</h6>
+                        <div class="d-grid gap-2">
+                            <a class="btn btn-outline-primary btn-sm text-start" href="{{ thong_tin.tai_docx }}">
+                                <i class="fa-solid fa-file-word me-2"></i> Word (.docx)
+                            </a>
+                            <a class="btn btn-outline-danger btn-sm text-start" href="{{ thong_tin.tai_pdf }}">
+                                <i class="fa-solid fa-file-pdf me-2"></i> PDF (.pdf)
+                            </a>
+                            <a class="btn btn-success btn-sm text-start mt-2" href="/tai/zip/{{ ma_cv }}">
+                                <i class="fa-solid fa-file-zipper me-2"></i> Gói tất cả (Word & PDF)
+                            </a>
+                            <button class="btn btn-dark btn-sm text-start mt-2" data-bs-toggle="modal" data-bs-target="#techModal">
+                                <i class="fa-solid fa-microchip me-2"></i> Chi tiết kỹ thuật AI
+                            </button>
+                        </div>
+
+                        <h6 class="text-uppercase text-secondary fw-bold mb-3 small mt-4"><i class="fa-solid fa-eraser me-2"></i>Tải xuống (Bản sạch)</h6>
+                        <div class="text-muted small mb-2" style="font-size: 0.75rem;">Phiên bản không đính kèm trích dẫn nguồn APA.</div>
+                        <div class="d-grid gap-2">
+                             <a class="btn btn-outline-secondary btn-sm text-start" href="{{ thong_tin.tai_docx_plain }}">
+                                <i class="fa-regular fa-file-word me-2"></i> Word sạch (.docx)
+                            </a>
+                            <a class="btn btn-outline-secondary btn-sm text-start" href="{{ thong_tin.tai_pdf_plain }}">
+                                <i class="fa-regular fa-file-pdf me-2"></i> PDF sạch (.pdf)
+                            </a>
+                            <a class="btn btn-secondary btn-sm text-start mt-2" href="/tai/zip/{{ ma_cv }}_plain">
+                                <i class="fa-solid fa-file-zipper me-2"></i> Gói bản sạch (.zip)
+                            </a>
+                        </div>
+
+                        <h6 class="text-uppercase text-secondary fw-bold mb-3 small mt-4"><i class="fa-solid fa-eye me-2"></i>Chế độ xem</h6>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary btn-sm text-start view-toggle active" data-view="content">
+                                <i class="fa-solid fa-book-open me-2"></i> Nội dung giáo trình
+                            </button>
+                            <button class="btn btn-outline-success btn-sm text-start view-toggle" data-view="summaries">
+                                <i class="fa-solid fa-lightbulb me-2"></i> Tóm tắt các chương
+                            </button>
+                            <button class="btn btn-outline-info btn-sm text-start view-toggle" data-view="glossary">
+                                <i class="fa-solid fa-spell-check me-2"></i> Bảng thuật ngữ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Nút trở lên đầu trang -->
+    <button type="button" class="btn btn-primary rounded-circle shadow no-print" id="btn-back-to-top"
+        style="position: fixed; bottom: 30px; right: 30px; display: none; width: 50px; height: 50px; z-index: 1000;">
+        ↑
+    </button>
+
+    <!-- Modal: Hệ thống AI Analytics (V18.7) -->
+    <div class="modal fade" id="techModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable shadow-lg">
+            <div class="modal-content border-0">
+                <div class="modal-header bg-dark text-white py-3">
+                    <h5 class="modal-title d-flex align-items-center">
+                        <i class="fa-solid fa-microchip me-2 text-info"></i> 
+                        AI Analytics & Transparency Dashboard
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0 bg-white">
+                    <ul class="nav nav-tabs nav-fill bg-light border-bottom" id="techTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active py-3 fw-bold" data-bs-toggle="tab" data-bs-target="#journalTab" type="button">
+                                <i class="fa-solid fa-list-ul me-1"></i> Nhật ký AI
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link py-3 fw-bold" data-bs-toggle="tab" data-bs-target="#termsTab" type="button">
+                                <i class="fa-solid fa-tags me-1"></i> Thuật ngữ (Glossary)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link py-3 fw-bold" data-bs-toggle="tab" data-bs-target="#sourcesTab" type="button">
+                                <i class="fa-solid fa-globe me-1"></i> Nguồn tri thức
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link py-3 fw-bold" data-bs-toggle="tab" data-bs-target="#groundingTab" type="button">
+                                <i class="fa-solid fa-shield-check me-1"></i> Grounding Score
+                            </button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="techTabsContent">
+                        <!-- Tab: Nhật ký AI -->
+                        <div class="tab-pane fade show active p-4" id="journalTab" role="tabpanel">
+                            <div class="timeline-container px-3">
+                                {% if thong_tin.nhat_ky %}
+                                {% for line in thong_tin.nhat_ky %}
+                                <div class="d-flex mb-3 align-items-start">
+                                    <div class="badge bg-primary bg-opacity-10 text-primary border border-primary me-3 pt-2" style="min-width: 90px; font-family: monospace;">
+                                        {{ line[1:9] }}
+                                    </div>
+                                    <div class="border-start ps-3 py-1 flex-grow-1">
+                                        <span class="text-dark">{{ line[11:] }}</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                                {% else %}
+                                <p class="text-muted text-center py-5">Không có dữ liệu tiến trình chi tiết.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Tab: Thuật ngữ + Glossary (V33) -->
+                        <div class="tab-pane fade p-4" id="termsTab" role="tabpanel">
+                            {% if glossary %}
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="text-muted small">
+                                    <i class="fa-solid fa-circle-info me-1"></i>
+                                    {{ glossary|length }} thuật ngữ với định nghĩa học thuật
+                                </span>
+                                <a href="/tai/glossary/{{ ma_cv }}" class="btn btn-outline-info btn-sm">
+                                    <i class="fa-solid fa-download me-1"></i> Xuất file (.docx)
+                                </a>
+                            </div>
+                            <div class="row g-3">
+                                {% for item in glossary %}
+                                <div class="col-md-6">
+                                    <div class="p-3 bg-light rounded border-start border-3 border-info h-100">
+                                        <h6 class="fw-bold text-dark mb-1" style="font-size: 0.95rem;">{{ item.term }}</h6>
+                                        <div class="text-muted" style="font-size: 0.85rem; line-height: 1.6;">{{ item.definition }}</div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% elif thong_tin.terms_detail %}
+                            <div class="row g-3">
+                                {% set all_terms = thong_tin.terms_detail.core_terms + thong_tin.terms_detail.supporting_terms %}
+                                {% for t in all_terms %}
+                                <div class="col-md-4">
+                                    <div class="p-3 bg-light rounded border h-100">
+                                        <div class="d-flex justify-content-between align-items-start mb-1">
+                                            <h6 class="fw-bold text-dark mb-0" style="font-size: 0.95rem;">{{ t.term }}</h6>
+                                            <span class="badge bg-{{ 'success' if t.importance_score > 0.8 else 'secondary' }} x-small" style="font-size: 0.6rem;">
+                                                {{ (t.importance_score * 100)|int }}%
+                                            </span>
+                                        </div>
+                                        <div class="x-small text-muted fst-italic">Academic complexity: High</div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <p class="text-muted text-center py-5">Không tìm thấy danh sách thuật ngữ.</p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Tab: Nguồn tri thức -->
+                        <div class="tab-pane fade p-4" id="sourcesTab" role="tabpanel">
+                            {% if thong_tin.top_30_links %}
+                            <div class="mb-3 d-flex justify-content-between align-items-center">
+                                <span class="text-muted small">
+                                    <i class="fa-solid fa-circle-info me-1"></i>
+                                    {{ thong_tin.top_30_links|length }} nguồn tri thức được sử dụng — sắp xếp theo điểm chất lượng
+                                </span>
+                                <div class="d-flex gap-2">
+                                    <span class="badge bg-light text-dark border" style="font-size:0.7rem;">
+                                        🟢 Quality ≥ 1.5 (tốt)
+                                    </span>
+                                    <span class="badge bg-light text-dark border" style="font-size:0.7rem;">
+                                        🟡 Quality 0.5–1.5 (tb)
+                                    </span>
+                                    <span class="badge bg-light text-dark border" style="font-size:0.7rem;">
+                                        🔴 Quality < 0.5 (yếu)
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover align-middle" style="font-size:0.88rem;">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th style="width:35px;">#</th>
+                                            <th>Nguồn</th>
+                                            <th style="width:50px;" class="text-center">Lang</th>
+                                            <th style="width:80px;" class="text-center">Quality</th>
+                                            <th style="width:80px;" class="text-center">Sim</th>
+                                            <th style="width:80px;" class="text-center">Độ dài</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for src in thong_tin.top_30_links %}
+                                        <tr class="{{ 'table-warning' if src.is_low_priority else '' }}">
+                                            <td class="text-muted fw-bold">{{ loop.index }}</td>
+                                            <td>
+                                                <div>
+                                                    <a href="{{ src.url }}" target="_blank" class="text-dark text-decoration-none fw-bold">
+                                                        {{ src.title }}
+                                                        <i class="fa-solid fa-up-right-from-square ms-1 text-primary" style="font-size:0.65rem;"></i>
+                                                    </a>
+                                                </div>
+                                                {% if src.reason %}
+                                                <div class="text-muted" style="font-size:0.75rem;">{{ src.reason }}</div>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-{{ 'success' if src.lang == 'vi' else 'primary' }} rounded-pill" style="font-size:0.72rem;">
+                                                    {{ '🇻🇳' if src.lang == 'vi' else '🇬🇧' }} {{ src.lang|upper }}
+                                                </span>
+                                            </td>
+                                            <td class="text-center">
+                                                {% if src.quality_score >= 1.5 %}
+                                                <span class="badge bg-success bg-opacity-10 text-success border border-success px-2">{{ src.quality_score }}</span>
+                                                {% elif src.quality_score >= 0.5 %}
+                                                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning px-2">{{ src.quality_score }}</span>
+                                                {% else %}
+                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger px-2">{{ src.quality_score }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="text-muted" style="font-size:0.8rem;">{{ (src.relevance_score * 100)|int }}%</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="text-muted" style="font-size:0.8rem;">{{ (src.text_len / 1000)|round(1) }}k</span>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <p class="text-muted text-center py-5">Chưa lưu dữ liệu Discovery log.</p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Tab: Grounding Score (V33) -->
+                        <div class="tab-pane fade p-4" id="groundingTab" role="tabpanel">
+                            {% if grounding and grounding.overall %}
+                            {% set ov = grounding.overall %}
+                            <div class="row">
+                                <!-- Donut Chart -->
+                                <div class="col-md-4 text-center mb-4">
+                                    <div style="position:relative; width:180px; height:180px; margin:0 auto;">
+                                        {% set ratio = ov.ratio %}
+                                        {% set color = '#198754' if ratio >= 80 else '#ffc107' if ratio >= 50 else '#dc3545' %}
+                                        <div style="width:180px; height:180px; border-radius:50%; background: conic-gradient({{ color }} 0% {{ ratio }}%, #e9ecef {{ ratio }}% 100%); display:flex; align-items:center; justify-content:center;">
+                                            <div style="width:120px; height:120px; border-radius:50%; background:white; display:flex; align-items:center; justify-content:center; flex-direction:column;">
+                                                <div style="font-size:2rem; font-weight:800; color:{{ color }};">{{ ratio }}%</div>
+                                                <div style="font-size:0.7rem; color:#6c757d;">Grounded</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3">
+                                        {% if ratio >= 80 %}
+                                        <span class="badge bg-success px-3 py-2">🔬 Đáng tin cậy</span>
+                                        {% elif ratio >= 50 %}
+                                        <span class="badge bg-warning text-dark px-3 py-2">⚠️ Trung bình</span>
+                                        {% else %}
+                                        <span class="badge bg-danger px-3 py-2">🔴 Cần cải thiện</span>
+                                        {% endif %}
+                                    </div>
+                                    <p class="text-muted mt-2" style="font-size:0.8rem;">{{ ov.grounded }}/{{ ov.total }} đoạn có nguồn trích dẫn</p>
+                                </div>
+                                <!-- Per-chapter table -->
+                                <div class="col-md-8">
+                                    <h6 class="fw-bold mb-3">Chi tiết theo chương</h6>
+                                    <table class="table table-sm table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Chương</th>
+                                                <th class="text-center">Tổng đoạn</th>
+                                                <th class="text-center">Có nguồn</th>
+                                                <th class="text-center">Tỷ lệ</th>
+                                                <th class="text-center">Đánh giá</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for ch in grounding.chapters %}
+                                            <tr>
+                                                <td class="fw-bold" style="font-size:0.85rem;">{{ ch.title }}</td>
+                                                <td class="text-center">{{ ch.total }}</td>
+                                                <td class="text-center">{{ ch.grounded }}</td>
+                                                <td class="text-center">
+                                                    <div class="progress" style="height:6px; width:80px; margin:0 auto;">
+                                                        <div class="progress-bar bg-{{ 'success' if ch.ratio >= 80 else 'warning' if ch.ratio >= 50 else 'danger' }}" style="width:{{ ch.ratio }}%"></div>
+                                                    </div>
+                                                    <span style="font-size:0.75rem;">{{ ch.ratio }}%</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    {% if ch.ratio >= 80 %}🟢
+                                                    {% elif ch.ratio >= 50 %}🟡
+                                                    {% else %}🔴{% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            {% else %}
+                            <p class="text-muted text-center py-5">Chưa có dữ liệu Grounding Score.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary px-4 rounded-pill" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ScrollSpy logic helper (Bootstrap handles most, but we can tweak active classes)
+        document.addEventListener('DOMContentLoaded', () => {
+            const scrollSpy = new bootstrap.ScrollSpy(document.body, {
+                target: '#toc-nav',
+                rootMargin: '0px 0px -60%' // Adjust trigger point
+            });
+
+            // Sync accordion with scrollspy
+            window.addEventListener('activate.bs.scrollspy', function (e) {
+                const activeNav = e.relatedTarget;
+                if(activeNav) {
+                    const activeLink = document.querySelector(`a[href="${activeNav}"]`);
+                    if(activeLink) {
+                        const collapseDiv = activeLink.closest('.accordion-collapse');
+                        if (collapseDiv && !collapseDiv.classList.contains('show')) {
+                            // Close other shows
+                            document.querySelectorAll('#tocAccordion .accordion-collapse.show').forEach(el => {
+                                if (el !== collapseDiv) {
+                                    new bootstrap.Collapse(el, {toggle: true});
+                                }
+                            });
+                            // Open active
+                            new bootstrap.Collapse(collapseDiv, {toggle: true});
+                        }
+                    }
+                }
+            });
+
+            // Back to top button
+            const btnTop = document.getElementById("btn-back-to-top");
+            window.onscroll = function () {
+                if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+                    btnTop.style.display = "block";
+                } else {
+                    btnTop.style.display = "none";
+                }
+            };
+            btnTop.addEventListener("click", () => {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            });
+            
+            // --- FIX FOR MARKDOWN HEADERS ---
+            // Natively parse markdown headers and decorate them dynamically
+            document.querySelectorAll('.content').forEach(contentDiv => {
+                // Convert bold **Câu hỏi Ôn tập** text into an h5 heading so it appears in TOC and is traceable
+                contentDiv.querySelectorAll('strong, b').forEach(bold => {
+                    const text = bold.textContent.trim();
+                    if (text === 'Câu hỏi Ôn tập' || text === 'Bài tập & Ôn tập') {
+                        const wrapper = document.createElement('h5');
+                        wrapper.textContent = text;
+                        const p = bold.closest('p');
+                        if (p && p.textContent.trim() === text) {
+                            p.parentNode.replaceChild(wrapper, p);
+                        } else {
+                            bold.parentNode.replaceChild(wrapper, bold);
+                        }
+                    }
+                });
+
+                const cIdx = contentDiv.dataset.chapter;
+                const sIdx = contentDiv.dataset.section;
+                let subIdx = 0;
+                
+                contentDiv.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(header => {
+                    subIdx++;
+                    header.id = `subsec-${cIdx}-${sIdx}-${subIdx}`;
+                    header.classList.add('fw-bold', 'mt-4', 'mb-2', 'level3-heading', 'term-traceable');
+                    header.style.color = '#2c3e50';
+                    header.style.fontSize = '1.15rem'; // Smaller than section h4 headers
+                    header.style.borderLeft = '3px solid var(--bs-primary)';
+                    header.style.paddingLeft = '10px';
+                    header.style.cursor = 'pointer';
+                    header.dataset.chapter = cIdx;
+                    header.dataset.section = sIdx;
+                    header.dataset.sub = subIdx;
+                    header.title = "Click để xem thuật ngữ nguồn";
+                    
+                    // Thêm numbering nếu chưa có (1.1.1.)
+                    const text = header.innerText.trim();
+                    if (!/^\d+\.\d+\.\d+/.test(text)) {
+                        header.innerText = `${cIdx}.${sIdx}.${subIdx}. ${text}`;
+                    }
+                });
+            });
+            
+        });
+        // === V33: VIEW TOGGLE ===
+        document.querySelectorAll('.view-toggle').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const target = btn.dataset.view;
+                // Hide all panels
+                document.querySelectorAll('.view-panel').forEach(p => p.style.display = 'none');
+                // Show selected
+                const panel = document.getElementById('view-' + target);
+                if (panel) panel.style.display = 'block';
+                // Update button states
+                document.querySelectorAll('.view-toggle').forEach(b => {
+                    b.classList.remove('active', 'btn-primary', 'btn-success', 'btn-info');
+                    b.classList.add('btn-outline-' + (b.dataset.view === 'content' ? 'primary' : b.dataset.view === 'summaries' ? 'success' : 'info'));
+                });
+                const colorMap = {content: 'primary', summaries: 'success', glossary: 'info'};
+                btn.classList.remove('btn-outline-' + colorMap[target]);
+                btn.classList.add('btn-' + colorMap[target], 'active');
+                // Scroll to top of content
+                window.scrollTo({top: 200, behavior: 'smooth'});
+            });
+        });
+        // === V39: POPULATE LEVEL-3 TOC ENTRIES ===
+        // Fix: Use .content h3 and .content p since markdown doesn't generate classes
+        document.querySelectorAll('.content h3, .content p').forEach((el) => {
+            let isH3 = el.tagName === 'H3';
+            let isReviewQ = el.tagName === 'P' && (el.textContent.includes('Câu hỏi Ôn tập') || el.textContent.includes('Bài tập & Ôn tập')) && (el.innerHTML.includes('<strong') || el.innerHTML.includes('<b'));
+            
+            if (!isH3 && !isReviewQ) return;
+
+            const contentDiv = el.closest('.content');
+            if (!contentDiv) return;
+            
+            const c = contentDiv.dataset.chapter;
+            const s = contentDiv.dataset.section;
+            
+            const tocContainer = document.getElementById(`toc-l3-${c}-${s}`);
+            if (tocContainer) {
+                const sub = tocContainer.children.length + 1;
+                const headingId = `subsec-${c}-${s}-${sub}`;
+                el.id = headingId;
+                
+                let fullText = "";
+                if (isH3) {
+                    fullText = el.textContent.replace(/\*/g, '').replace(/#/g, '').trim();
+                    el.classList.add('mt-4', 'mb-2', 'fw-bold', 'text-dark');
+                    el.style.fontSize = '1.1rem';
+                    // Inject numbering if not present
+                    if (!fullText.match(/^\d+\.\d+\.\d+\./)) {
+                        fullText = `${c}.${s}.${sub}. ${fullText}`;
+                        el.textContent = fullText;
+                    }
+                } else if (isReviewQ) {
+                    let baseTitle = el.textContent.includes('Bài tập & Ôn tập') ? 'Bài tập & Ôn tập' : 'Câu hỏi Ôn tập';
+                    fullText = `${c}.${s}.${sub}. ${baseTitle}`;
+                    
+                    // Create a real H3 element to ensure 100% style match (font-family, margins, etc.)
+                    const h3 = document.createElement('h3');
+                    h3.className = 'fw-bold mt-4 mb-3 level3-heading term-traceable';
+                    h3.style.color = '#2c3e50';
+                    h3.style.fontSize = '1.15rem';
+                    h3.style.borderLeft = '3px solid var(--bs-primary)';
+                    h3.style.paddingLeft = '10px';
+                    h3.id = headingId;
+                    h3.textContent = fullText;
+                    
+                    // Move the ID from the P tag to the new H3
+                    el.removeAttribute('id');
+                    
+                    // Insert H3 before the P tag
+                    el.parentNode.insertBefore(h3, el);
+                    
+                    // Clean up the title from the P tag
+                    let pInner = el.innerHTML.replace(`<strong>${baseTitle}</strong>`, '').replace(`<b>${baseTitle}</b>`, '').replace(baseTitle, '').trim();
+                    // Clean up leading <br> tags if any
+                    if (pInner.toLowerCase().startsWith('<br>')) {
+                        pInner = pInner.substring(4).trim();
+                    }
+                    if (pInner.toLowerCase().startsWith('<br/>')) {
+                        pInner = pInner.substring(5).trim();
+                    }
+                    el.innerHTML = pInner;
+                }
+
+                const li = document.createElement('li');
+                li.style.marginBottom = '2px';
+                const a = document.createElement('a');
+                a.href = `#${headingId}`;
+                a.className = 'text-muted text-decoration-none';
+                a.style.fontSize = '0.78rem';
+                a.style.opacity = '0.8';
+                a.textContent = fullText;
+                
+                li.appendChild(a);
+                tocContainer.appendChild(li);
+            }
+        });
+
+        // Hide empty Level-3 TOC containers
+        document.querySelectorAll('.toc-level3').forEach(ul => {
+            if (ul.children.length === 0) ul.style.display = 'none';
+        });
+
+        // === V39: TERM TRACEABILITY POPUP ===
+        const EXTRACTED_TERMS = {{ extracted_terms|default([])|tojson }};
+        const KB_HEADINGS = {{ kb_headings|default([])|tojson }};
+        const ALL_TERMS = [
+            ...EXTRACTED_TERMS, 
+            ...KB_HEADINGS.map(h => ({term: h, meaning: 'Tiêu đề gốc trích xuất từ dữ liệu Wikipedia', isHeading: true}))
+        ];
+
+        // Normalize Vietnamese text for matching
+        function normalizeVN(str) {
+            return str.toLowerCase()
+                .replace(/[àáạảãăắằặẳẵâấầậẩẫ]/g, 'a')
+                .replace(/[èéẹẻẽêếềệểễ]/g, 'e')
+                .replace(/[ìíịỉĩ]/g, 'i')
+                .replace(/[òóọỏõôốồộổỗơớờợởỡ]/g, 'o')
+                .replace(/[ùúụủũưứừựửữ]/g, 'u')
+                .replace(/[ỳýỵỷỹ]/g, 'y')
+                .replace(/đ/g, 'd')
+                .replace(/[^a-z0-9\s]/g, '')
+                .trim();
+        }
+
+        function findMatchedTerms(titleText) {
+            const STOPWORDS = ['cac', 'nhung', 'cua', 'va', 've', 'su', 'viec', 'trong', 'la', 'mot', 'co', 'voi', 'cho', 'den', 'tu', 'tai', 'nay', 'hien', 'tai', 'nhieu', 'nhung', 'cac', 'cac', 'su'];
+            const normalized = normalizeVN(titleText);
+            let titleWords = normalized.split(/\s+/).filter(w => !STOPWORDS.includes(w) && w.length > 0);
+            if (titleWords.length === 0) titleWords = normalized.split(/\s+/); // Fallback if it was ALL stopwords
+
+            const results = [];
+
+            ALL_TERMS.forEach(t => {
+                const termNorm = normalizeVN(t.term);
+                const termWords = termNorm.split(/\s+/);
+
+                // Strategy 1: Full substring match
+                if ((normalized.includes(termNorm) || termNorm.includes(normalized)) && termNorm.length > 3) {
+                    results.push({term: t.term, meaning: t.meaning, score: 1.0, method: 'exact', isHeading: t.isHeading});
+                    return;
+                }
+
+                // Strategy 2: Strict Word Overlap (ignoring stopwords in title)
+                const validTermWords = termWords.filter(w => w.length >= 3 && !STOPWORDS.includes(w));
+                if (validTermWords.length > 0) {
+                    const overlap = validTermWords.filter(w => titleWords.some(tw => tw === w));
+                    const score = overlap.length / validTermWords.length;
+                    
+                    // Require strict match: at least 2 words matching (and >=70% overlap), OR 100% overlap for 1-word terms
+                    if ((score >= 0.7 && overlap.length >= 2) || (score === 1.0 && overlap.length === 1)) {
+                        results.push({term: t.term, meaning: t.meaning, score: score, method: 'overlap', isHeading: t.isHeading});
+                    }
+                }
+            });
+
+            // Sort by score descending, deduplicate
+            results.sort((a, b) => b.score - a.score);
+            const seen = new Set();
+            return results.filter(r => {
+                if (seen.has(r.term)) return false;
+                seen.add(r.term);
+                return true;
+            });
+        }
+
+        // Create popup element
+        const termPopup = document.createElement('div');
+        termPopup.id = 'term-trace-popup';
+        termPopup.style.cssText = `
+            display: none; position: fixed; z-index: 9999;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0; border-radius: 12px; padding: 0;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1);
+            max-width: 420px; min-width: 300px; font-family: 'Inter', sans-serif;
+            backdrop-filter: blur(20px); overflow: hidden;
+            animation: termPopupIn 0.25s ease-out;
+        `;
+        termPopup.innerHTML = `
+            <style>
+                @keyframes termPopupIn { from { opacity:0; transform: translateY(-8px) scale(0.96); } to { opacity:1; transform: translateY(0) scale(1); } }
+                #term-trace-popup .popup-header { padding: 14px 18px; background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; }
+                #term-trace-popup .popup-header h6 { margin: 0; color: #64ffda; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
+                #term-trace-popup .popup-close { background: none; border: none; color: #888; font-size: 1.2rem; cursor: pointer; padding: 0 4px; }
+                #term-trace-popup .popup-close:hover { color: #fff; }
+                #term-trace-popup .popup-body { padding: 12px 18px; max-height: 320px; overflow-y: auto; }
+                #term-trace-popup .term-item { padding: 8px 12px; margin: 4px 0; background: rgba(255,255,255,0.04); border-radius: 8px; border-left: 3px solid #64ffda; transition: all 0.15s; }
+                #term-trace-popup .term-item:hover { background: rgba(100,255,218,0.08); }
+                #term-trace-popup .term-name { font-weight: 700; color: #fff; font-size: 0.9rem; }
+                #term-trace-popup .term-meaning { color: #aaa; font-size: 0.78rem; margin-top: 3px; font-style: italic; }
+                #term-trace-popup .term-badge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 0.65rem; margin-left: 6px; }
+                #term-trace-popup .badge-exact { background: rgba(100,255,218,0.2); color: #64ffda; }
+                #term-trace-popup .badge-overlap { background: rgba(255,193,7,0.2); color: #ffc107; }
+                #term-trace-popup .badge-heading { background: rgba(156,39,176,0.3); color: #e1bee7; }
+                #term-trace-popup .popup-empty { text-align: center; padding: 24px; color: #666; }
+                #term-trace-popup .popup-empty i { font-size: 2rem; margin-bottom: 8px; display: block; color: #444; }
+                #term-trace-popup .popup-title-preview { padding: 8px 18px; background: rgba(255,255,255,0.03); color: #888; font-size: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.05); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            </style>
+            <div class="popup-header">
+                <h6><i class="fa-solid fa-dna me-2"></i>Thuật ngữ nguồn</h6>
+                <button class="popup-close" onclick="document.getElementById('term-trace-popup').style.display='none'">&times;</button>
+            </div>
+            <div class="popup-title-preview" id="popup-title-preview"></div>
+            <div class="popup-body" id="popup-body"></div>
+        `;
+        document.body.appendChild(termPopup);
+
+        // Click handler for all headings (Event Delegation)
+        document.addEventListener('click', function(e) {
+            const header = e.target.closest('.term-traceable');
+            if (header) {
+                e.stopPropagation();
+                const rawText = header.textContent.trim();
+                // Remove "Chương X:" prefix and numbering (e.g. 1.1. or 1.1.1.)
+                const cleanTitle = rawText.replace(/^(Chương\s*\d+\s*:\s*|(\d+\.)+\s*)/i, '').trim();
+
+                const matches = findMatchedTerms(cleanTitle);
+                const preview = document.getElementById('popup-title-preview');
+                const body = document.getElementById('popup-body');
+
+                preview.textContent = '📌 ' + cleanTitle;
+
+                if (matches.length === 0) {
+                    body.innerHTML = `<div class="popup-empty"><i class="fa-solid fa-brain" style="color: #64ffda;"></i>Tiêu đề tổng hợp (AI Synthesized)<br><small>Tiêu đề này được AI tổng hợp từ ngữ cảnh bài học để tạo mạch văn logic, không lấy nguyên văn từ một thuật ngữ đơn lẻ.</small></div>`;
+                } else {
+                    body.innerHTML = matches.map(m => `
+                        <div class="term-item">
+                            <div class="term-name">${m.term} 
+                                ${m.isHeading ? '<span class="term-badge badge-heading"><i class="fa-brands fa-wikipedia-w"></i> Nguồn Wiki</span>' : ''}
+                                <span class="term-badge ${m.method === 'exact' ? 'badge-exact' : 'badge-overlap'}">${m.method === 'exact' ? '✓ Chính xác' : '≈ Liên quan'}</span>
+                            </div>
+                            ${m.meaning ? `<div class="term-meaning">${m.meaning}</div>` : ''}
+                        </div>
+                    `).join('');
+                }
+
+                // Position popup near the clicked element
+                const rect = header.getBoundingClientRect();
+                const popup = document.getElementById('term-trace-popup');
+                popup.style.display = 'block';
+
+                let top = rect.bottom + 8;
+                let left = rect.left;
+                // Ensure popup stays within viewport
+                if (top + 350 > window.innerHeight) top = rect.top - 350;
+                if (left + 420 > window.innerWidth) left = window.innerWidth - 440;
+                if (left < 10) left = 10;
+                if (top < 10) top = 10;
+
+                popup.style.top = top + 'px';
+                popup.style.left = left + 'px';
+            } else {
+                // Close popup when clicking outside
+                const popup = document.getElementById('term-trace-popup');
+                if (popup && !popup.contains(e.target)) {
+                    popup.style.display = 'none';
+                }
+            }
+        });
+
+    </script>
+</body>
+
+</html>

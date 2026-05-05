@@ -1,0 +1,15 @@
+.env
+__pycache__/
+*.pyc
+du_lieu/
+du_lieu/*
+ThucNghiem_KetQua/
+ThucNghiem_KetQua/*
+app.log
+instance/
+.vscode/
+.idea/
+*.pdf
+*.docx
+*.json
+!ground_truth_dataset.json

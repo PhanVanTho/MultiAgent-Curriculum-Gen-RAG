@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Cấu hình giáo trình - Giáo Trình AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        :root {
+            --primary: #10b981;
+            --primary-dark: #059669;
+            --primary-light: #ecfdf5;
+            --sidebar-width: 260px;
+            --bg-body: #f8fafc;
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+            --radius-xl: 24px;
+            --radius-lg: 16px;
+            --font-main: 'Be Vietnam Pro', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-dark);
+            font-family: var(--font-main);
+            margin: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2, h3, h4, h5, h6, .brand-logo, .nav-link, .btn {
+            font-family: var(--font-main);
+            font-weight: 700;
+        }
+
+        /* Sidebar (Synced with Profile) */
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            left: 0; top: 0;
+            background: white;
+            border-right: 1px solid #e2e8f0;
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+        }
+        .brand-logo {
+            display: flex; align-items: center; gap: 12px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700; font-size: 1.5rem;
+            color: var(--primary); text-decoration: none;
+            margin-bottom: 3rem;
+        }
+        .nav-menu { list-style: none; padding: 0; margin: 0; flex-grow: 1; }
+        .nav-item { margin-bottom: 0.5rem; }
+        .nav-link {
+            display: flex; align-items: center; gap: 12px;
+            padding: 0.8rem 1rem; color: var(--text-muted);
+            text-decoration: none; border-radius: 12px;
+            font-weight: 500; transition: all 0.3s;
+        }
+        .nav-link:hover, .nav-link.active { background: var(--primary-light); color: var(--primary); }
+        .logout-link { color: #ef4444; padding: 0.8rem 1rem; text-decoration: none; display: flex; align-items: center; gap: 12px; font-weight: 600; margin-top: auto; }
+
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 2rem 4rem;
+            min-height: 100vh;
+        }
+        .content-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .top-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem;
+            width: 100%;
+        }
+        .token-badge {
+            background: white; padding: 8px 16px; border-radius: 100px;
+            border: 1px solid #e2e8f0; display: flex; align-items: center;
+            gap: 10px; font-weight: 700; font-size: 0.9rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        /* Config Form Layout */
+        .config-card {
+            background: white;
+            border-radius: var(--radius-xl);
+            border: 1px solid #e2e8f0;
+            padding: 3rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        }
+
+        .header-section {
+            margin-bottom: 2rem;
+        }
+
+        /* Custom SweetAlert2 Theme */
+        .swal2-popup {
+            border-radius: 24px !important;
+            font-family: var(--font-main) !important;
+            padding: 2rem !important;
+        }
+        .swal2-title {
+            font-weight: 700 !important;
+            color: var(--text-dark) !important;
+        }
+        .swal2-confirm {
+            background-color: var(--primary) !important;
+            border-radius: 12px !important;
+            padding: 12px 32px !important;
+            font-weight: 600 !important;
+        }
+        .swal2-styled.swal2-confirm:focus {
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.5) !important;
+        }
+            margin-bottom: 2.5rem;
+        }
+        .header-section h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header-section h2 i { color: var(--primary); }
+        .header-section p { color: var(--text-muted); }
+
+        /* Inputs */
+        .form-label {
+            font-weight: 600;
+            color: #475569;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+            display: block;
+        }
+
+        .input-group-custom {
+            position: relative;
+            margin-bottom: 2rem;
+        }
+        .form-control-custom {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            border-radius: var(--radius-lg);
+            border: 2px solid #f1f5f9;
+            background: #f8fafc;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        .form-control-custom:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 0 0 4px var(--primary-light);
+        }
+
+        /* Language & Mode Toggles */
+        .toggle-group {
+            display: block;
+            margin-bottom: 2.5rem;
+        }
+
+        .chip-group {
+            display: flex;
+            gap: 12px;
+            background: #f1f5f9;
+            padding: 6px;
+            border-radius: 16px;
+        }
+        .chip-item {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            color: var(--text-muted);
+            border: 1px solid transparent;
+            background: transparent;
+        }
+        .chip-item.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border-color: #e2e8f0;
+        }
+
+        /* Mode Selection Cards */
+        .mode-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+        .mode-card {
+            background: #f8fafc;
+            border: 2px solid #f1f5f9;
+            border-radius: 16px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+            position: relative;
+        }
+        .mode-card:hover {
+            border-color: #d1d5db;
+        }
+        .mode-card.active {
+            background: white;
+            border-color: var(--primary);
+            box-shadow: 0 8px 20px -5px rgba(16, 185, 129, 0.15);
+        }
+        .mode-icon {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        .mode-title {
+            font-weight: 700;
+            font-size: 0.9rem;
+            display: block;
+            margin-bottom: 2px;
+        }
+        .mode-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            line-height: 1.3;
+            display: block;
+        }
+        .mode-card.active .mode-title { color: var(--primary); }
+        .mode-card.active .mode-icon { color: var(--primary); }
+
+        .token-cost-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #f1f5f9;
+            color: #475569;
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-weight: 700;
+            border: 1px solid #e2e8f0;
+        }
+        .mode-card.active .token-cost-badge {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Advanced Settings Section */
+        .advanced-toggle {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            transition: 0.3s;
+        }
+        .advanced-toggle:hover { opacity: 0.8; }
+
+        .advanced-panel {
+            background: #f1f5f9;
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: none;
+            border: 1px dashed #cbd5e1;
+        }
+
+        .chapter-input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .chapter-item-input {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            width: 100%;
+        }
+        .chapter-item-input:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+
+        /* Scale Selector Cards */
+        .scale-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+        .scale-card {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .scale-card:hover {
+            border-color: #10b981;
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px -10px rgba(0,0,0,0.1);
+        }
+        .scale-card.active {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            box-shadow: 0 0 0 1px var(--primary), 0 10px 25px -10px rgba(16, 185, 129, 0.3);
+        }
+        .scale-card .icon {
+            width: 40px;
+            height: 40px;
+            background: #f1f5f9;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            transition: all 0.3s;
+        }
+        .scale-card.active .icon {
+            background: var(--primary);
+            color: white;
+        }
+        .scale-card .title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--text-dark);
+            margin: 0;
+        }
+        .scale-card .info {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin: 0;
+        }
+        .scale-card .badge-check {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 20px;
+            height: 20px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+        .scale-card.active .badge-check {
+            display: flex;
+        }
+
+        .label-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .label-group label {
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+        .current-scale-val {
+            color: var(--primary);
+            font-weight: 800;
+            font-size: 1rem;
+        }
+        /* Description Box Animation */
+        .desc-box {
+            background: white;
+            border: 1px solid #e2e8f0;
+            padding: 1.5rem;
+            border-radius: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            margin-top: 2rem;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(0);
+            opacity: 1;
+        }
+        .desc-box.changing {
+            transform: translateY(10px);
+            opacity: 0;
+        }
+        .desc-icon {
+            width: 40px; height: 40px;
+            border-radius: 10px;
+            background: var(--primary-light);
+            color: var(--primary);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .desc-content h5 { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+        .desc-content p { font-size: 0.85rem; color: var(--text-muted); margin: 0; }
+
+        /* Submit Button */
+        .btn-submit {
+            width: 100%;
+            padding: 1.25rem;
+            border-radius: var(--radius-lg);
+            border: none;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            transition: all 0.3s;
+            box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.4);
+        }
+        .btn-submit:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 25px -5px rgba(16, 185, 129, 0.5);
+        }
+        .btn-submit:active { transform: scale(0.98); }
+
+        /* Progress Overlay */
+        #progress-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <a href="/" class="brand-logo">
+            <i class="fa-solid fa-bolt"></i>
+            <span>Giáo Trình AI</span>
+        </a>
+        <ul class="nav-menu">
+            <li class="nav-item"><a href="/" class="nav-link"><i class="fa-solid fa-house"></i> Trang Chủ</a></li>
+            <li class="nav-item"><a href="{{ url_for('profile') }}" class="nav-link"><i class="fa-solid fa-grid-2"></i> Tổng Quan</a></li>
+            <li class="nav-item"><a href="{{ url_for('trang_tao_giao_trinh') }}" class="nav-link active"><i class="fa-solid fa-wand-magic-sparkles"></i> Tạo Giáo Trình</a></li>
+            <li class="nav-item"><a href="{{ url_for('buy_tokens') }}" class="nav-link"><i class="fa-solid fa-credit-card"></i> Gói Cước</a></li>
+            <li class="nav-item"><a href="{{ url_for('lich_su') }}" class="nav-link"><i class="fa-solid fa-clock-rotate-left"></i> Lịch Sử</a></li>
+            
+            {% if current_user.la_admin %}
+            <div style="margin: 1.5rem 0 0.5rem 1rem; font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Admin</div>
+            <li class="nav-item">
+                <a href="{{ url_for('admin_dashboard') }}" class="nav-link">
+                    <i class="fa-solid fa-chart-pie"></i> Dashboard Quản trị
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('admin_dashboard') }}#history-section" class="nav-link">
+                    <i class="fa-solid fa-book-medical"></i> Quản lý giáo trình
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+        <a href="{{ url_for('logout') }}" class="logout-link"><i class="fa-solid fa-right-from-bracket"></i> Đăng Xuất</a>
+    </aside>
+
+    <main class="main-content">
+        <div class="content-container">
+            <header class="top-header">
+                <div>
+                    <h4 class="fw-bold mb-0">Thiết lập giáo trình</h4>
+                    <p class="text-muted small">Cấu hình các tham số để AI bắt đầu biên soạn.</p>
+                </div>
+                <div class="token-badge">
+                    <i class="fa-solid fa-coins text-warning"></i>
+                    <span>
+                        {% if current_user.la_admin %}
+                            ∞ Unlimited
+                        {% else %}
+                            {{ current_user.token }} Credits
+                        {% endif %}
+                    </span>
+                </div>
+            </header>
+
+            <section class="config-card">
+            <div class="header-section">
+                <h2><i class="fa-solid fa-sliders"></i> Thông số AI</h2>
+            </div>
+
+            <form id="tao-form" onsubmit="handleFormSubmit(event)">
+                <div class="input-group-custom">
+                    <label class="form-label">Chủ đề giáo trình</label>
+                    <input type="text" id="chu_de" class="form-control-custom" placeholder="Ví dụ: Cơ học lượng tử, Kinh tế vĩ mô nâng cao..." oninput="validateChuDe()" required>
+                    <div id="chu_de_warning" class="text-danger mt-2" style="display: none; font-size: 0.8rem; font-weight: 500;"></div>
+                </div>
+
+                <div class="toggle-group">
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <label class="form-label">Ngôn ngữ đầu ra</label>
+                            <div class="chip-group" id="lang-group">
+                                <button type="button" class="chip-item active" onclick="setLang('vi', this)">Tiếng Việt</button>
+                                <button type="button" class="chip-item" onclick="setLang('en', this)">English</button>
+                            </div>
+                            <input type="hidden" id="ngon_ngu" value="vi">
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Chế độ biên soạn</label>
+                            <div class="mode-grid" id="mode-group">
+                                <div class="mode-card active" onclick="setMode('auto', this)">
+                                    <span class="token-cost-badge">1 Token</span>
+                                    <i class="fa-solid fa-wand-magic-sparkles mode-icon"></i>
+                                    <span class="mode-title">Auto</span>
+                                    <span class="mode-desc">Tự động hoàn toàn</span>
+                                </div>
+                                <div class="mode-card" onclick="setMode('expert', this)">
+                                    <span class="token-cost-badge">2 Tokens</span>
+                                    <i class="fa-solid fa-shield-halved mode-icon"></i>
+                                    <span class="mode-title">Expert</span>
+                                    <span class="mode-desc">Chuyên gia audit</span>
+                                </div>
+                                <div class="mode-card" onclick="setMode('creative', this)">
+                                    <span class="token-cost-badge">3 Tokens</span>
+                                    <i class="fa-solid fa-lightbulb mode-icon"></i>
+                                    <span class="mode-title">Creative</span>
+                                    <span class="mode-desc">Sáng tạo nội dung</span>
+                                </div>
+                            </div>
+                            <input type="hidden" id="che_do" value="auto">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-5">
+                    <div class="label-group">
+                        <label>QUY MÔ GIÁO TRÌNH</label>
+                        <div class="current-scale-val" id="scale-display">Tiêu chuẩn</div>
+                    </div>
+                    
+                    <div class="scale-grid">
+                        <div class="scale-card" onclick="selectScale(1, 'Căn bản')" id="scale-1">
+                            <div class="badge-check"><i class="fa-solid fa-check"></i></div>
+                            <div class="icon"><i class="fa-solid fa-leaf"></i></div>
+                            <div class="title">Căn bản</div>
+                            <p class="info">~3-5 phút • 3-5 chương. Tóm tắt cốt lõi, nhanh chóng.</p>
+                        </div>
+                        <div class="scale-card active" onclick="selectScale(2, 'Tiêu chuẩn')" id="scale-2">
+                            <div class="badge-check"><i class="fa-solid fa-check"></i></div>
+                            <div class="icon"><i class="fa-solid fa-book-open"></i></div>
+                            <div class="title">Tiêu chuẩn</div>
+                            <p class="info">~5-8 phút • 7-10 chương. Chuẩn đại học, đầy đủ kiến thức.</p>
+                        </div>
+                        <div class="scale-card" onclick="selectScale(3, 'Chuyên sâu')" id="scale-3">
+                            <div class="badge-check"><i class="fa-solid fa-check"></i></div>
+                            <div class="icon"><i class="fa-solid fa-graduation-cap"></i></div>
+                            <div class="title">Chuyên sâu</div>
+                            <p class="info">~10-15 phút • 12-15 chương. Nghiên cứu sâu, học thuật.</p>
+                        </div>
+                    </div>
+                    <input type="hidden" name="quy_mo" id="quy_mo_input" value="2">
+                </div>
+
+                <!-- Cấu hình nâng cao -->
+                <div class="advanced-toggle" onclick="toggleAdvanced()">
+                    <i class="fa-solid fa-gear" id="gear-icon"></i>
+                    <span>Cấu hình nâng cao (Tùy chọn số chương & Tên chương)</span>
+                </div>
+
+                <div class="advanced-panel" id="advanced-panel">
+                    <div class="row align-items-center mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted small mb-0">SỐ LƯỢNG CHƯƠNG TỰ CHỌN (1-15)</label>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center gap-2">
+                            <input type="number" id="custom_so_chuong" name="custom_so_chuong" 
+                                   class="form-control fw-bold text-center" min="1" max="15" 
+                                   placeholder="Chọn số chương..." 
+                                   oninput="updateTimeEstimate(); generateChapterInputs()">
+                            <div id="time-estimate-badge" class="badge bg-primary-light text-primary py-2 px-3 rounded-3" style="display: none; min-width: 110px; font-weight: 700;">
+                                <i class="fa-solid fa-clock me-1"></i> <span id="est-time"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="manual_titles_toggle" onchange="generateChapterInputs()">
+                        <label class="form-check-label fw-600" for="manual_titles_toggle" style="font-size: 0.9rem;">Tôi muốn tự đặt tên cho từng chương</label>
+                    </div>
+
+                    <div id="chapter-inputs-container" class="chapter-input-grid">
+                        <!-- Chapter inputs will appear here -->
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit" id="submit-btn">
+                    <span>KHỞI TẠO GIÁO TRÌNH</span>
+                    <i class="fa-solid fa-bolt"></i>
+                </button>
+            </form>
+        </section>
+        <!-- INLINE PROGRESS AREA -->
+        <section id="progress-area" class="mt-4 animate-fade-in-up" style="display: none;">
+            <!-- Main Supervisor Progress -->
+            <div id="supervisor-panel" class="p-4 mb-4 shadow-sm" style="background: white; border-radius: 16px; border: 1px solid var(--glass-border);">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0 fw-bold text-primary d-flex align-items-center">
+                        <i class="fa-solid fa-microchip me-2"></i> AI Supervisor
+                    </h5>
+                    <span id="progress-percentage" class="badge bg-primary rounded-pill">0%</span>
+                </div>
+                
+                <div class="progress mb-3" style="height: 10px; border-radius: 5px; background: var(--bg-surface-2);">
+                    <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width: 0%"></div>
+                </div>
+                
+                <p id="progress-status" class="text-muted fw-medium mb-0 small"><i class="fa-solid fa-circle-notch fa-spin me-2"></i>Đang khởi tạo Agent...</p>
+                <div class="mt-3 text-center" id="cancel-btn-container">
+                    <button type="button" class="btn btn-outline-danger btn-sm px-4 rounded-pill fw-bold" onclick="huyTienTrinh()">
+                        <i class="fa-solid fa-stop me-1"></i> Hủy tiến trình
+                    </button>
+                </div>
+            </div>
+
+            <!-- X-Ray Discovery Log & Scraped Sources -->
+            <div id="xray-panel" class="p-4 shadow-sm" style="background: #f8fafc; border-radius: 16px; border: 1px dashed #cbd5e1;">
+                <div class="row">
+                    <!-- Logs Column -->
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <h6 class="fw-bold mb-3 d-flex align-items-center" style="color: #475569;">
+                            <i class="fa-solid fa-terminal me-2 text-info"></i> System Logs
+                        </h6>
+                        <div id="xray-log-container" style="height: 250px; overflow-y: auto; font-family: 'JetBrains Mono', 'Consolas', monospace; font-size: 0.8rem;" class="pe-2">
+                            <!-- Logs will be inserted here dynamically -->
+                        </div>
+                    </div>
+                    <!-- Sources Column -->
+                    <div class="col-md-6">
+                        <h6 class="fw-bold mb-3 d-flex align-items-center" style="color: #475569;">
+                            <i class="fa-solid fa-satellite-dish me-2 text-primary"></i> Crawled Sources
+                        </h6>
+                        <div id="xray-docs-container" style="height: 250px; overflow-y: auto; font-size: 0.85rem;" class="pe-2">
+                            <div class="text-muted small fst-italic">Đang thu thập dữ liệu...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function validateChuDe() {
+            const input = document.getElementById('chu_de').value;
+            const warning = document.getElementById('chu_de_warning');
+            
+            // Check for special characters (allow alphanumeric, spaces, vietnamese accents, and basic punctuation ,.-)
+            const specialCharRegex = /[!@#$%^&*()_+=\[\]{};':"\\|<>\/?]/;
+            const hasSpecialChars = specialCharRegex.test(input);
+            
+            // Check for Vietnamese without accents
+            const hasVietnameseAccents = /[àáảãạâầấẩẫậăằắẳẵặèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđÀÁẢÃẠÂẦẤẨẪẬĂẰẮẲẴẶÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴĐ]/i.test(input);
+            const words = input.trim().split(/\s+/).filter(w => w.length > 0);
+            const isVi = document.getElementById('ngon_ngu').value === 'vi';
+            
+            // If >= 2 words, no accents, and language is Vietnamese -> likely "tiếng việt không dấu" or English phrase
+            const looksLikeKhongDau = isVi && words.length >= 2 && !hasVietnameseAccents;
+
+            if (hasSpecialChars || looksLikeKhongDau) {
+                warning.style.display = 'block';
+                warning.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Lưu ý: Vui lòng nhập Tiếng Việt có dấu và hạn chế ký tự lạ để AI biên soạn chính xác nhất!';
+            } else {
+                warning.style.display = 'none';
+            }
+        }
+
+        function setFormInputsDisabled(disabled) {
+            document.getElementById('chu_de').disabled = disabled;
+            document.getElementById('custom_so_chuong').disabled = disabled;
+            document.getElementById('manual_titles_toggle').disabled = disabled;
+            
+            const interactiveElements = document.querySelectorAll('#tao-form .scale-card, #tao-form .mode-card, #tao-form .chip-item, .advanced-toggle');
+            interactiveElements.forEach(el => {
+                el.style.pointerEvents = disabled ? 'none' : 'auto';
+                el.style.opacity = disabled ? '0.6' : '1';
+            });
+
+            const customInputs = document.querySelectorAll('.chapter-item-input');
+            customInputs.forEach(input => input.disabled = disabled);
+        }
+
+        function setLang(lang, btn) {
+            document.getElementById('ngon_ngu').value = lang;
+            const chips = document.querySelectorAll('#lang-group .chip-item');
+            chips.forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            validateChuDe(); // Re-validate when language changes
+        }
+
+        function setMode(mode, card) {
+            document.getElementById('che_do').value = mode;
+            const cards = document.querySelectorAll('#mode-group .mode-card');
+            cards.forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+
+            const scaleSection = document.getElementById('scale-display').closest('.mb-5');
+            const advancedPanel = document.getElementById('advanced-panel');
+            const advancedToggle = document.querySelector('.advanced-toggle');
+
+            if (mode === 'auto') {
+                scaleSection.style.display = 'block';
+                advancedPanel.style.display = 'none';
+                advancedToggle.style.display = 'flex';
+                document.getElementById('gear-icon').style.transform = 'rotate(0deg)';
+            } else {
+                scaleSection.style.display = 'none';
+                advancedPanel.style.display = 'block';
+                advancedToggle.style.display = 'none';
+                document.getElementById('gear-icon').style.transform = 'rotate(90deg)';
+                
+                // Xử lý logic liên kết giữa Mode và Nút đặt tên chương
+                const manualToggle = document.getElementById('manual_titles_toggle');
+                if (mode === 'creative') {
+                    manualToggle.checked = true;
+                } else if (mode === 'expert') {
+                    manualToggle.checked = false;
+                }
+
+                // Nếu chưa có giá trị số chương, gợi ý lấy theo mức 10 chương
+                if (!document.getElementById('custom_so_chuong').value) {
+                    document.getElementById('custom_so_chuong').value = 10;
+                }
+                generateChapterInputs();
+            }
+        }
+
+        function updateTimeEstimate() {
+            const count = parseInt(document.getElementById('custom_so_chuong').value);
+            const badge = document.getElementById('time-estimate-badge');
+            const span = document.getElementById('est-time');
+
+            if (count > 0) {
+                badge.style.display = 'flex';
+                badge.style.alignItems = 'center';
+                const min = Math.ceil(count * 0.7);
+                const max = Math.ceil(count * 1.1);
+                span.innerText = `~${min}-${max} phút`;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function selectScale(val, title) {
+            // Update hidden input
+            document.getElementById('quy_mo_input').value = val;
+            
+            // Update UI classes
+            const cards = document.querySelectorAll('.scale-card');
+            cards.forEach(c => c.classList.remove('active'));
+            document.getElementById('scale-' + val).classList.add('active');
+            
+            // Update display text
+            document.getElementById('scale-display').innerText = title;
+        }
+
+        // Initialize display if needed
+        window.addEventListener('DOMContentLoaded', async () => {
+            const activeCard = document.querySelector('.scale-card.active');
+            if (activeCard) {
+                const val = activeCard.id.split('-')[1];
+                document.getElementById('quy_mo_input').value = val;
+            }
+
+            // Tự động phục hồi tiến trình nếu người dùng tải lại trang hoặc quay lại từ trang khác
+            const activeMaCv = localStorage.getItem('active_job_ma_cv');
+            if (activeMaCv) {
+                try {
+                    const res = await fetch(`/trang_thai/${activeMaCv}`);
+                    const d = await res.json();
+                    
+                    if (d.trang_thai === 'dang_chay') {
+                        // Khôi phục giao diện tiến trình
+                        const btn = document.getElementById('submit-btn');
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-2"></i> ĐANG XỬ LÝ...';
+                        document.getElementById('progress-area').style.display = 'block';
+                        setFormInputsDisabled(true);
+                        
+                        // Đặt lại tên chủ đề nếu có
+                        const savedTitle = localStorage.getItem('active_job_title');
+                        if (savedTitle && !document.getElementById('chu_de').value) {
+                            document.getElementById('chu_de').value = savedTitle;
+                        }
+
+                        // Tiếp tục poll status
+                        pollStatus(activeMaCv);
+                    } else if (d.trang_thai === 'hoan_thanh') {
+                        localStorage.removeItem('active_job_ma_cv');
+                        localStorage.removeItem('active_job_title');
+                        window.location.href = `/ket_qua/${activeMaCv}`;
+                    } else {
+                        // Job thất bại hoặc không tồn tại
+                        localStorage.removeItem('active_job_ma_cv');
+                        localStorage.removeItem('active_job_title');
+                    }
+                } catch (e) {
+                    console.error("Lỗi khi khôi phục tiến trình:", e);
+                }
+            }
+        });
+
+        function toggleAdvanced() {
+            const panel = document.getElementById('advanced-panel');
+            const icon = document.getElementById('gear-icon');
+            if (panel.style.display === 'block') {
+                panel.style.display = 'none';
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                panel.style.display = 'block';
+                icon.style.transform = 'rotate(90deg)';
+            }
+        }
+
+        function generateChapterInputs() {
+            const container = document.getElementById('chapter-inputs-container');
+            const toggle = document.getElementById('manual_titles_toggle');
+            const count = parseInt(document.getElementById('custom_so_chuong').value) || 0;
+
+            // Xử lý chuyển đổi mode dựa trên nút gạt đặt tên chương
+            const currentMode = document.getElementById('che_do').value;
+            if (toggle.checked && currentMode !== 'creative') {
+                const creativeCard = document.querySelector('.mode-card[onclick*="creative"]');
+                if (creativeCard) setMode('creative', creativeCard);
+            } else if (!toggle.checked && currentMode === 'creative') {
+                const expertCard = document.querySelector('.mode-card[onclick*="expert"]');
+                if (expertCard) setMode('expert', expertCard);
+            }
+
+            container.innerHTML = '';
+            if (toggle.checked && count > 0) {
+                for (let i = 1; i <= count; i++) {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'chapter-item-input';
+                    input.placeholder = `Tên chương ${i}...`;
+                    input.dataset.index = i;
+                    container.appendChild(input);
+                }
+            }
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+            const chuDe = document.getElementById('chu_de').value.trim();
+            
+            // V33.5: Validation chủ đề (Tối thiểu 2 ký tự)
+            const hasLetters = /[a-zA-ZÀ-ỹ]/.test(chuDe); // Kiểm tra có ít nhất 1 chữ cái
+            if (!chuDe || chuDe.length < 2 || !hasLetters) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Thông báo',
+                    text: 'Hãy nhập đầy đủ tiêu đề để đạt được kết quả tốt nhất',
+                    confirmButtonText: 'Tôi sẽ bổ sung',
+                    confirmButtonColor: '#059669'
+                });
+                return;
+            }
+
+            // Get advanced data
+            const customCount = document.getElementById('custom_so_chuong').value;
+            const manualToggle = document.getElementById('manual_titles_toggle').checked;
+            let chapterTitles = [];
+            if (manualToggle) {
+                const inputs = document.querySelectorAll('.chapter-item-input');
+                inputs.forEach(input => {
+                    if (input.value.trim()) chapterTitles.push(input.value.trim());
+                });
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-2"></i> ĐANG XỬ LÝ...';
+            document.getElementById('progress-area').style.display = 'block';
+            document.getElementById('xray-log-container').innerHTML = ''; // reset log
+            document.getElementById('xray-docs-container').innerHTML = '<div class="text-muted small fst-italic">Đang thu thập dữ liệu...</div>'; // reset docs
+            setFormInputsDisabled(true);
+
+            const payload = {
+                tieu_de: chuDe,
+                ngon_ngu: document.getElementById('ngon_ngu').value,
+                che_do: document.getElementById('che_do').value,
+                quy_mo: document.getElementById('quy_mo_input').value,
+                so_chuong_custom: customCount || null,
+                danh_sach_chuong: chapterTitles.length > 0 ? chapterTitles : null
+            };
+
+            try {
+                const res = await fetch('/tao', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await res.json();
+                if (data.ma_cv) {
+                    localStorage.setItem('active_job_ma_cv', data.ma_cv);
+                    localStorage.setItem('active_job_title', chuDe);
+                    pollStatus(data.ma_cv);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Thất bại',
+                        text: data.error || "Có lỗi xảy ra",
+                        confirmButtonText: 'Đóng'
+                    });
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>KHỞI TẠO GIÁO TRÌNH</span><i class="fa-solid fa-bolt ms-2"></i>';
+                    document.getElementById('progress-area').style.display = 'none';
+                    setFormInputsDisabled(false);
+                }
+            } catch (err) {
+                console.error(err);
+                btn.disabled = false;
+                btn.innerHTML = '<span>KHỞI TẠO GIÁO TRÌNH</span><i class="fa-solid fa-bolt ms-2"></i>';
+                document.getElementById('progress-area').style.display = 'none';
+                setFormInputsDisabled(false);
+            }
+        }
+
+        let pollingInterval = null;
+
+        async function pollStatus(ma_cv) {
+            const bar = document.getElementById('progress-bar');
+            const statusText = document.getElementById('progress-status');
+            const pctText = document.getElementById('progress-percentage');
+            const logContainer = document.getElementById('xray-log-container');
+            
+            if (pollingInterval) clearInterval(pollingInterval);
+            
+            pollingInterval = setInterval(async () => {
+                try {
+                    const r = await fetch(`/trang_thai/${ma_cv}`);
+                    const d = await r.json();
+                    
+                    if (d.tien_do) {
+                        bar.style.width = `${d.tien_do}%`;
+                        pctText.innerText = `${d.tien_do}%`;
+                    }
+                    if (d.buoc) {
+                        statusText.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin me-2"></i>${d.buoc}`;
+                    }
+
+                    // Render System Logs (nhat_ky)
+                    if (d.nhat_ky && d.nhat_ky.length > 0) {
+                        const currentLogsCount = logContainer.children.length;
+                        if (d.nhat_ky.length > currentLogsCount) {
+                            logContainer.innerHTML = ''; 
+                            d.nhat_ky.forEach(log => {
+                                const icon = (log.includes('TRƯỢT') || log.includes('LOW_YIELD') || log.includes('🛑') || log.includes('Error')) ? '🔴' : '🟢';
+                                logContainer.innerHTML += `<div class="mb-2 pb-2 border-bottom border-light text-muted">
+                                    <span class="me-2">${icon}</span> ${log}
+                                </div>`;
+                            });
+                            logContainer.scrollTop = logContainer.scrollHeight;
+                        }
+                    }
+
+                    // Render Crawled Sources (evaluated_docs)
+                    const docsContainer = document.getElementById('xray-docs-container');
+                    if (d.discovery_xray && d.discovery_xray.evaluated_docs && d.discovery_xray.evaluated_docs.length > 0) {
+                        docsContainer.innerHTML = '';
+                        d.discovery_xray.evaluated_docs.forEach(doc => {
+                            const isKept = doc.status === 'kept';
+                            const badgeColor = isKept ? 'bg-success' : 'bg-secondary';
+                            const icon = isKept ? '<i class="fa-solid fa-check-circle text-success me-2"></i>' : '<i class="fa-solid fa-times-circle text-danger me-2"></i>';
+                            
+                            docsContainer.innerHTML += `
+                                <div class="p-2 mb-2 rounded bg-white border">
+                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                        <div class="fw-bold text-truncate pe-2" style="max-width: 80%;" title="${doc.title}">
+                                            ${icon} <a href="${doc.url}" target="_blank" class="text-decoration-none text-dark">${doc.title}</a>
+                                        </div>
+                                        <span class="badge ${badgeColor}">${doc.score}</span>
+                                    </div>
+                                    <div class="text-muted" style="font-size: 0.75rem;">${doc.reason}</div>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    if (d.trang_thai === 'hoan_thanh') {
+                        clearInterval(pollingInterval);
+                        pollingInterval = null;
+                        localStorage.removeItem('active_job_ma_cv');
+                        localStorage.removeItem('active_job_title');
+                        window.location.href = `/ket_qua/${ma_cv}`;
+                    } else if (d.trang_thai === 'that_bai') {
+                        clearInterval(pollingInterval);
+                        pollingInterval = null;
+                        localStorage.removeItem('active_job_ma_cv');
+                        localStorage.removeItem('active_job_title');
+                        
+                        let errorMessage = d.loi || "Không rõ lỗi";
+                        let swalOptions = {
+                            icon: 'error',
+                            title: 'Quá trình tạo thất bại',
+                            confirmButtonText: 'Tôi đã hiểu',
+                            confirmButtonColor: '#059669'
+                        };
+
+                        if (errorMessage.includes("không phù hợp") || errorMessage.includes("đánh giá nội dung")) {
+                            swalOptions.title = 'Nội dung không phù hợp';
+                            swalOptions.html = `
+                                <div class="text-start mt-3">
+                                    <p class="mb-3">${errorMessage}</p>
+                                    <div class="p-3 rounded-4" style="background: #f0fdf4; border: 1px solid #dcfce7;">
+                                        <div class="d-flex gap-2 text-success fw-bold mb-2">
+                                            <i class="fa-solid fa-lightbulb"></i> Gợi ý cho bạn:
+                                        </div>
+                                        <p class="small text-muted mb-0">Bạn có thể diễn đạt lại theo hướng nghiên cứu hoặc phân tích học thuật. Ví dụ: thêm các từ khóa như 'phân tích', 'lịch sử', 'nguyên lý' vào chủ đề.</p>
+                                    </div>
+                                </div>
+                            `;
+                        } else if (d.loai_loi === 'semantic_drift') {
+                            swalOptions.icon = 'warning';
+                            swalOptions.title = 'Tên chương không phù hợp';
+                            swalOptions.confirmButtonText = 'Tôi sẽ chỉnh sửa';
+                            // Replace newlines with <br> for HTML rendering
+                            let formattedMsg = errorMessage.replace(/\n/g, '<br>');
+                            swalOptions.html = `
+                                <div class="text-start mt-3">
+                                    <p class="mb-3">${formattedMsg}</p>
+                                    <div class="p-3 rounded-4" style="background: #fffbeb; border: 1px solid #fde68a;">
+                                        <div class="d-flex gap-2 fw-bold mb-2" style="color: #b45309;">
+                                            <i class="fa-solid fa-lightbulb"></i> Gợi ý:
+                                        </div>
+                                        <p class="small text-muted mb-0">Hãy đặt tên chương liên quan trực tiếp đến chủ đề. Ví dụ: nếu chủ đề là <strong>"Trí Tuệ Nhân Tạo"</strong>, tên chương nên là <em>"Học máy"</em>, <em>"Mạng nơ-ron"</em>, <em>"Xử lý ngôn ngữ tự nhiên"</em>...</p>
+                                    </div>
+                                </div>
+                            `;
+                        } else if (errorMessage.includes('<br>')) {
+                            swalOptions.html = errorMessage;
+                        } else {
+                            swalOptions.text = errorMessage;
+                        }
+
+                        Swal.fire(swalOptions).then(() => {
+                            // V33.6: Không reload trang, reset UI để sửa lỗi
+                            const btn = document.getElementById('submit-btn');
+                            if(btn) {
+                                btn.disabled = false;
+                                btn.innerHTML = '<span>KHỞI TẠO GIÁO TRÌNH</span><i class="fa-solid fa-bolt ms-2"></i>';
+                            }
+                            setFormInputsDisabled(false);
+                            // Ẩn progress-area để giao diện sạch sẽ cho người dùng chỉnh sửa
+                            document.getElementById('progress-area').style.display = 'none';
+                        });
+                    }
+                } catch (e) {
+                    // ignore fetch errors, keep polling
+                }
+            }, 3000);
+        }
+
+        async function huyTienTrinh() {
+            const ma_cv = localStorage.getItem('active_job_ma_cv');
+            if (!ma_cv) return;
+            
+            if (!confirm("Bạn có chắc chắn muốn hủy tiến trình đang chạy? Dữ liệu đang tạo có thể bị mất.")) return;
+
+            try {
+                // Gửi lệnh hủy xuống backend
+                await fetch(`/huy/${ma_cv}`, { method: 'POST' });
+                
+                // Dừng polling UI
+                if (pollingInterval) {
+                    clearInterval(pollingInterval);
+                    pollingInterval = null;
+                }
+                
+                // Reset giao diện
+                const btn = document.getElementById('submit-btn');
+                btn.disabled = false;
+                btn.innerHTML = '<span>KHỞI TẠO GIÁO TRÌNH</span><i class="fa-solid fa-bolt ms-2"></i>';
+                setFormInputsDisabled(false);
+                document.getElementById('progress-area').style.display = 'none';
+                
+                // Xóa trạng thái local
+                localStorage.removeItem('active_job_ma_cv');
+                localStorage.removeItem('active_job_title');
+                
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Đã hủy tiến trình',
+                    text: 'Tiến trình đã được dừng lại. Bạn có thể bắt đầu tạo giáo trình mới.',
+                    confirmButtonColor: '#059669'
+                });
+                
+            } catch (e) {
+                console.error("Lỗi khi hủy tiến trình:", e);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi',
+                    text: 'Không thể gửi lệnh hủy tới máy chủ.',
+                    confirmButtonColor: '#059669'
+                });
+            }
+        }
+    </script>
+</body>
+</html>
