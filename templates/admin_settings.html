@@ -1,0 +1,207 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}Cài đặt Hệ thống{% endblock %}
+
+{% block header_title %}<span data-i18n="admin.settings.title">Cài đặt hệ thống (API & Models)</span>{% endblock %}
+{% block header_subtitle %}<span data-i18n="admin.settings.subtitle">Điều chỉnh API Key, Model Engines và Cấu hình phương thức thanh toán.</span>{% endblock %}
+
+{% block content %}
+<!-- System Settings Table -->
+<div class="table-card" id="settings-section" style="margin-top: 1.5rem; margin-bottom: 2rem;">
+    <div class="table-card-header">
+        <h5 data-i18n="admin.settings.card_title"><i class="fa-solid fa-gear me-2" style="color: var(--primary);"></i>Cài đặt hệ thống (API & Models)</h5>
+    </div>
+    <div style="padding: 1.5rem;">
+        <form id="settings-form" class="row g-4">
+            <div class="col-md-6">
+                <label class="form-label fw-bold">OpenAI API Key</label>
+                <input type="password" class="form-control" id="OPENAI_API_KEY" value="{{ masked_openai }}" placeholder="sk-...">
+                <div class="form-text" data-i18n="admin.settings.openai_desc">Dùng cho gpt-4o-mini (Writer/Search)</div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold">OpenAI Model</label>
+                <input type="text" class="form-control" id="OPENAI_MODEL" value="{{ cau_hinh.OPENAI_MODEL or 'gpt-4o-mini' }}">
+            </div>
+            <div class="col-12">
+                <label class="form-label fw-bold">Gemini API Keys</label>
+                <textarea class="form-control" id="GEMINI_API_KEYS" rows="2" placeholder="AIzaSy..., AIzaSy...">{{ masked_gemini }}</textarea>
+                <div class="form-text" data-i18n="admin.settings.gemini_desc">Các key phân cách nhau bởi dấu phẩy (,). Hệ thống sẽ tự động xoay vòng (round-robin) khi hết quota.</div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Gemini Model (Pro)</label>
+                <input type="text" class="form-control" id="GEMINI_MODEL" value="{{ cau_hinh.GEMINI_MODEL or 'gemini-2.5-flash' }}">
+                <div class="form-text" data-i18n="admin.settings.gemini_pro_desc">Dùng làm core engine (phân tích tri thức lớn).</div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Gemini Model (Lite)</label>
+                <input type="text" class="form-control" id="GEMINI_MODEL_LITE" value="{{ cau_hinh.GEMINI_MODEL_LITE or 'gemini-3.1-flash-lite' }}">
+                <div class="form-text" data-i18n="admin.settings.gemini_lite_desc">Dùng làm model gọn cho các tác vụ phụ.</div>
+            </div>
+            
+            <div class="col-12">
+                <h6 class="border-bottom pb-2 mb-3 mt-4 text-primary"><i class="fa-solid fa-network-wired me-2"></i><span data-i18n="admin.settings.task_assignments">Cấu hình Phân vai trò Model (Task Assignments)</span></h6>
+            </div>
+            
+            <div class="col-md-6">
+                <label class="form-label fw-bold" data-i18n="admin.settings.writer_model">Biên soạn & Viết nội dung (Writer Model)</label>
+                <input type="text" class="form-control" id="WRITER_MODEL" value="{{ cau_hinh.WRITER_MODEL or 'gpt-4o-mini' }}">
+                <div class="form-text" data-i18n="admin.settings.writer_model_desc">Model đảm nhận sinh văn bản chi tiết cho các mục trong giáo trình.</div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold" data-i18n="admin.settings.search_model">Tìm kiếm & Phân tích (Search/Crawler Model)</label>
+                <input type="text" class="form-control" id="SEARCH_MODEL" value="{{ cau_hinh.SEARCH_MODEL or 'gpt-4o' }}">
+                <div class="form-text" data-i18n="admin.settings.search_model_desc">Model phụ trách trích xuất thực thể, lọc liên kết và lập chỉ mục.</div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold" data-i18n="admin.settings.lite_supervisor">Giám sát nhẹ (Lite Supervisor)</label>
+                <input type="text" class="form-control" id="SUPERVISOR_MODEL_LITE" value="{{ cau_hinh.SUPERVISOR_MODEL_LITE or 'gemini-3.1-flash-lite' }}">
+                <div class="form-text" data-i18n="admin.settings.lite_supervisor_desc">Model dùng để đánh giá độ trôi chảy, logic cơ bản và kiểm duyệt nhanh.</div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold" data-i18n="admin.settings.pro_supervisor">Giám sát nâng cao (Pro Supervisor)</label>
+                <input type="text" class="form-control" id="SUPERVISOR_MODEL_PRO" value="{{ cau_hinh.SUPERVISOR_MODEL_PRO or 'gemini-2.5-flash' }}">
+                <div class="form-text" data-i18n="admin.settings.pro_supervisor_desc">Model phụ trách kiểm tra dàn ý chi tiết, audit trích dẫn và viết lại bài lỗi.</div>
+            </div>
+
+            <div class="col-12">
+                <h6 class="border-bottom pb-2 mb-3 mt-4 text-primary"><i class="fa-solid fa-credit-card me-2"></i><span data-i18n="admin.settings.payment_gateways">Cấu hình Cổng thanh toán (Payment Gateways)</span></h6>
+            </div>
+            
+            <div class="col-md-6 border-end pr-3">
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="PAYMENT_VNPAY_ACTIVE" {% if cau_hinh.PAYMENT_VNPAY_ACTIVE %}checked{% endif %}>
+                    <label class="form-check-label fw-bold" for="PAYMENT_VNPAY_ACTIVE" data-i18n="admin.settings.vnpay_active">Kích hoạt thanh toán VNPAY</label>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-muted">VNPAY TMN CODE (Mã Website)</label>
+                    <input type="text" class="form-control" id="VNPAY_TMN_CODE" value="{{ cau_hinh.VNPAY_TMN_CODE or '' }}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-muted">VNPAY Hash Secret (Chuỗi mật khẩu)</label>
+                    <input type="password" class="form-control" id="VNPAY_HASH_SECRET" value="{{ masked_vnpay_secret or '' }}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-muted">VNPAY Payment URL (Cổng Sandbox/Live)</label>
+                    <input type="text" class="form-control" id="VNPAY_PAYMENT_URL" value="{{ cau_hinh.VNPAY_PAYMENT_URL or '' }}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-muted">VNPAY Return URL (Callback)</label>
+                    <input type="text" class="form-control" id="VNPAY_RETURN_URL" value="{{ cau_hinh.VNPAY_RETURN_URL or '' }}">
+                </div>
+            </div>
+
+            <div class="col-md-6 pl-3">
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="PAYMENT_SEPAY_ACTIVE" {% if cau_hinh.PAYMENT_SEPAY_ACTIVE %}checked{% endif %}>
+                    <label class="form-check-label fw-bold" for="PAYMENT_SEPAY_ACTIVE" data-i18n="admin.settings.sepay_active">Kích hoạt thanh toán SePay</label>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-muted">SePay API Key (Mã Token kết nối)</label>
+                    <input type="password" class="form-control" id="SEPAY_API_KEY" value="{{ masked_sepay_key or '' }}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-muted">Số tài khoản Ngân hàng (Account Number)</label>
+                    <input type="text" class="form-control" id="SEPAY_ACCOUNT_NUMBER" value="{{ cau_hinh.SEPAY_ACCOUNT_NUMBER or '' }}">
+                </div>
+                <div class="mb-3 row">
+                    <div class="col-6">
+                        <label class="form-label fw-bold small text-muted">Ngân hàng (Ví dụ: MBBank)</label>
+                        <input type="text" class="form-control" id="SEPAY_BANK_BRAND" value="{{ cau_hinh.SEPAY_BANK_BRAND or '' }}">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label fw-bold small text-muted">Tên thương hiệu (Web Name)</label>
+                        <input type="text" class="form-control" id="SEPAY_WEB_NAME" value="{{ cau_hinh.SEPAY_WEB_NAME or '' }}">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-muted">Mã XOR Key bảo mật (Dạng Hex 0x...)</label>
+                    <input type="text" class="form-control" id="SEPAY_XOR_KEY" value="0x{{ '%X' % cau_hinh.SEPAY_XOR_KEY if cau_hinh.SEPAY_XOR_KEY is integer else cau_hinh.SEPAY_XOR_KEY }}">
+                </div>
+            </div>
+
+            <div class="col-12 text-end mt-4">
+                <button type="submit" class="btn btn-primary" id="btn-save-settings">
+                    <i class="fa-solid fa-floppy-disk me-2"></i><span data-i18n="admin.settings.save_btn">Lưu Cài đặt</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('settings-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btn-save-settings');
+        const originalText = btn.innerHTML;
+        const lang = getCurrentLang();
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-2"></i>${lang === 'vi' ? 'Đang lưu...' : 'Saving...'}`;
+        btn.disabled = true;
+
+        const payload = {
+            OPENAI_API_KEY: document.getElementById('OPENAI_API_KEY').value,
+            OPENAI_MODEL: document.getElementById('OPENAI_MODEL').value,
+            GEMINI_API_KEYS: document.getElementById('GEMINI_API_KEYS').value,
+            GEMINI_MODEL: document.getElementById('GEMINI_MODEL').value,
+            GEMINI_MODEL_LITE: document.getElementById('GEMINI_MODEL_LITE').value,
+            WRITER_MODEL: document.getElementById('WRITER_MODEL').value,
+            SEARCH_MODEL: document.getElementById('SEARCH_MODEL').value,
+            SUPERVISOR_MODEL_LITE: document.getElementById('SUPERVISOR_MODEL_LITE').value,
+            SUPERVISOR_MODEL_PRO: document.getElementById('SUPERVISOR_MODEL_PRO').value,
+            PAYMENT_VNPAY_ACTIVE: document.getElementById('PAYMENT_VNPAY_ACTIVE').checked ? 'True' : 'False',
+            PAYMENT_SEPAY_ACTIVE: document.getElementById('PAYMENT_SEPAY_ACTIVE').checked ? 'True' : 'False',
+            VNPAY_TMN_CODE: document.getElementById('VNPAY_TMN_CODE').value,
+            VNPAY_HASH_SECRET: document.getElementById('VNPAY_HASH_SECRET').value,
+            VNPAY_PAYMENT_URL: document.getElementById('VNPAY_PAYMENT_URL').value,
+            VNPAY_RETURN_URL: document.getElementById('VNPAY_RETURN_URL').value,
+            SEPAY_API_KEY: document.getElementById('SEPAY_API_KEY').value,
+            SEPAY_ACCOUNT_NUMBER: document.getElementById('SEPAY_ACCOUNT_NUMBER').value,
+            SEPAY_BANK_BRAND: document.getElementById('SEPAY_BANK_BRAND').value,
+            SEPAY_WEB_NAME: document.getElementById('SEPAY_WEB_NAME').value,
+            SEPAY_XOR_KEY: document.getElementById('SEPAY_XOR_KEY').value
+        };
+
+        try {
+            const res = await fetch('/admin/update_settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: lang === 'vi' ? 'Đã lưu cài đặt' : 'Settings Saved',
+                    text: lang === 'vi' ? 'Cấu hình mới đã được cập nhật.' : 'The new configuration has been updated.',
+                    confirmButtonColor: '#047857',
+                    timer: 2000,
+                    showConfirmButton: false
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: lang === 'vi' ? 'Lỗi' : 'Error',
+                    text: data.error || (lang === 'vi' ? 'Không thể lưu cài đặt' : 'Could not save settings'),
+                    confirmButtonColor: '#047857'
+                });
+            }
+        } catch (err) {
+            console.error(err);
+            Swal.fire({
+                icon: 'error',
+                title: lang === 'vi' ? 'Lỗi kết nối' : 'Connection Error',
+                text: lang === 'vi' ? 'Không thể kết nối tới máy chủ' : 'Could not connect to server',
+                confirmButtonColor: '#047857'
+            });
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    });
+</script>
+{% endblock %}

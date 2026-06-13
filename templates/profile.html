@@ -159,6 +159,133 @@
             align-items: center;
             justify-content: center;
             font-weight: 700;
+            overflow: hidden;
+        }
+        .avatar-circle img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Password field with eye toggle */
+        .pw-field {
+            display: flex;
+            align-items: center;
+            border: 1.5px solid #dee2e6;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #fff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .pw-field:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+        }
+        .pw-input {
+            flex: 1;
+            border: none !important;
+            outline: none !important;
+            box-shadow: none !important;
+            background: transparent;
+            padding: 10px 12px;
+            font-size: 0.9rem;
+            color: var(--text-primary, #1a202c);
+        }
+        .pw-input::placeholder { color: #9ca3af; }
+        .pw-eye {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            border-left: 1.5px solid #e5e7eb;
+            color: #9ca3af;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: color 0.15s, background 0.15s;
+        }
+        .pw-eye:hover {
+            color: var(--primary);
+            background: rgba(16, 185, 129, 0.06);
+        }
+        .pw-eye:active { background: rgba(16, 185, 129, 0.14); }
+
+        /* Avatar Upload CSS */
+        .avatar-upload-wrapper {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 1.5rem;
+            cursor: pointer;
+        }
+        .avatar-upload-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            overflow: hidden;
+            border: 3px solid #fff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        .avatar-upload-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .avatar-upload-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            color: #fff;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .avatar-upload-wrapper:hover .avatar-upload-overlay {
+            opacity: 1;
+        }
+        .avatar-upload-overlay i {
+            font-size: 1.25rem;
+            margin-bottom: 2px;
+        }
+
+        /* Nav tabs styling override */
+        .modal-body .nav-tabs {
+            border-bottom: 2px solid #f1f5f9;
+            margin-bottom: 1.2rem;
+        }
+        .modal-body .nav-link {
+            border: none;
+            color: #64748b;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+        }
+        .modal-body .nav-link:hover {
+            color: var(--primary);
+            border-bottom-color: #cbd5e1;
+        }
+        .modal-body .nav-link.active {
+            color: var(--primary) !important;
+            background: none !important;
+            border-bottom: 2px solid var(--primary) !important;
         }
 
         /* Hero Banner */
@@ -307,6 +434,138 @@
             align-items: center;
             gap: 6px;
         }
+        .lang-btn {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            color: #475569;
+            cursor: pointer;
+            font-size: 0.82rem;
+            font-weight: 700;
+            padding: 5px 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.2s;
+            margin-right: 15px;
+            margin-left: auto;
+        }
+        .lang-btn:hover { background: #e2e8f0; }
+        .top-header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        /* Mobile nav toggle button */
+        .mobile-nav-toggle {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            cursor: pointer;
+            color: var(--text-dark);
+            font-size: 1.25rem;
+            transition: all 0.2s;
+        }
+        .mobile-nav-toggle:hover {
+            background: #f1f5f9;
+        }
+
+        /* Sidebar backdrop for mobile */
+        .sidebar-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .sidebar-backdrop.show {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Mobile responsive layout adjustment */
+        @media (max-width: 991.98px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease-in-out;
+                box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0 !important;
+                padding: 1.5rem 1rem !important;
+            }
+            .mobile-nav-toggle {
+                display: flex !important;
+            }
+            /* Reposition top-header for mobile */
+            .top-header {
+                justify-content: space-between !important;
+                margin-bottom: 2rem !important;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+            .top-header .mobile-nav-toggle {
+                order: 1;
+            }
+            .top-header .token-badge-top {
+                order: 1;
+                margin-right: auto !important;
+                margin-left: 10px !important;
+            }
+            .top-header .lang-btn {
+                margin-left: auto !important;
+                margin-right: 0 !important;
+                order: 1;
+            }
+            .top-header .user-profile-top {
+                order: 1;
+                padding: 4px 8px !important;
+            }
+            
+            /* Responsive layout elements */
+            .stats-grid {
+                grid-template-columns: 1fr !important;
+                gap: 1rem !important;
+            }
+            .actions-grid {
+                grid-template-columns: 1fr !important;
+                gap: 1rem !important;
+            }
+            .welcome-banner {
+                padding: 1.5rem !important;
+                border-radius: var(--radius-lg) !important;
+                position: relative;
+            }
+            .welcome-banner h1 {
+                font-size: 1.5rem !important;
+            }
+            .welcome-banner p {
+                font-size: 0.95rem !important;
+                margin-bottom: 5rem !important;
+            }
+            .btn-banner {
+                position: absolute !important;
+                bottom: 1.5rem !important;
+                left: 1.5rem !important;
+                right: 1.5rem !important;
+                top: auto !important;
+                transform: none !important;
+                justify-content: center;
+                width: calc(100% - 3rem);
+            }
+        }
     </style>
 </head>
 <body>
@@ -321,31 +580,31 @@
             <li class="nav-item">
                 <a href="/" class="nav-link">
                     <i class="fa-solid fa-house"></i>
-                    Trang Chủ
+                    <span data-i18n="nav.home">Trang Chủ</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a href="{{ url_for('profile') }}" class="nav-link active">
                     <i class="fa-solid fa-grid-2"></i>
-                    Tổng Quan
+                    <span data-i18n="nav.overview">Tổng Quan</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a href="{{ url_for('trang_tao_giao_trinh') }}" class="nav-link">
                     <i class="fa-solid fa-wand-magic-sparkles"></i>
-                    Tạo Giáo Trình
+                    <span data-i18n="nav.create">Tạo Giáo Trình</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a href="{{ url_for('buy_tokens') }}" class="nav-link">
                     <i class="fa-solid fa-credit-card"></i>
-                    Gói Cước
+                    <span data-i18n="nav.pricing">Gói Cước</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a href="{{ url_for('lich_su') }}" class="nav-link">
                     <i class="fa-solid fa-clock-rotate-left"></i>
-                    Lịch Sử
+                    <span data-i18n="nav.history">Lịch Sử</span>
                 </a>
             </li>
 
@@ -353,12 +612,12 @@
             <div style="margin: 1.5rem 0 0.5rem 1rem; font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Admin</div>
             <li class="nav-item">
                 <a href="{{ url_for('admin_dashboard') }}" class="nav-link">
-                    <i class="fa-solid fa-chart-pie"></i> Dashboard Quản trị
+                    <i class="fa-solid fa-chart-pie"></i> <span data-i18n="nav.admin_dashboard">Dashboard Quản trị</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a href="{{ url_for('admin_dashboard') }}#history-section" class="nav-link">
-                    <i class="fa-solid fa-book-medical"></i> Quản lý giáo trình
+                    <i class="fa-solid fa-book-medical"></i> <span data-i18n="nav.admin_curriculums">Quản lý giáo trình</span>
                 </a>
             </li>
             {% endif %}
@@ -366,43 +625,76 @@
 
         <a href="{{ url_for('logout') }}" class="logout-link">
             <i class="fa-solid fa-right-from-bracket"></i>
-            Đăng Xuất
+            <span data-i18n="nav.logout">Đăng Xuất</span>
         </a>
     </aside>
 
     <!-- Main Content -->
     <main class="main-content">
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show mb-4" role="alert" style="border-radius: 12px;">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
         <header class="top-header">
-            <div class="token-badge-top">
+            <button class="mobile-nav-toggle" id="sidebar-toggle" title="Menu">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <div class="token-badge-top" style="margin-right: auto; margin-left: 0;">
                 <i class="fa-solid fa-coins text-warning"></i>
                 <span>
                     {% if current_user.la_admin %}
                         ∞ Unlimited
                     {% else %}
-                        {{ current_user.token }} Credits
+                        {{ current_user.token }} <span data-i18n="profile.credits">Credits</span>
                     {% endif %}
                 </span>
             </div>
 
-            <div class="user-profile-top">
+            <button class="lang-btn" onclick="toggleLanguage()" title="Switch Language">
+                <span id="langFlag">🇻🇳</span><span id="langLabel">VI</span>
+            </button>
+
+            <div class="user-profile-top" style="cursor: pointer; padding: 6px 12px; border-radius: 12px; transition: background 0.3s;" data-bs-toggle="modal" data-bs-target="#editProfileModal" title="Chỉnh sửa thông tin" data-i18n-title="profile.edit_title" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">
                 <div class="user-info-text">
-                    <span class="user-name-top">{{ current_user.ho_ten or current_user.ten_dang_nhap }}</span>
-                    <span class="user-email-top">{{ current_user.email or 'Chưa cập nhật email' }}</span>
+                    <span class="user-name-top">{{ current_user.ho_ten or current_user.ten_dang_nhap }} <i class="fa-solid fa-pen-to-square ms-1 text-muted small" style="font-size: 0.75rem;"></i></span>
+                    <span class="user-email-top">
+                        {% if current_user.email %}
+                            {{ current_user.email }}
+                        {% else %}
+                            <span data-i18n="profile.no_email">Chưa cập nhật email</span>
+                        {% endif %}
+                    </span>
                 </div>
                 <div class="avatar-circle">
-                    {{ (current_user.ho_ten or current_user.ten_dang_nhap)[0] | upper }}
+                    {% if current_user.anh_dai_dien %}
+                        {% if current_user.anh_dai_dien.startswith('http') %}
+                            <img src="{{ current_user.anh_dai_dien }}" alt="Avatar">
+                        {% else %}
+                            <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.anh_dai_dien) }}" alt="Avatar">
+                        {% endif %}
+                    {% else %}
+                        {{ (current_user.ho_ten or current_user.ten_dang_nhap)[0] | upper }}
+                    {% endif %}
                 </div>
             </div>
         </header>
 
         <section class="welcome-banner">
             <div>
-                <h1>Chào mừng trở lại, {{ (current_user.ho_ten or current_user.ten_dang_nhap).split(' ')[-1] }}! 👋</h1>
-                <p>Hôm nay bạn muốn biên soạn giáo trình gì?</p>
+                <h1><span data-i18n="profile.welcome">Chào mừng trở lại</span>, {{ (current_user.ho_ten or current_user.ten_dang_nhap).split(' ')[-1] }}! 👋</h1>
+                <p data-i18n="profile.welcome_sub">Hôm nay bạn muốn biên soạn giáo trình gì?</p>
             </div>
             <a href="{{ url_for('trang_tao_giao_trinh') }}" class="btn-banner text-decoration-none">
                 <i class="fa-solid fa-plus-circle"></i>
-                Tạo Giáo Trình Mới
+                <span data-i18n="profile.create_btn">Tạo Giáo Trình Mới</span>
             </a>
         </section>
 
@@ -412,7 +704,7 @@
                     <i class="fa-solid fa-bolt-lightning"></i>
                 </div>
                 <div>
-                    <div class="stat-label">Số dư hiện tại</div>
+                    <div class="stat-label" data-i18n="profile.stat_balance">Số dư hiện tại</div>
                     <div class="stat-value">
                         {% if current_user.la_admin %}
                             ∞ Unlimited
@@ -428,7 +720,7 @@
                     <i class="fa-solid fa-book"></i>
                 </div>
                 <div>
-                    <div class="stat-label">Giáo trình đã tạo</div>
+                    <div class="stat-label" data-i18n="profile.stat_created">Giáo trình đã tạo</div>
                     <div class="stat-value">{{ current_user.lich_su | length }}</div>
                 </div>
             </div>
@@ -438,21 +730,21 @@
                     <i class="fa-solid fa-chart-line"></i>
                 </div>
                 <div>
-                    <div class="stat-label">Tổng chi tiêu</div>
+                    <div class="stat-label" data-i18n="profile.stat_spent">Tổng chi tiêu</div>
                     <div class="stat-value">{{ current_user.lich_su | length }} Tokens</div>
                 </div>
             </div>
         </div>
 
-        <h3 class="section-title">Thao tác nhanh</h3>
+        <h3 class="section-title" data-i18n="profile.quick_actions">Thao tác nhanh</h3>
         <div class="actions-grid">
             {% if not current_user.la_admin %}
             <a href="{{ url_for('buy_tokens') }}" class="action-card">
                 <div class="action-icon">
                     <i class="fa-solid fa-credit-card"></i>
                 </div>
-                <h4>Mua Token</h4>
-                <div class="action-link">
+                <h4 data-i18n="profile.act_buy">Mua Token</h4>
+                <div class="action-link" data-i18n="profile.act_buy_desc">
                     Nạp thêm vào tài khoản <i class="fa-solid fa-arrow-right"></i>
                 </div>
             </a>
@@ -462,14 +754,192 @@
                 <div class="action-icon">
                     <i class="fa-solid fa-clock-rotate-left"></i>
                 </div>
-                <h4>Xem Lịch Sử</h4>
-                <div class="action-link">
+                <h4 data-i18n="profile.act_history">Xem Lịch Sử</h4>
+                <div class="action-link" data-i18n="profile.act_history_desc">
                     Xem lại các giáo trình đã tạo <i class="fa-solid fa-arrow-right"></i>
                 </div>
             </a>
         </div>
     </main>
 
+    <div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 20px; border: none; box-shadow: 0 15px 30px rgba(0,0,0,0.08);">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="editProfileModalLabel" style="font-family: 'Be Vietnam Pro', sans-serif;"><i class="fa-solid fa-user-gear text-primary me-2"></i><span data-i18n="profile.edit_title">Chỉnh sửa hồ sơ</span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{{ url_for('profile') }}" method="POST" enctype="multipart/form-data">
+                    <div class="modal-body pt-3">
+                        <!-- Avatar Editor -->
+                        <div class="avatar-upload-wrapper" onclick="document.getElementById('avatarInput').click();">
+                            <div class="avatar-upload-preview" id="avatarPreviewContainer">
+                                {% if current_user.anh_dai_dien %}
+                                    {% if current_user.anh_dai_dien.startswith('http') %}
+                                        <img src="{{ current_user.anh_dai_dien }}" alt="Avatar" id="avatarPreviewImg">
+                                    {% else %}
+                                        <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.anh_dai_dien) }}" alt="Avatar" id="avatarPreviewImg">
+                                    {% endif %}
+                                {% else %}
+                                    <span id="avatarPreviewFallback">{{ (current_user.ho_ten or current_user.ten_dang_nhap)[0] | upper }}</span>
+                                    <img src="" alt="Avatar" id="avatarPreviewImg" class="d-none">
+                                {% endif %}
+                            </div>
+                            <div class="avatar-upload-overlay">
+                                <i class="fa-solid fa-camera"></i>
+                                <span data-i18n="profile.change_avatar">Thay đổi</span>
+                            </div>
+                            <input type="file" id="avatarInput" name="anh_dai_dien" accept="image/*" style="display: none;" onchange="previewAvatar(event)">
+                        </div>
+
+                        <!-- Tab links -->
+                        <ul class="nav nav-tabs justify-content-center" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info-panel" type="button" role="tab" aria-controls="info-panel" aria-selected="true" data-i18n="profile.tab_info">Thông tin cá nhân</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="security-tab" data-bs-toggle="tab" data-bs-target="#security-panel" type="button" role="tab" aria-controls="security-panel" aria-selected="false" data-i18n="profile.tab_security">Đổi mật khẩu</button>
+                            </li>
+                        </ul>
+
+                        <!-- Tab content -->
+                        <div class="tab-content">
+                            <!-- Tab 1: Personal Info -->
+                            <div class="tab-pane fade show active" id="info-panel" role="tabpanel" aria-labelledby="info-tab">
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold text-muted small" data-i18n="profile.label_fullname">Họ và tên</label>
+                                    <input type="text" class="form-control" name="ho_ten" value="{{ current_user.ho_ten or '' }}" placeholder="Nhập họ và tên..." data-i18n="profile.label_fullname" style="border-radius: 10px; padding: 10px;" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold text-muted small" data-i18n="profile.label_email">Địa chỉ Email</label>
+                                    <input type="email" class="form-control" name="email" value="{{ current_user.email or '' }}" placeholder="Nhập email..." data-i18n="profile.label_email" style="border-radius: 10px; padding: 10px;" required>
+                                    <div class="form-text text-warning small mt-2">
+                                        <i class="fa-solid fa-triangle-exclamation me-1"></i> <span data-i18n="profile.email_change_note">Lưu ý: Nếu thay đổi Email, hệ thống sẽ gửi một mã OTP xác thực tới Email mới của bạn để xác nhận.</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tab 2: Security -->
+                            <div class="tab-pane fade" id="security-panel" role="tabpanel" aria-labelledby="security-tab">
+                                {% if current_user.mat_khau %}
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold text-muted small" data-i18n="profile.label_pw_old">Mật khẩu hiện tại</label>
+                                    <div class="pw-field">
+                                        <input type="password" class="pw-input" name="mat_khau_cu" id="mat_khau_cu" placeholder="Nhập mật khẩu hiện tại..." data-i18n="profile.label_pw_old">
+                                        <button type="button" class="pw-eye" onclick="togglePwd('mat_khau_cu', this)" title="Hiện/ẩn mật khẩu">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="alert alert-info py-2 px-3 small" style="font-size: 0.8rem;">
+                                    <i class="fa-solid fa-circle-info me-1"></i> <span data-i18n="profile.google_pw_note">Tài khoản của bạn được liên kết qua Google và chưa thiết lập mật khẩu trực tiếp. Bạn có thể đặt mật khẩu mới ngay tại đây.</span>
+                                </div>
+                                {% endif %}
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold text-muted small" data-i18n="profile.label_pw_new">Mật khẩu mới</label>
+                                    <div class="pw-field">
+                                        <input type="password" class="pw-input" name="mat_khau_moi" id="mat_khau_moi" placeholder="Nhập mật khẩu mới..." data-i18n="profile.label_pw_new">
+                                        <button type="button" class="pw-eye" onclick="togglePwd('mat_khau_moi', this)" title="Hiện/ẩn mật khẩu">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold text-muted small" data-i18n="profile.label_pw_confirm">Xác nhận mật khẩu mới</label>
+                                    <div class="pw-field">
+                                        <input type="password" class="pw-input" name="xac_nhan_mat_khau_moi" id="xac_nhan_mat_khau_moi" placeholder="Xác nhận mật khẩu mới..." data-i18n="profile.label_pw_confirm">
+                                        <button type="button" class="pw-eye" onclick="togglePwd('xac_nhan_mat_khau_moi', this)" title="Hiện/ẩn mật khẩu">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div class="invalid-feedback" data-i18n="profile.pw_mismatch">Mật khẩu mới không trùng khớp.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top-0 pt-0">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius: 10px; font-weight: 600; padding: 10px 20px;" data-i18n="profile.btn_cancel">Hủy bỏ</button>
+                        <button type="submit" class="btn btn-primary" style="border-radius: 10px; font-weight: 600; background: var(--primary); border: none; padding: 10px 20px;" data-i18n="profile.btn_save">Lưu thay đổi</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='i18n.js') }}"></script>
+    <script>
+        function previewAvatar(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const previewImg = document.getElementById('avatarPreviewImg');
+                    const previewFallback = document.getElementById('avatarPreviewFallback');
+                    if (previewImg) {
+                        previewImg.src = e.target.result;
+                        previewImg.classList.remove('d-none');
+                    }
+                    if (previewFallback) {
+                        previewFallback.classList.add('d-none');
+                    }
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Toggle password visibility — global function dùng cho onclick=""
+        function togglePwd(inputId, btn) {
+            const inp = document.getElementById(inputId);
+            if (!inp) return;
+            const icon = btn.querySelector('i');
+            if (inp.type === 'password') {
+                inp.type = 'text';
+                if (icon) { icon.classList.remove('fa-eye'); icon.classList.add('fa-eye-slash'); }
+            } else {
+                inp.type = 'password';
+                if (icon) { icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
+            }
+        }
+
+        // Client-side password validation
+        document.querySelector('#editProfileModal form').addEventListener('submit', function(e) {
+            const matKhauMoi = document.getElementById('mat_khau_moi');
+            const xacNhanMatKhau = document.getElementById('xac_nhan_mat_khau_moi');
+            if (matKhauMoi && matKhauMoi.value) {
+                if (matKhauMoi.value !== xacNhanMatKhau.value) {
+                    e.preventDefault();
+                    xacNhanMatKhau.classList.add('is-invalid');
+                    const securityTab = new bootstrap.Tab(document.getElementById('security-tab'));
+                    securityTab.show();
+                } else {
+                    xacNhanMatKhau.classList.remove('is-invalid');
+                }
+            }
+        });
+    </script>
+    <script>
+        // Sidebar toggle logic for mobile
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleBtn = document.getElementById('sidebar-toggle');
+            const sidebar = document.querySelector('.sidebar');
+            if (toggleBtn && sidebar) {
+                const backdrop = document.createElement('div');
+                backdrop.className = 'sidebar-backdrop';
+                document.body.appendChild(backdrop);
+
+                toggleBtn.addEventListener('click', function() {
+                    sidebar.classList.toggle('show');
+                    backdrop.classList.toggle('show');
+                });
+
+                backdrop.addEventListener('click', function() {
+                    sidebar.classList.remove('show');
+                    backdrop.classList.remove('show');
+                });
+            }
+        });
+    </script>
 </body>
 </html>

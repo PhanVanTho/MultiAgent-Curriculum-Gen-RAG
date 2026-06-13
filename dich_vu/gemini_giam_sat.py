@@ -287,9 +287,9 @@ RETURN VALID JSON ONLY:
         logger.info(f"[GeminiSupervisor] Key ...{api_key[-4:]} failed after backoff. Rotating key...")
 
     # 🆕 Fallback to Gemini 3.1 Flash Lite if all keys failed
-    logger.warning(f"[GeminiSupervisor] All keys exhausted for {model_su_dung}. Falling back to gemini-3.1-flash-lite-preview...")
+    logger.warning(f"[GeminiSupervisor] All keys exhausted for {model_su_dung}. Falling back to gemini-3.1-flash-lite...")
     import random
-    fallback_model = "gemini-3.1-flash-lite-preview"
+    fallback_model = "gemini-3.1-flash-lite"
     fallback_keys = api_keys.copy()
     random.shuffle(fallback_keys)
     
@@ -442,9 +442,9 @@ RETURN ONLY valid JSON:
         logger.info(f"[GeminiSupervisor-Outline] Rotating key...")
 
     # 🆕 Fallback to Gemini 3.1 Flash Lite if all keys failed
-    logger.warning(f"[GeminiSupervisor-Outline] All keys exhausted for {model_pro}. Falling back to gemini-3.1-flash-lite-preview...")
+    logger.warning(f"[GeminiSupervisor-Outline] All keys exhausted for {model_pro}. Falling back to gemini-3.1-flash-lite...")
     import random
-    fallback_model = "gemini-3.1-flash-lite-preview"
+    fallback_model = "gemini-3.1-flash-lite"
     fallback_keys = api_keys.copy()
     random.shuffle(fallback_keys)
     
@@ -659,9 +659,9 @@ RETURN JSON:
             logger.info(f"[GeminiSupervisor-QuyMo] Rotating key...")
             
         # 🆕 Fallback to Gemini 3.1 Flash Lite if all keys failed for model_lite
-        logger.warning(f"[GeminiSupervisor-QuyMo] All keys exhausted for {model_lite}. Falling back to gemini-3.1-flash-lite-preview...")
+        logger.warning(f"[GeminiSupervisor-QuyMo] All keys exhausted for {model_lite}. Falling back to gemini-3.1-flash-lite...")
         import random
-        fallback_model = "gemini-3.1-flash-lite-preview"
+        fallback_model = "gemini-3.1-flash-lite"
         # Shuffle keys for fallback to avoid hitting the exact same exhausted rate limit bucket immediately
         fallback_keys = api_keys.copy()
         random.shuffle(fallback_keys)

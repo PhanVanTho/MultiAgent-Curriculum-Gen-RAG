@@ -1,0 +1,137 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}Quản lý Giáo trình{% endblock %}
+
+{% block header_title %}<span data-i18n="admin.curriculums.title">Thư viện giáo trình</span>{% endblock %}
+{% block header_subtitle %}<span data-i18n="admin.curriculums.subtitle">Xem danh sách các giáo trình được biên soạn tự động.</span>{% endblock %}
+
+{% block content %}
+<!-- History Table -->
+<div class="table-card" id="history-section">
+    <div class="table-card-header">
+        <h5 data-i18n="admin.curriculums.list_title">Thư viện giáo trình</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th data-i18n="admin.curriculums.col_id">ID</th>
+                    <th data-i18n="admin.curriculums.col_user">Người tạo</th>
+                    <th data-i18n="admin.curriculums.col_topic">Chủ đề</th>
+                    <th data-i18n="admin.curriculums.col_date">Ngày tạo</th>
+                    <th data-i18n="admin.curriculums.col_status">Trạng thái</th>
+                    <th data-i18n="admin.curriculums.col_showcase" style="width: 120px;">Trưng bày</th>
+                    <th data-i18n="admin.curriculums.col_action">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in history %}
+                <tr>
+                    <td style="color: var(--text-dim); font-size:0.82rem;">#{{ item.id }}</td>
+                    <td><strong>{{ item.nguoi_dung.ten_dang_nhap if item.nguoi_dung else item.nguoi_dung_id }}</strong></td>
+                    <td style="color: var(--primary);">{{ item.chu_de }}</td>
+                    <td style="color: var(--text-muted); font-size:0.82rem;">{{ item.ngay_tao.strftime('%b %d, %Y') if item.ngay_tao else '—' }}</td>
+                    <td>
+                        {% if item.ma_cv %}
+                        <span class="badge bg-success" data-i18n="admin.curriculums.status_available">Có sẵn</span>
+                        {% else %}
+                        <span class="badge bg-warning" data-i18n="admin.curriculums.status_not_saved">Chưa lưu</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="showcase-{{ item.id }}" 
+                                   {% if item.noi_bat %}checked{% endif %} 
+                                   onchange="toggleShowcase({{ item.id }}, this.checked)">
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <a href="{{ url_for('hien_thi_lich_su', id=item.id) }}" class="btn btn-sm btn-outline-primary" title="Xem">
+                                <i class="fa-solid fa-eye"></i>
+                            </a>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteCurriculum({{ item.id }}, '{{ item.chu_de|replace("'", "\\'") }}')" title="Xóa">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function deleteCurriculum(id, topic) {
+        const lang = typeof getCurrentLang === 'function' ? getCurrentLang() : 'vi';
+        const confirmResult = await Swal.fire({
+            title: lang === 'vi' ? 'Xác nhận xóa?' : 'Confirm delete?',
+            text: lang === 'vi' 
+                ? `Bạn có chắc muốn xóa giáo trình "${topic}" không? Hành động này sẽ xóa vĩnh viễn dữ liệu và các tệp liên quan.`
+                : `Are you sure you want to delete curriculum "${topic}"? This action will permanently delete all data and related files.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: lang === 'vi' ? 'Xóa ngay' : 'Delete Now',
+            cancelButtonText: lang === 'vi' ? 'Hủy bỏ' : 'Cancel'
+        });
+
+        if (confirmResult.isConfirmed) {
+            try {
+                const res = await fetch(`/admin/curriculums/delete/${id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    Swal.fire(lang === 'vi' ? 'Đã xóa' : 'Deleted', data.message, 'success').then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire(lang === 'vi' ? 'Lỗi' : 'Error', data.error || (lang === 'vi' ? 'Không thể xóa' : 'Could not delete'), 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                Swal.fire(lang === 'vi' ? 'Lỗi' : 'Error', lang === 'vi' ? 'Lỗi kết nối tới máy chủ' : 'Error connecting to server', 'error');
+            }
+        }
+    }
+
+    async function toggleShowcase(id, checked) {
+        const lang = typeof getCurrentLang === 'function' ? getCurrentLang() : 'vi';
+        try {
+            const res = await fetch(`/admin/curriculums/toggle-showcase/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ noi_bat: checked })
+            });
+            const data = await res.json();
+            if (!data.success) {
+                Swal.fire(lang === 'vi' ? 'Lỗi' : 'Error', data.error || (lang === 'vi' ? 'Không thể cập nhật trạng thái' : 'Could not update status'), 'error');
+                document.getElementById(`showcase-${id}`).checked = !checked;
+            } else {
+                // Subtle toast message using SweetAlert2
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 2000,
+                    timerProgressBar: true
+                });
+                Toast.fire({
+                    icon: 'success',
+                    title: data.message
+                });
+            }
+        } catch (err) {
+            console.error(err);
+            Swal.fire(lang === 'vi' ? 'Lỗi' : 'Error', lang === 'vi' ? 'Lỗi kết nối tới máy chủ' : 'Error connecting to server', 'error');
+            document.getElementById(`showcase-${id}`).checked = !checked;
+        }
+    }
+</script>
+{% endblock %}

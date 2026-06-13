@@ -6,103 +6,213 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Kết quả - {{ thong_tin.tieu_de }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
-
-    <!-- Phông chữ -->
+    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">    <!-- Phông chữ học thuật chuẩn giáo trình -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
+        /* ══════════════════════════════════════════
+           BIẾN TOÀN CỤC — ACADEMIC TYPOGRAPHY SYSTEM
+           ══════════════════════════════════════════ */
         :root {
-            --font-ui: 'Inter', sans-serif;
-            --font-body: 'Times New Roman', Times, serif;
-            --color-primary: #15803d;
-            --color-text: #000000;
+            --font-ui:     'Inter', sans-serif;
+            --font-body:   'EB Garamond', 'Times New Roman', Georgia, serif;
+            --font-mono:   'Source Code Pro', monospace;
+
+            --color-ink:       #1a1a1a;   /* Mực in chính */
+            --color-ink-light: #3d3d3d;   /* Mực phụ      */
+            --color-rule:      #c8c8c8;   /* Đường kẻ     */
+            --color-accent:    #1a4a8a;   /* Xanh học thuật */
+            --color-chapter-bg:#f8f7f4;   /* Nền tiêu đề chương */
+            --color-primary:   #15803d;
+            --size-body:       12pt;
+            --leading:         1.95;      /* Giãn dòng chuẩn sách */
         }
 
         body {
             font-family: var(--font-ui);
-            background-color: #f1f5f9;
-            color: var(--color-text);
+            background-color: #ebe9e3;   /* Màu nền giống giấy cũ */
+            color: var(--color-ink);
         }
 
+        /* ══════════════════════════════════════════
+           KHUNG TRANG — A4 PAPER SIMULATION
+           ══════════════════════════════════════════ */
         .academic-paper {
             font-family: var(--font-body);
-            background-color: #fff;
-            max-width: 21cm; /* A4 Width */
+            background-color: #fefefe;
+            max-width: 21cm;
             margin: 0 auto;
-            color: #000;
+            color: var(--color-ink);
+            box-shadow: 0 2px 30px rgba(0,0,0,0.15), 0 1px 6px rgba(0,0,0,0.08);
         }
 
+        /* ══════════════════════════════════════════
+           TRANG BÌA (COVER PAGE)
+           ══════════════════════════════════════════ */
+        .cover-page {
+            border-bottom: 3px double var(--color-rule);
+            padding-bottom: 2.5rem !important;
+            margin-bottom: 1rem;
+        }
+        .cover-label {
+            font-family: var(--font-ui);
+            font-size: 0.7rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: #888;
+            font-weight: 600;
+        }
+        .cover-title {
+            font-family: var(--font-body);
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: var(--color-ink);
+            letter-spacing: 0.01em;
+            line-height: 1.2;
+        }
+        .cover-subtitle {
+            font-family: var(--font-body);
+            font-style: italic;
+            color: #666;
+            font-size: 1rem;
+        }
+
+        /* ══════════════════════════════════════════
+           NỘI DUNG CHÍNH — BOOK CONTENT
+           ══════════════════════════════════════════ */
         .book-content {
             font-family: var(--font-body);
-            line-height: 1.5;
-            font-size: 13pt;
+            font-size: var(--size-body);
+            line-height: var(--leading);
+            color: var(--color-ink);
             text-align: justify;
+            hyphens: auto;
         }
-        
+
+        /* Đoạn văn: Thụt đầu dòng kiểu sách */
         .book-content p {
-            text-indent: 1.25em; /* Chuẩn thụt đầu dòng học thuật */
-            margin-bottom: 1.25rem;
-            line-height: 1.7; /* Tăng độ giãn dòng để dễ đọc hơn */
+            margin: 0 0 0.25em 0;
+            text-indent: 2em;
             text-align: justify;
+            line-height: var(--leading);
         }
 
-        /* Sticky Sidebar TOC */
-        .sidebar-toc {
-            position: sticky;
-            top: 2rem;
-            height: calc(100vh - 4rem);
-            overflow-y: auto;
-            padding-right: 1rem;
-            border-right: 1px solid var(--glass-border);
+        /* Đoạn đầu ngay sau tiêu đề không thụt */
+        .book-content h2 + p,
+        .book-content h3 + p,
+        .book-content h4 + p,
+        .book-content h5 + p {
+            text-indent: 0;
         }
 
-        .nav-toc .nav-link {
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            padding: 0.25rem 0 0.25rem 1rem;
-            border-left: 2px solid transparent;
+        /* ══════════════════════════════════════════
+           TIÊU ĐỀ CHƯƠNG — CHAPTER HEADING
+           ══════════════════════════════════════════ */
+        .chapter-heading {
+            border-top: 2.5px solid var(--color-ink);
+            border-bottom: 1px solid var(--color-rule);
+            padding: 1.5rem 0 1.25rem;
+            margin: 3.5rem 0 2rem;
+        }
+        .chapter-heading .chapter-label {
+            font-family: var(--font-ui);
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: #999;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        .chapter-heading h2 {
+            font-family: var(--font-body);
+            font-size: 1.9rem;
+            font-weight: 700;
+            color: var(--color-ink);
+            margin: 0;
+            line-height: 1.25;
+            letter-spacing: -0.01em;
         }
 
-        .nav-toc .nav-link:hover {
-            color: var(--primary);
+        /* ══════════════════════════════════════════
+           TIÊU ĐỀ MỤC — SECTION HEADING
+           ══════════════════════════════════════════ */
+        .book-content .section-heading {
+            font-family: var(--font-body);
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--color-ink);
+            margin: 2.8rem 0 0.6rem;
+            padding-bottom: 0.4rem;
+            border-bottom: 1.5px solid var(--color-rule);
+            page-break-after: avoid;
+            letter-spacing: -0.01em;
         }
 
-        .nav-toc .nav-link.active {
-            color: var(--primary);
-            font-weight: 600;
-            border-left-color: var(--primary);
+        /* ══════════════════════════════════════════
+           TIÊU ĐỀ TIỂU MỤC — H3 (###)
+           ══════════════════════════════════════════ */
+        .book-content h3 {
+            font-family: var(--font-body);
+            font-size: 1.05rem;
+            font-weight: 700;
+            font-style: normal;
+            color: var(--color-ink);
+            margin: 1.5rem 0 0.4rem 0;
+            padding-left: 0.75rem;
+            border-left: 3px solid #bbb;
+            page-break-after: avoid;
         }
 
-        .nav-toc .nav-link.sub-link {
-            padding-left: 2rem;
-            font-size: 0.82rem;
+        /* ══════════════════════════════════════════
+           BẢNG — TABLE STYLING
+           ══════════════════════════════════════════ */
+        .book-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-size: 0.9rem;
+            font-family: var(--font-body);
+        }
+        .book-content th {
+            background-color: var(--color-chapter-bg);
+            border: 1px solid #ccc;
+            padding: 0.5rem 0.75rem;
+            font-weight: 700;
+            text-align: left;
+        }
+        .book-content td {
+            border: 1px solid #ddd;
+            padding: 0.4rem 0.75rem;
+            vertical-align: top;
+        }
+        .book-content tr:nth-child(even) td {
+            background-color: #fafaf8;
         }
 
-        /* Chapter/Section anchors for ScrollSpy */
-        .chapter-anchor,
-        .section-anchor {
-            scroll-margin-top: 5rem;
-            /* Offset for sticky header if any */
+        /* ══════════════════════════════════════════
+           DANH SÁCH — LIST STYLING
+           ══════════════════════════════════════════ */
+        .book-content ul,
+        .book-content ol {
+            margin: 0.5rem 0 1rem 1.5rem;
+            padding-left: 1em;
+        }
+        .book-content li {
+            margin-bottom: 0.3rem;
+            line-height: var(--leading);
         }
 
-        .source-card {
-            transition: transform 0.2s;
-        }
-        .source-card:hover {
-            transform: translateY(-2px);
-        }
-
-        /* V37: APA Inline Citation Style */
+        /* ══════════════════════════════════════════
+           TRÍCH DẪN — CITATION
+           ══════════════════════════════════════════ */
         .citation-apa {
             font-family: var(--font-body);
             font-size: inherit;
-            color: #15803d;
+            color: var(--color-accent);
             white-space: nowrap;
         }
         .citation-apa a {
@@ -113,47 +223,97 @@
             text-decoration: underline;
             color: #0d6efd;
         }
+        sup.citation {
+            color: var(--color-accent);
+            font-size: 0.72em;
+            font-family: var(--font-ui);
+        }
 
-        /* APA Reference List */
+        /* ══════════════════════════════════════════
+           TÀI LIỆU THAM KHẢO — REFERENCES
+           ══════════════════════════════════════════ */
         .apa-reference {
             text-indent: -2em;
             padding-left: 2em;
-            margin-bottom: 0.8rem;
-            line-height: 1.8;
+            margin-bottom: 0.75rem;
+            line-height: 1.75;
             font-family: var(--font-body);
-            font-size: 12pt;
-            text-align: left; /* FIX: Override justify to prevent massive spacing */
+            font-size: 11pt;
+            text-align: left;
             word-wrap: break-word;
             word-break: break-word;
+            color: var(--color-ink-light);
         }
 
-        /* Dark sidebar labels */
+        /* ══════════════════════════════════════════
+           MỤC LỤC BÊN TRÁI — SIDEBAR TOC
+           ══════════════════════════════════════════ */
+        .sidebar-toc {
+            position: sticky;
+            top: 2rem;
+            height: calc(100vh - 4rem);
+            overflow-y: auto;
+            padding-right: 1rem;
+            border-right: 1px solid var(--glass-border, #e0e0e0);
+        }
+        .nav-toc .nav-link {
+            color: var(--text-muted, #6c757d);
+            font-size: 0.82rem;
+            font-family: var(--font-ui);
+            padding: 0.2rem 0 0.2rem 1rem;
+            border-left: 2px solid transparent;
+            line-height: 1.4;
+        }
+        .nav-toc .nav-link:hover { color: var(--color-primary); }
+        .nav-toc .nav-link.active {
+            color: var(--color-primary);
+            font-weight: 600;
+            border-left-color: var(--color-primary);
+        }
+        .nav-toc .nav-link.sub-link {
+            padding-left: 2rem;
+            font-size: 0.77rem;
+        }
+
+        .chapter-anchor, .section-anchor {
+            scroll-margin-top: 5rem;
+        }
+
+        /* ══════════════════════════════════════════
+           DARK SIDEBAR OVERRIDES
+           ══════════════════════════════════════════ */
         .sidebar-toc h6 { color: var(--text-muted) !important; }
-        .sidebar-toc .text-dark { color: var(--text-primary) !important; }
-        .sidebar-toc .text-muted { color: var(--text-dim) !important; }
-        .sidebar-toc a { color: var(--text-secondary); }
-        .sidebar-toc a:hover { color: var(--primary); }
-        .sidebar-toc a.fw-bold { color: var(--text-primary); }
+        .sidebar-toc a { color: var(--text-secondary, #555); }
+        .sidebar-toc a:hover { color: var(--color-primary); }
+        .sidebar-toc a.fw-bold { color: var(--text-primary, #222); }
 
+        /* ══════════════════════════════════════════
+           IN ẤN — PRINT
+           ══════════════════════════════════════════ */
         @media print {
-            .no-print {
-                display: none !important;
-            }
-
-            .sidebar-toc {
-                display: none;
-            }
-
-            .col-lg-9 {
-                width: 100% !important;
-                flex: 0 0 100%;
-                max-width: 100%;
-            }
-
-            .book-content {
-                text-align: justify;
-            }
+            .no-print { display: none !important; }
+            .sidebar-toc { display: none; }
+            body { background: white; }
+            .academic-paper { box-shadow: none; }
+            .chapter-heading { margin: 2rem 0; }
+            .col-lg-9 { width: 100% !important; flex: 0 0 100%; max-width: 100%; }
+            .book-content { text-align: justify; }
         }
+        .lang-btn {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            color: #475569;
+            cursor: pointer;
+            font-size: 0.82rem;
+            font-weight: 700;
+            padding: 5px 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.2s;
+        }
+        .lang-btn:hover { background: #e2e8f0; }
     </style>
 </head>
 
@@ -163,11 +323,24 @@
         <div class="container-fluid px-4">
             <a class="navbar-brand d-flex align-items-center" href="{{ url_for('trang_chu') }}">
                 <i class="fa-solid fa-book-open me-2"></i>
-                <span>Giáo Trình AI</span>
+                <span data-i18n="nav.logo">Giáo Trình AI</span>
             </a>
             <div class="d-flex align-items-center gap-3">
+                <button class="lang-btn" onclick="toggleLanguage()" title="Switch Language" style="margin-right: 0;">
+                    <span id="langFlag">🇻🇳</span><span id="langLabel">VI</span>
+                </button>
                 <a href="{{ url_for('profile') }}" class="btn d-flex align-items-center" style="background: var(--bg-surface-1); border-radius: 10px; border: 1px solid var(--glass-border); padding: 4px 12px; text-decoration: none;">
-                    <i class="fa-solid fa-circle-user fs-5 text-primary me-2"></i>
+                    {% if current_user.anh_dai_dien %}
+                        {% if current_user.anh_dai_dien.startswith('http') %}
+                            <img src="{{ current_user.anh_dai_dien }}" alt="Avatar" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;" class="me-2">
+                        {% else %}
+                            <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.anh_dai_dien) }}" alt="Avatar" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;" class="me-2">
+                        {% endif %}
+                    {% else %}
+                        <div class="avatar-fallback me-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; border-radius: 50%; background: var(--primary, #10b981); color: white; font-weight: bold; font-size: 0.75rem;">
+                             {{ (current_user.ho_ten or current_user.ten_dang_nhap)[0] | upper }}
+                        </div>
+                    {% endif %}
                     <div class="text-start">
                         <div style="font-size: 0.6rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Token</div>
                         <div style="font-size: 0.9rem; color: var(--text-primary); font-weight: 700; line-height: 1;">{{ current_user.token }}</div>
@@ -175,7 +348,7 @@
                 </a>
                 <span class="badge bg-primary d-none d-md-inline-block" style="font-size:0.72rem;">{{ thong_tin.tieu_de }}</span>
                 <a href="{{ url_for('trang_tao_giao_trinh') }}" class="btn btn-primary btn-sm">
-                    <i class="fa-solid fa-plus me-1"></i>Tạo mới
+                    <i class="fa-solid fa-plus me-1"></i><span data-i18n="history.create_btn">Tạo mới</span>
                 </a>
             </div>
         </div>
@@ -184,7 +357,7 @@
     <div class="container-fluid px-4 mt-4">
         {% if thong_tin.trang_thai == 'that_bai' %}
         <div class="alert alert-danger mx-auto" style="max-width: 800px;">
-            <h4 class="alert-heading">Rất tiếc, đã xảy ra lỗi!</h4>
+            <h4 class="alert-heading" data-i18n="result.error_title">Rất tiếc, đã xảy ra lỗi!</h4>
             <p>{{ thong_tin.loi }}</p>
             <hr>
             <p class="mb-0 small">{{ thong_tin.chi_tiet }}</p>
@@ -195,7 +368,7 @@
             <!-- CỘT BÊN TRÁI: Mục lục -->
             <div class="col-lg-3 d-none d-lg-block no-print">
                 <nav class="sidebar-toc" id="toc-nav">
-                    <h6 class="text-uppercase text-secondary fw-bold mb-3 ls-1 small pt-2">Mục Lục</h6>
+                    <h6 class="text-uppercase text-secondary fw-bold mb-3 ls-1 small pt-2" data-i18n="result.toc">Mục Lục</h6>
                     <div class="nav-toc" style="font-family: 'Times New Roman', serif;">
                         {% if book and book.chapters %}
                         <ul class="list-unstyled ps-0">
@@ -203,7 +376,7 @@
                         {% set c_idx = loop.index %}
                             <li class="mb-2">
                                 <a class="text-dark text-decoration-none fw-bold" href="#chap-{{ c_idx }}">
-                                    Chương {{ c_idx }}. {{ chapter.title }}
+                                    <span data-i18n="result.chapter_prefix">Chương</span> {{ c_idx }}. {{ chapter.title }}
                                 </a>
                                 <ul class="list-unstyled ps-3 mt-1 border-start ms-2">
                                     {% for section in chapter.sections %}
@@ -223,7 +396,7 @@
                         </ul>
                         {% endif %}
                         <a class="text-dark fw-bold text-decoration-none d-block mt-3" href="#references-section">
-                            <i class="fa-solid fa-book me-2"></i> Tài liệu tham khảo
+                            <i class="fa-solid fa-book me-2"></i> <span data-i18n="result.references">Tài liệu tham khảo</span>
                         </a>
                     </div>
                 </nav>
@@ -233,13 +406,13 @@
             <div class="col-lg-6 col-12 mx-auto">
                 <div class="academic-paper p-5 mb-5 shadow-sm border animate-fade-in-up">
                     <!-- Phần tiêu đề đầu trang -->
-                    <div class="text-center mb-5 pb-4 border-bottom">
-                        <h5 class="text-muted text-uppercase small mb-2" style="font-family: var(--font-ui);">Giáo trình Đại học</h5>
-                        <h1 class="display-5 fw-bold text-dark mb-3 text-uppercase" style="font-family: var(--font-body);">{{ thong_tin.tieu_de }}</h1>
-                        <p class="text-muted fst-italic" style="font-family: var(--font-body);">Biên soạn tự động bởi Hệ thống AI Data Aggregator</p>
+                    <div class="text-center cover-page mb-4 pt-2">
+                        <p class="cover-label mb-2" data-i18n="result.cover_label">Giáo trình Đại học</p>
+                        <h1 class="cover-title mb-3">{{ thong_tin.tieu_de }}</h1>
+                        <p class="cover-subtitle" data-i18n="result.cover_subtitle">Biên soạn tự động bởi Hệ thống AI Data Aggregator</p>
                         <div class="mt-3 no-print d-flex justify-content-center gap-2 flex-wrap">
                             <span class="badge bg-success bg-opacity-10 text-success border border-success px-3 py-2 rounded-pill">
-                                <i class="fa-solid fa-circle-check me-1"></i> Hoàn thành
+                                <i class="fa-solid fa-circle-check me-1"></i> <span data-i18n="history.done">Hoàn thành</span>
                             </span>
                             {% if thong_tin.curriculum_level %}
                             <span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-3 py-2 rounded-pill">
@@ -248,7 +421,7 @@
                             {% endif %}
                             {% if thong_tin.tong_chuong %}
                             <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary px-3 py-2 rounded-pill">
-                                <i class="fa-solid fa-list-ol me-1"></i> {{ thong_tin.tong_chuong }} Chương
+                                <i class="fa-solid fa-list-ol me-1"></i> {{ thong_tin.tong_chuong }} <span data-i18n="result.chapters_suffix">Chương</span>
                             </span>
                             {% endif %}
                             {% if thong_tin.terms_count %}
@@ -258,7 +431,7 @@
                             {% endif %}
                             {% if thong_tin.domain_label %}
                             <span class="badge bg-warning bg-opacity-10 text-warning border border-warning px-3 py-2 rounded-pill">
-                                <i class="fa-solid fa-graduation-cap me-1"></i> {{ thong_tin.domain_label }}
+                                <i class="fa-solid fa-graduation-cap me-1"></i> <span data-i18n="{{ thong_tin.domain_label }}">{{ thong_tin.domain_label }}</span>
                             </span>
                             {% endif %}
                         </div>
@@ -275,19 +448,20 @@
                         {% set c_idx = loop.index %}
 
                         <!-- Chương -->
-                        <div id="chap-{{ c_idx }}" class="chapter-anchor mb-5 mt-5 pt-3">
-                            <h2 class="fw-bold text-primary mb-4 pb-2 border-bottom border-2 border-primary term-traceable" style="cursor: pointer;" title="Click để xem thuật ngữ nguồn">
-                                <i class="fa-solid fa-dna me-2" style="font-size: 0.6em; opacity: 0.4;"></i>Chương {{ c_idx }}: {{ chapter.title }}
-                            </h2>
+                        <div id="chap-{{ c_idx }}" class="chapter-anchor">
+                            <div class="chapter-heading term-traceable" style="cursor: pointer;" title="Click để xem thuật ngữ nguồn">
+                                <span class="chapter-label"><span data-i18n="result.chapter_prefix">Chương</span> {{ c_idx }}</span>
+                                <h2>{{ chapter.title }}</h2>
+                            </div>
 
                             <!-- Các mục -->
                             {% for section in chapter.sections %}
                             {% set s_idx = loop.index %}
                             <div id="sec-{{ c_idx }}-{{ s_idx }}" class="section-anchor mb-4">
-                                <h4 class="fw-bold text-dark mt-4 mb-3 term-traceable" style="cursor: pointer;" title="Click để xem thuật ngữ nguồn">
-                                    <i class="fa-solid fa-dna me-2" style="font-size: 0.55em; opacity: 0.3;"></i>{{ c_idx }}.{{ s_idx }}. {{ section.title }}
+                                <h4 class="section-heading term-traceable" style="cursor: pointer;" title="Click để xem thuật ngữ nguồn">
+                                    {{ c_idx }}.{{ s_idx }}. {{ section.title }}
                                 </h4>
-                                <div class="content mt-3 text-justify" data-chapter="{{ c_idx }}" data-section="{{ s_idx }}">
+                                <div class="content mt-2" data-chapter="{{ c_idx }}" data-section="{{ s_idx }}">
                                     <!-- Use markdown parser instead of naive loop -->
                                     {{ section.content | markdown | safe }}
                                 </div>
@@ -301,11 +475,11 @@
                     <!-- V37: Khu vực Tài liệu tham khảo (APA 7th Edition) -->
                     <div id="references-section" class="mt-5 pt-5 border-top">
                         <h3 class="fw-bold mb-4">
-                            <i class="fa-solid fa-book me-2 text-secondary"></i> Tài liệu tham khảo
+                            <i class="fa-solid fa-book me-2 text-secondary"></i> <span data-i18n="result.references">Tài liệu tham khảo</span>
                         </h3>
                         <p class="text-muted small mb-4" style="font-family: var(--font-ui);">
                             <i class="fa-solid fa-circle-info me-1"></i>
-                            Định dạng trích dẫn: APA 7th Edition · {{ references|length }} nguồn
+                            <span data-i18n="result.citation_format">Định dạng trích dẫn:</span> APA 7th Edition · {{ references|length }} <span data-i18n="result.sources_suffix">nguồn</span>
                         </p>
 
                         {% if references %}
@@ -320,7 +494,7 @@
                             {% endfor %}
                         </div>
                         {% else %}
-                        <p class="text-muted">Không có dữ liệu nguồn chi tiết.</p>
+                        <p class="text-muted" data-i18n="result.no_references">Không có dữ liệu nguồn chi tiết.</p>
                         {% endif %}
                     </div>
                     </div> <!-- end #view-content -->
@@ -329,10 +503,10 @@
                     <div id="view-summaries" class="view-panel" style="display:none;">
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h3 class="fw-bold mb-0">
-                                <i class="fa-solid fa-lightbulb text-success me-2"></i>Tóm tắt các chương
+                                <i class="fa-solid fa-lightbulb text-success me-2"></i><span data-i18n="result.summaries_title">Tóm tắt các chương</span>
                             </h3>
                             <a href="/tai/summary/{{ ma_cv }}" class="btn btn-success btn-sm no-print">
-                                <i class="fa-solid fa-download me-1"></i> Xuất file (.docx)
+                                <i class="fa-solid fa-download me-1"></i> <span data-i18n="result.export_docx">Xuất file (.docx)</span>
                             </a>
                         </div>
                         {% if book %}
@@ -341,12 +515,12 @@
                         <div class="card mb-3 border-start border-4 border-success">
                             <div class="card-body">
                                 <h5 class="card-title fw-bold text-primary mb-3">
-                                    Chương {{ c_idx }}: {{ chapter.title }}
+                                    <span data-i18n="result.chapter_prefix">Chương</span> {{ c_idx }}: {{ chapter.title }}
                                 </h5>
                                 {% if chapter.summary %}
                                 <p class="card-text" style="line-height: 1.8; font-family: var(--font-body);">{{ chapter.summary }}</p>
                                 {% else %}
-                                <p class="text-muted fst-italic">Chưa có tóm tắt cho chương này.</p>
+                                <p class="text-muted fst-italic" data-i18n="result.no_summary">Chưa có tóm tắt cho chương này.</p>
                                 {% endif %}
                             </div>
                         </div>
@@ -358,10 +532,10 @@
                     <div id="view-glossary" class="view-panel" style="display:none;">
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h3 class="fw-bold mb-0">
-                                <i class="fa-solid fa-spell-check text-info me-2"></i>Bảng thuật ngữ toàn tập
+                                <i class="fa-solid fa-spell-check text-info me-2"></i><span data-i18n="result.glossary_title">Bảng thuật ngữ toàn tập</span>
                             </h3>
                             <a href="/tai/glossary/{{ ma_cv }}" class="btn btn-info btn-sm text-white no-print">
-                                <i class="fa-solid fa-download me-1"></i> Xuất file (.docx)
+                                <i class="fa-solid fa-download me-1"></i> <span data-i18n="result.export_docx">Xuất file (.docx)</span>
                             </a>
                         </div>
                         
@@ -379,10 +553,10 @@
                             {% endfor %}
                         </div>
                         <div class="text-muted text-center mt-4" style="font-size:0.85rem;">
-                            <i class="fa-solid fa-circle-info me-1"></i> Tổng cộng {{ terms_to_show|length }} thuật ngữ trong toàn bộ giáo trình
+                            <i class="fa-solid fa-circle-info me-1"></i> <span data-i18n="result.total_prefix">Tổng cộng</span> {{ terms_to_show|length }} <span data-i18n="result.total_suffix">thuật ngữ trong toàn bộ giáo trình</span>
                         </div>
                         {% else %}
-                        <p class="text-muted text-center py-5">Chưa có dữ liệu bảng thuật ngữ.</p>
+                        <p class="text-muted text-center py-5" data-i18n="result.no_glossary">Chưa có dữ liệu bảng thuật ngữ.</p>
                         {% endif %}
                     </div>
 
@@ -390,10 +564,10 @@
 
                 <footer class="footer no-print">
                     <div class="d-flex justify-content-center gap-4 mb-2">
-                        <a href="#">Chính sách</a>
-                        <a href="#">Điều khoản</a>
+                        <a href="#" data-i18n="footer.policy">Chính sách</a>
+                        <a href="#" data-i18n="footer.terms">Điều khoản</a>
                     </div>
-                    <p>&copy; 2026 GIÁO TRÌNH AI — Hệ thống biên soạn giáo trình tự động</p>
+                    <p>&copy; 2026 <span data-i18n="nav.logo">Giáo Trình AI</span> — <span data-i18n="footer.tagline">Hệ thống biên soạn giáo trình tự động</span></p>
                 </footer>
             </div>
 
@@ -401,46 +575,47 @@
             <div class="col-lg-3 d-none d-lg-block no-print">
                 <div class="sticky-top pt-2" style="top: 80px;">
                     <div class="p-4 bg-light rounded shadow-sm border mb-4">
-                        <h6 class="text-uppercase text-secondary fw-bold mb-3 small"><i class="fa-solid fa-download me-2"></i>Tải xuống giáo trình</h6>
+                        <h6 class="text-uppercase text-secondary fw-bold mb-3 small"><i class="fa-solid fa-download me-2"></i><span data-i18n="result.download_title">Tải xuống giáo trình</span></h6>
                         <div class="d-grid gap-2">
                             <a class="btn btn-outline-primary btn-sm text-start" href="{{ thong_tin.tai_docx }}">
-                                <i class="fa-solid fa-file-word me-2"></i> Word (.docx)
+                                <i class="fa-solid fa-file-word me-2"></i> <span data-i18n="result.docx_label">Word (.docx)</span>
                             </a>
                             <a class="btn btn-outline-danger btn-sm text-start" href="{{ thong_tin.tai_pdf }}">
-                                <i class="fa-solid fa-file-pdf me-2"></i> PDF (.pdf)
+                                <i class="fa-solid fa-file-pdf me-2"></i> <span data-i18n="result.pdf_label">PDF (.pdf)</span>
                             </a>
                             <a class="btn btn-success btn-sm text-start mt-2" href="/tai/zip/{{ ma_cv }}">
-                                <i class="fa-solid fa-file-zipper me-2"></i> Gói tất cả (Word & PDF)
+                                <i class="fa-solid fa-file-zipper me-2"></i> <span data-i18n="result.zip_label">Gói tất cả (Word & PDF)</span>
                             </a>
                             <button class="btn btn-dark btn-sm text-start mt-2" data-bs-toggle="modal" data-bs-target="#techModal">
-                                <i class="fa-solid fa-microchip me-2"></i> Chi tiết kỹ thuật AI
+                                <i class="fa-solid fa-microchip me-2"></i> <span data-i18n="result.tech_details_btn">Chi tiết kỹ thuật AI</span>
                             </button>
                         </div>
 
-                        <h6 class="text-uppercase text-secondary fw-bold mb-3 small mt-4"><i class="fa-solid fa-eraser me-2"></i>Tải xuống (Bản sạch)</h6>
-                        <div class="text-muted small mb-2" style="font-size: 0.75rem;">Phiên bản không đính kèm trích dẫn nguồn APA.</div>
+                        <h6 class="text-uppercase text-secondary fw-bold mb-3 small mt-4"><i class="fa-solid fa-eraser me-2"></i><span data-i18n="result.download_clean_title">Tải xuống (Bản sạch)</span></h6>
+                        <div class="text-muted small mb-2" style="font-size: 0.75rem;" data-i18n="result.download_clean_desc">Phiên bản không đính kèm trích dẫn nguồn APA.</div>
                         <div class="d-grid gap-2">
                              <a class="btn btn-outline-secondary btn-sm text-start" href="{{ thong_tin.tai_docx_plain }}">
-                                <i class="fa-regular fa-file-word me-2"></i> Word sạch (.docx)
+                                <i class="fa-regular fa-file-word me-2"></i> <span data-i18n="result.docx_clean_label">Word sạch (.docx)</span>
                             </a>
                             <a class="btn btn-outline-secondary btn-sm text-start" href="{{ thong_tin.tai_pdf_plain }}">
-                                <i class="fa-regular fa-file-pdf me-2"></i> PDF sạch (.pdf)
+                                <i class="fa-regular fa-file-pdf me-2"></i> <span data-i18n="result.pdf_clean_label">PDF sạch (.pdf)</span>
                             </a>
                             <a class="btn btn-secondary btn-sm text-start mt-2" href="/tai/zip/{{ ma_cv }}_plain">
-                                <i class="fa-solid fa-file-zipper me-2"></i> Gói bản sạch (.zip)
+                                <i class="fa-solid fa-file-zipper me-2"></i> <span data-i18n="result.zip_clean_label">Gói bản sạch (.zip)</span>
                             </a>
                         </div>
+                        <hr class="my-4">
 
-                        <h6 class="text-uppercase text-secondary fw-bold mb-3 small mt-4"><i class="fa-solid fa-eye me-2"></i>Chế độ xem</h6>
+                        <h6 class="text-uppercase text-secondary fw-bold mb-3 small"><i class="fa-solid fa-eye me-2"></i><span data-i18n="result.view_mode_title">Chế độ xem</span></h6>
                         <div class="d-grid gap-2">
                             <button class="btn btn-primary btn-sm text-start view-toggle active" data-view="content">
-                                <i class="fa-solid fa-book-open me-2"></i> Nội dung giáo trình
+                                <i class="fa-solid fa-book-open me-2"></i> <span data-i18n="result.view_content">Nội dung giáo trình</span>
                             </button>
                             <button class="btn btn-outline-success btn-sm text-start view-toggle" data-view="summaries">
-                                <i class="fa-solid fa-lightbulb me-2"></i> Tóm tắt các chương
+                                <i class="fa-solid fa-lightbulb me-2"></i> <span data-i18n="result.view_summaries">Tóm tắt các chương</span>
                             </button>
                             <button class="btn btn-outline-info btn-sm text-start view-toggle" data-view="glossary">
-                                <i class="fa-solid fa-spell-check me-2"></i> Bảng thuật ngữ
+                                <i class="fa-solid fa-spell-check me-2"></i> <span data-i18n="result.view_glossary">Bảng thuật ngữ</span>
                             </button>
                         </div>
                     </div>
@@ -461,7 +636,7 @@
         <div class="modal-dialog modal-xl modal-dialog-scrollable shadow-lg">
             <div class="modal-content border-0">
                 <div class="modal-header bg-dark text-white py-3">
-                    <h5 class="modal-title d-flex align-items-center">
+                    <h5 class="modal-title d-flex align-items-center" data-i18n="tech.modal_title">
                         <i class="fa-solid fa-microchip me-2 text-info"></i> 
                         AI Analytics & Transparency Dashboard
                     </h5>
@@ -471,22 +646,22 @@
                     <ul class="nav nav-tabs nav-fill bg-light border-bottom" id="techTabs" role="tablist">
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active py-3 fw-bold" data-bs-toggle="tab" data-bs-target="#journalTab" type="button">
-                                <i class="fa-solid fa-list-ul me-1"></i> Nhật ký AI
+                                <i class="fa-solid fa-list-ul me-1"></i> <span data-i18n="tech.tab_journal">Nhật ký AI</span>
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link py-3 fw-bold" data-bs-toggle="tab" data-bs-target="#termsTab" type="button">
-                                <i class="fa-solid fa-tags me-1"></i> Thuật ngữ (Glossary)
+                                <i class="fa-solid fa-tags me-1"></i> <span data-i18n="tech.tab_terms">Thuật ngữ (Glossary)</span>
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link py-3 fw-bold" data-bs-toggle="tab" data-bs-target="#sourcesTab" type="button">
-                                <i class="fa-solid fa-globe me-1"></i> Nguồn tri thức
+                                <i class="fa-solid fa-globe me-1"></i> <span data-i18n="tech.tab_sources">Nguồn tri thức</span>
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link py-3 fw-bold" data-bs-toggle="tab" data-bs-target="#groundingTab" type="button">
-                                <i class="fa-solid fa-shield-check me-1"></i> Grounding Score
+                                <i class="fa-solid fa-shield-check me-1"></i> <span data-i18n="tech.tab_grounding">Grounding Score</span>
                             </button>
                         </li>
                     </ul>
@@ -506,7 +681,7 @@
                                 </div>
                                 {% endfor %}
                                 {% else %}
-                                <p class="text-muted text-center py-5">Không có dữ liệu tiến trình chi tiết.</p>
+                                <p class="text-muted text-center py-5" data-i18n="tech.no_journal">Không có dữ liệu tiến trình chi tiết.</p>
                                 {% endif %}
                             </div>
                         </div>
@@ -517,10 +692,10 @@
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <span class="text-muted small">
                                     <i class="fa-solid fa-circle-info me-1"></i>
-                                    {{ glossary|length }} thuật ngữ với định nghĩa học thuật
+                                    {{ glossary|length }} <span data-i18n="tech.terms_desc">thuật ngữ với định nghĩa học thuật</span>
                                 </span>
                                 <a href="/tai/glossary/{{ ma_cv }}" class="btn btn-outline-info btn-sm">
-                                    <i class="fa-solid fa-download me-1"></i> Xuất file (.docx)
+                                    <i class="fa-solid fa-download me-1"></i> <span data-i18n="result.export_docx">Xuất file (.docx)</span>
                                 </a>
                             </div>
                             <div class="row g-3">
@@ -551,7 +726,7 @@
                                 {% endfor %}
                             </div>
                             {% else %}
-                            <p class="text-muted text-center py-5">Không tìm thấy danh sách thuật ngữ.</p>
+                            <p class="text-muted text-center py-5" data-i18n="tech.no_terms">Không tìm thấy danh sách thuật ngữ.</p>
                             {% endif %}
                         </div>
 
@@ -561,16 +736,16 @@
                             <div class="mb-3 d-flex justify-content-between align-items-center">
                                 <span class="text-muted small">
                                     <i class="fa-solid fa-circle-info me-1"></i>
-                                    {{ thong_tin.top_30_links|length }} nguồn tri thức được sử dụng — sắp xếp theo điểm chất lượng
+                                    {{ thong_tin.top_30_links|length }} <span data-i18n="tech.sources_desc">nguồn tri thức được sử dụng — sắp xếp theo điểm chất lượng</span>
                                 </span>
                                 <div class="d-flex gap-2">
-                                    <span class="badge bg-light text-dark border" style="font-size:0.7rem;">
+                                    <span class="badge bg-light text-dark border" style="font-size:0.7rem;" data-i18n="tech.quality_good">
                                         🟢 Quality ≥ 1.5 (tốt)
                                     </span>
-                                    <span class="badge bg-light text-dark border" style="font-size:0.7rem;">
+                                    <span class="badge bg-light text-dark border" style="font-size:0.7rem;" data-i18n="tech.quality_medium">
                                         🟡 Quality 0.5–1.5 (tb)
                                     </span>
-                                    <span class="badge bg-light text-dark border" style="font-size:0.7rem;">
+                                    <span class="badge bg-light text-dark border" style="font-size:0.7rem;" data-i18n="tech.quality_weak">
                                         🔴 Quality < 0.5 (yếu)
                                     </span>
                                 </div>
@@ -580,11 +755,11 @@
                                     <thead class="table-dark">
                                         <tr>
                                             <th style="width:35px;">#</th>
-                                            <th>Nguồn</th>
+                                            <th data-i18n="tech.col_source">Nguồn</th>
                                             <th style="width:50px;" class="text-center">Lang</th>
                                             <th style="width:80px;" class="text-center">Quality</th>
                                             <th style="width:80px;" class="text-center">Sim</th>
-                                            <th style="width:80px;" class="text-center">Độ dài</th>
+                                            <th style="width:80px;" class="text-center" data-i18n="tech.col_length">Độ dài</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -628,7 +803,7 @@
                                 </table>
                             </div>
                             {% else %}
-                            <p class="text-muted text-center py-5">Chưa lưu dữ liệu Discovery log.</p>
+                            <p class="text-muted text-center py-5" data-i18n="tech.no_discovery">Chưa lưu dữ liệu Discovery log.</p>
                             {% endif %}
                         </div>
 
@@ -645,32 +820,32 @@
                                         <div style="width:180px; height:180px; border-radius:50%; background: conic-gradient({{ color }} 0% {{ ratio }}%, #e9ecef {{ ratio }}% 100%); display:flex; align-items:center; justify-content:center;">
                                             <div style="width:120px; height:120px; border-radius:50%; background:white; display:flex; align-items:center; justify-content:center; flex-direction:column;">
                                                 <div style="font-size:2rem; font-weight:800; color:{{ color }};">{{ ratio }}%</div>
-                                                <div style="font-size:0.7rem; color:#6c757d;">Grounded</div>
+                                                <div style="font-size:0.7rem; color:#6c757d;" data-i18n="tech.grounded">Grounded</div>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="mt-3">
                                         {% if ratio >= 80 %}
-                                        <span class="badge bg-success px-3 py-2">🔬 Đáng tin cậy</span>
+                                        <span class="badge bg-success px-3 py-2" data-i18n="tech.grounding_reliable">🔬 Đáng tin cậy</span>
                                         {% elif ratio >= 50 %}
-                                        <span class="badge bg-warning text-dark px-3 py-2">⚠️ Trung bình</span>
+                                        <span class="badge bg-warning text-dark px-3 py-2" data-i18n="tech.grounding_medium">⚠️ Trung bình</span>
                                         {% else %}
-                                        <span class="badge bg-danger px-3 py-2">🔴 Cần cải thiện</span>
+                                        <span class="badge bg-danger px-3 py-2" data-i18n="tech.grounding_poor">🔴 Cần cải thiện</span>
                                         {% endif %}
                                     </div>
-                                    <p class="text-muted mt-2" style="font-size:0.8rem;">{{ ov.grounded }}/{{ ov.total }} đoạn có nguồn trích dẫn</p>
+                                    <p class="text-muted mt-2" style="font-size:0.8rem;">{{ ov.grounded }}/{{ ov.total }} <span data-i18n="tech.grounded_desc">đoạn có nguồn trích dẫn</span></p>
                                 </div>
                                 <!-- Per-chapter table -->
                                 <div class="col-md-8">
-                                    <h6 class="fw-bold mb-3">Chi tiết theo chương</h6>
+                                    <h6 class="fw-bold mb-3" data-i18n="tech.grounding_detail_title">Chi tiết theo chương</h6>
                                     <table class="table table-sm table-hover">
                                         <thead class="table-light">
                                             <tr>
-                                                <th>Chương</th>
-                                                <th class="text-center">Tổng đoạn</th>
-                                                <th class="text-center">Có nguồn</th>
-                                                <th class="text-center">Tỷ lệ</th>
-                                                <th class="text-center">Đánh giá</th>
+                                                <th data-i18n="tech.col_chapter">Chương</th>
+                                                <th class="text-center" data-i18n="tech.col_total_paras">Tổng đoạn</th>
+                                                <th class="text-center" data-i18n="tech.col_grounded_paras">Có nguồn</th>
+                                                <th class="text-center" data-i18n="tech.col_ratio">Tỷ lệ</th>
+                                                <th class="text-center" data-i18n="tech.col_rating">Đánh giá</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -697,13 +872,13 @@
                                 </div>
                             </div>
                             {% else %}
-                            <p class="text-muted text-center py-5">Chưa có dữ liệu Grounding Score.</p>
+                            <p class="text-muted text-center py-5" data-i18n="tech.no_grounding">Chưa có dữ liệu Grounding Score.</p>
                             {% endif %}
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary px-4 rounded-pill" data-bs-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-secondary px-4 rounded-pill" data-bs-dismiss="modal" data-i18n="tech.btn_close">Đóng</button>
                 </div>
             </div>
         </div>
@@ -775,23 +950,22 @@
                 let subIdx = 0;
                 
                 contentDiv.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(header => {
+                    const rawText = header.innerText.trim();
+                    // Heading "Câu hỏi Ôn tập" / "Bài tập & Ôn tập": KHÔNG đánh số, chỉ định style
+                    const isReviewSection = /câu hỏi ôn tập|bài tập.*ôn tập|review questions/i.test(rawText);
+
                     subIdx++;
                     header.id = `subsec-${cIdx}-${sIdx}-${subIdx}`;
                     header.classList.add('fw-bold', 'mt-4', 'mb-2', 'level3-heading', 'term-traceable');
-                    header.style.color = '#2c3e50';
-                    header.style.fontSize = '1.15rem'; // Smaller than section h4 headers
-                    header.style.borderLeft = '3px solid var(--bs-primary)';
-                    header.style.paddingLeft = '10px';
                     header.style.cursor = 'pointer';
                     header.dataset.chapter = cIdx;
                     header.dataset.section = sIdx;
                     header.dataset.sub = subIdx;
                     header.title = "Click để xem thuật ngữ nguồn";
-                    
-                    // Thêm numbering nếu chưa có (1.1.1.)
-                    const text = header.innerText.trim();
-                    if (!/^\d+\.\d+\.\d+/.test(text)) {
-                        header.innerText = `${cIdx}.${sIdx}.${subIdx}. ${text}`;
+
+                    // Chỉ thêm số mục nếu KHÔNG phải "Câu hỏi Ôn tập"
+                    if (!isReviewSection && !/^\d+\.\d+\.\d+/.test(rawText)) {
+                        header.innerText = `${cIdx}.${sIdx}.${subIdx}. ${rawText}`;
                     }
                 });
             });
@@ -850,15 +1024,12 @@
                     }
                 } else if (isReviewQ) {
                     let baseTitle = el.textContent.includes('Bài tập & Ôn tập') ? 'Bài tập & Ôn tập' : 'Câu hỏi Ôn tập';
-                    fullText = `${c}.${s}.${sub}. ${baseTitle}`;
+                    fullText = baseTitle;
                     
                     // Create a real H3 element to ensure 100% style match (font-family, margins, etc.)
                     const h3 = document.createElement('h3');
-                    h3.className = 'fw-bold mt-4 mb-3 level3-heading term-traceable';
-                    h3.style.color = '#2c3e50';
-                    h3.style.fontSize = '1.15rem';
-                    h3.style.borderLeft = '3px solid var(--bs-primary)';
-                    h3.style.paddingLeft = '10px';
+                    h3.className = 'level3-heading term-traceable';
+                    h3.style.cursor = 'pointer';
                     h3.id = headingId;
                     h3.textContent = fullText;
                     
@@ -897,6 +1068,35 @@
         // Hide empty Level-3 TOC containers
         document.querySelectorAll('.toc-level3').forEach(ul => {
             if (ul.children.length === 0) ul.style.display = 'none';
+        });
+
+        // === STRIP CITATIONS FROM REVIEW QUESTIONS SECTION ===
+        document.querySelectorAll('.content').forEach(contentDiv => {
+            let inReview = false;
+            contentDiv.querySelectorAll('*').forEach(child => {
+                const tag = child.tagName;
+                const text = child.textContent.trim();
+                
+                // Detect review section headers or bold paragraphs
+                if ((/H[1-6]/i.test(tag) || tag === 'P') && 
+                    (/câu hỏi ôn tập|bài tập.*ôn tập|review questions/i.test(text))) {
+                    inReview = true;
+                }
+                
+                if (inReview) {
+                    // Remove all citation tags
+                    child.querySelectorAll('sup.citation, .citation-apa, span.citation').forEach(cite => {
+                        cite.remove();
+                    });
+                    
+                    // Strip APA inline text format (e.g. "(Mạng máy tính, 2026)")
+                    if (child.tagName === 'P' || child.tagName === 'LI') {
+                        let html = child.innerHTML;
+                        html = html.replace(/\s*\([^)]+,\s*\d{4}\)/g, '');
+                        child.innerHTML = html;
+                    }
+                }
+            });
         });
 
         // === V39: TERM TRACEABILITY POPUP ===
@@ -1055,8 +1255,7 @@
                 }
             }
         });
-
     </script>
+    <script src="{{ url_for('static', filename='i18n.js') }}"></script>
 </body>
-
 </html>

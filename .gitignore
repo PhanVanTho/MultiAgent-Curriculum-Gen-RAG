@@ -1,15 +1,36 @@
-.env
+# Các file nén (Thủ phạm gây nặng 2GB)
+*.tar.gz
+*.tar.zst
+*.zip
+*.7z
+
+# Môi trường ảo và bộ nhớ đệm
+venv/
+.venv/
+env/
 __pycache__/
 *.pyc
+
+# Các file dữ liệu và kết quả thực nghiệm (Rất nặng, không cần thiết để chạy web)
 du_lieu/
-du_lieu/*
 ThucNghiem_KetQua/
-ThucNghiem_KetQua/*
-app.log
-instance/
-.vscode/
-.idea/
-*.pdf
+ThucNghiem/
+*.sql
 *.docx
+*.pdf
 *.json
 !ground_truth_dataset.json
+
+# Log và cấu hình local
+*.log
+.env
+.vscode/
+.idea/
+
+# Các file script rác hoặc file test (Chỉ dùng lúc code, không dùng lúc chạy web)
+test_*.py
+debug_*.py
+sinh_*.py
+danh_gia_*.py
+scratch_*.py
+check_*.py

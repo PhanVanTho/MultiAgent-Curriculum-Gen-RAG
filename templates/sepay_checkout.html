@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="pay.checkout_title">Thanh toán Chuyển khoản - Giáo Trình AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8fafc; font-family: 'Inter', sans-serif; }
+        .payment-container {
+            max-width: 500px;
+            margin: 3rem auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        .payment-header {
+            background: #0284c7;
+            color: white;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .payment-body {
+            padding: 2rem;
+            text-align: center;
+        }
+        .qr-box {
+            background: #f1f5f9;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            border: 1px dashed #cbd5e1;
+        }
+        .qr-box img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .info-label { color: #64748b; font-weight: 500; }
+        .info-val { color: #0f172a; font-weight: 700; }
+        .copy-btn {
+            background: #e0f2fe;
+            color: #0284c7;
+            border: none;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        .loading-text {
+            color: #0284c7;
+            font-weight: 600;
+            margin-top: 1rem;
+            animation: blink 1.5s infinite;
+        }
+        @keyframes blink {
+            0% { opacity: 0.4; }
+            50% { opacity: 1; }
+            100% { opacity: 0.4; }
+        }
+        .lang-btn-float {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.8);
+            border: 1px solid #d1d5db;
+            border-radius: 20px;
+            color: #475569;
+            cursor: pointer;
+            font-size: 0.82rem;
+            font-weight: 700;
+            padding: 5px 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.2s;
+            z-index: 999;
+        }
+        .lang-btn-float:hover { background: #f1f5f9; }
+    </style>
+</head>
+<body>
+    <button class="lang-btn-float" onclick="toggleLanguage()" title="Switch Language">
+        <span id="langFlag">🇻🇳</span><span id="langLabel">VI</span>
+    </button>
+    <div class="container">
+        <div class="payment-container">
+            <div class="payment-header">
+                <h4 class="mb-0" data-i18n="pay.checkout_title">Thanh Toán Nạp Token</h4>
+                <p class="mb-0 opacity-75 mt-1" data-i18n="pay.checkout_subtitle">Quét mã QR để chuyển khoản</p>
+            </div>
+            
+            <div class="payment-body">
+                <div class="qr-box">
+                    <img src="https://img.vietqr.io/image/{{ bank_brand }}-{{ account_number }}-compact2.png?amount={{ giao_dich.so_tien }}&addInfo={{ transfer_content }}" alt="QR Code">
+                </div>
+                
+                <div class="text-start mb-4">
+                    <div class="info-row">
+                        <span class="info-label" data-i18n="pay.bank">Ngân hàng</span>
+                        <span class="info-val">{{ bank_brand }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label" data-i18n="pay.account_number">Số tài khoản</span>
+                        <span class="info-val">{{ account_number }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label" data-i18n="pay.amount">Số tiền</span>
+                        <span class="info-val text-primary fs-5">{{ "{:,.0f}".format(giao_dich.so_tien) }} VND</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label" data-i18n="pay.transfer_content">Nội dung chuyển khoản</span>
+                        <span class="info-val">
+                            <span id="transfer-content">{{ transfer_content }}</span>
+                            <button class="copy-btn" onclick="copyToClipboard('transfer-content')"><i class="fa-regular fa-copy"></i></button>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <div class="loading-text" data-i18n="pay.waiting">
+                    Đang chờ thanh toán... Hệ thống sẽ tự động xác nhận trong ít phút.
+                </div>
+                
+                <div class="mt-4">
+                    <a href="{{ url_for('buy_tokens') }}" class="btn btn-outline-secondary w-100" data-i18n="pay.cancel_back">Hủy giao dịch & Quay lại</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copyToClipboard(elementId) {
+            var text = document.getElementById(elementId).innerText;
+            navigator.clipboard.writeText(text).then(function() {
+                var lang = (typeof getCurrentLang === 'function') ? getCurrentLang() : 'vi';
+                var msg = lang === 'vi' ? "Đã sao chép nội dung: " : "Copied content: ";
+                alert(msg + text);
+            }, function(err) {
+                console.error('Không thể sao chép', err);
+            });
+        }
+
+        // Polling logic
+        const txId = {{ giao_dich.id }};
+        const statusUrl = `/api/payment/sepay/status/${txId}`;
+        
+        function checkStatus() {
+            fetch(statusUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'completed') {
+                        window.location.href = "{{ url_for('payment_success') }}";
+                    }
+                })
+                .catch(error => console.error("Error polling payment status:", error));
+        }
+
+        // Call every 5 seconds
+        setInterval(checkStatus, 5000);
+    </script>
+    <script src="{{ url_for('static', filename='i18n.js') }}"></script>
+</body>
+</html>

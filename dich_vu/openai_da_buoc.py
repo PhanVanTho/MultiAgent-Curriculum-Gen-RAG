@@ -30,9 +30,9 @@ from dich_vu.schemas import (
 
 # 🛠️ Cấu hình quy mô giáo trình tập trung (V28 - Aligned with User Specs)
 CURRICULUM_SCALES = {
-    "can_ban": {"ch": (4, 5), "sec": (2, 3), "label": "BASIC"},
-    "chuyen_sau": {"ch": (12, 20), "sec": (4, 6), "label": "ADVANCED"},
-    "tieu_chuan": {"ch": (7, 10), "sec": (4, 5), "label": "STANDARD"}
+    "can_ban":     {"ch": (3, 6),  "sec": (2, 3), "label": "BASIC"},
+    "tieu_chuan": {"ch": (7, 10), "sec": (4, 5), "label": "STANDARD"},
+    "chuyen_sau": {"ch": (11, 14), "sec": (4, 6), "label": "ADVANCED"}
 }
 
 def get_structure_config(quy_mo):
@@ -323,7 +323,8 @@ def xac_dinh_ngan_sach_thuat_ngu(num_articles: int, num_chapters: int, quy_mo: s
         cfg = get_structure_config(quy_mo)
         ch_min = cfg.get("ch", (4, 8))[0]
         ch_max = cfg.get("ch", (4, 8))[1]
-        num_chapters = (ch_min + ch_max) // 2
+        # Uu tien max de tan dung toi da du lieu
+        num_chapters = ch_max
     
     # 💎 Adaptive Term Cap (V24.4)
     config_caps = {
@@ -682,6 +683,7 @@ YÊU CẦU CỐT LÕI (STRICT RULES):
 3. ANTI-GENERIC: Tuyệt đối không dùng các tiêu đề chung chung như "Tổng quan", "Giới thiệu", "Kết luận" lặp đi lặp lại. Phải gắn tên chương với thực thể kỹ thuật cụ thể.
 4. QUY MÔ: Chia thành tối đa 8 chương. Mỗi chương 3–5 mục con chi tiết.
 5. VĂN PHONG GIÁO TRÌNH: Tinh chỉnh câu từ, tiêu đề chương/mục sao cho mang đậm tính học thuật, chuẩn mực như sách giáo trình đại học, nhưng tuyệt đối KHÔNG làm thay đổi nội dung lõi hay bịa thêm kiến thức.
+6. BẮT BUỘC (ANTI-HALLUCINATION): Toàn bộ Tên Chương và Tên Mục PHẢI được trích xuất hoặc tổng hợp TRỰC TIẾP từ dữ liệu CORPUS. TUYỆT ĐỐI KHÔNG sáng tạo thêm, bịa đặt thêm các chương/mục không có trong CORPUS.
 
 RETURN ONLY JSON matching OUTLINE_SCHEMA.
 """
@@ -745,6 +747,130 @@ def _cosine_sim(v1, v2):
     if v1 is None or v2 is None:
         return 1.0  # fallback an toàn
     return float(np.dot(v1, v2))
+
+
+def _cognitive_sequence_validate(outline: list) -> list:
+    """
+    V42: Deterministic Cognitive Sequence Validator.
+    Phân loại và sắp xếp ĐA CẤP (Chương -> Mục -> Tiểu mục) theo mức độ nhận thức (difficulty tier) 
+    bằng keyword matching. Phát hiện và sửa lỗi thứ tự: phần nâng cao không được xuất hiện trước phần cơ bản.
+    """
+    if not outline:
+        return outline
+
+    # === Bảng từ khóa siêu phổ quát (Universal Academic Lexicon) ===
+    # Thiết kế để thích nghi với mọi ngành học: Khoa học tự nhiên, Kỹ thuật, Y tế, Kinh tế, Xã hội học...
+    TIER_KEYWORDS = {
+        0: {  # FOUNDATION: Dành cho phần mở đầu, lịch sử, khái quát
+            "vi": ["tổng quan", "giới thiệu", "khái niệm", "lịch sử", "nền tảng", "cơ sở", 
+                   "đại cương", "nhập môn", "định nghĩa", "nguồn gốc", "bối cảnh", 
+                   "phát triển", "hình thành", "cơ bản", "sơ lược", "khái quát", "mở đầu"],
+            "en": ["introduction", "overview", "history", "foundation", "basic", "concept",
+                   "fundamental", "background", "origin", "preliminary", "getting started"]
+        },
+        1: {  # CORE: Dành cho lý thuyết cốt lõi, cấu tạo, nguyên tắc hoạt động
+            "vi": ["nguyên lý", "lý thuyết", "cấu trúc", "mô hình", "kiến trúc", "định luật",
+                   "phân loại", "thành phần", "đặc điểm", "tính chất", "phương pháp", "quy luật",
+                   "giao thức", "cơ chế", "quy trình", "thuật toán", "cấu tạo", "hệ thống", "bản chất"],
+            "en": ["theory", "principle", "structure", "model", "architecture", "law",
+                   "classification", "component", "protocol", "mechanism", "algorithm",
+                   "method", "framework", "system", "characteristics"]
+        },
+        2: {  # ADVANCED: Dành cho phân tích chuyên sâu, giải pháp, kỹ thuật phức tạp
+            "vi": ["nâng cao", "chuyên sâu", "phân tích", "tối ưu", "hiệu suất", "chiến lược",
+                   "bảo mật", "an toàn", "quản lý", "điều khiển", "xử lý", "giải quyết",
+                   "thiết kế", "giải pháp", "kỹ thuật", "đánh giá", "kiểm thử", "phác đồ"],
+            "en": ["advanced", "analysis", "optimization", "performance", "security", "strategy",
+                   "management", "design", "implementation", "technique", "solution", "evaluation"]
+        },
+        3: {  # APPLIED: Dành cho ứng dụng thực tế, thực hành, triển khai
+            "vi": ["ứng dụng", "thực tiễn", "thực hành", "dự án", "triển khai", "thực thi",
+                   "nghiên cứu điển hình", "bài tập", "thí nghiệm", "vận hành", "case study",
+                   "sử dụng", "lâm sàng", "thực nghiệm"],
+            "en": ["application", "practice", "project", "case study", "real-world", "operation",
+                   "hands-on", "laboratory", "exercise", "deployment", "clinical", "applied"]
+        },
+        4: {  # CAPSTONE: Dành cho xu hướng, tương lai, đạo đức, kết luận
+            "vi": ["xu hướng", "tương lai", "triển vọng", "thách thức", "tổng kết", "đổi mới",
+                   "kết luận", "đạo đức", "pháp lý", "xã hội", "phát triển bền vững", "tác động"],
+            "en": ["trend", "future", "prospect", "challenge", "conclusion", "innovation",
+                   "ethics", "legal", "society", "sustainability", "emerging", "impact"]
+        }
+    }
+
+    def _classify_tier(title: str) -> int:
+        if not isinstance(title, str):
+            return 1
+        t_lower = title.lower()
+        best_tier = 1  # Mặc định là CORE nếu không khớp gì
+        best_score = 0
+        for tier, kw_dict in TIER_KEYWORDS.items():
+            score = 0
+            for kw in kw_dict.get("vi", []) + kw_dict.get("en", []):
+                if kw in t_lower:
+                    score += 1
+            if score > best_score:
+                best_score = score
+                best_tier = tier
+        return best_tier
+
+    def _sort_items_by_tier(items: list, get_title_func, context: str) -> tuple[list, int]:
+        if len(items) <= 1:
+            return items, 0
+        
+        tiers = [_classify_tier(get_title_func(item)) for item in items]
+        sorted_items = list(items)
+        sorted_tiers = list(tiers)
+        swapped = True
+        swap_count = 0
+        max_swaps = len(items) * 2
+        
+        while swapped and swap_count < max_swaps:
+            swapped = False
+            for i in range(len(sorted_items) - 1):
+                if sorted_tiers[i] > sorted_tiers[i + 1]:
+                    logger.debug(
+                        f"[CogSeq] {context} Vi phạm thứ tự: '{get_title_func(sorted_items[i])[:30]}' (Tier {sorted_tiers[i]}) "
+                        f"trước '{get_title_func(sorted_items[i+1])[:30]}' (Tier {sorted_tiers[i+1]}). Hoán đổi."
+                    )
+                    sorted_items[i], sorted_items[i + 1] = sorted_items[i + 1], sorted_items[i]
+                    sorted_tiers[i], sorted_tiers[i + 1] = sorted_tiers[i + 1], sorted_tiers[i]
+                    swapped = True
+                    swap_count += 1
+                    
+        return sorted_items, swap_count
+
+    # === Sắp xếp ĐA CẤP ===
+    total_swaps = 0
+    
+    # 1. Cấp Chương (Level 1)
+    sorted_outline, ch_swaps = _sort_items_by_tier(outline, lambda x: x.get("title", ""), "Chapter")
+    total_swaps += ch_swaps
+
+    for i, ch in enumerate(sorted_outline):
+        ch["chapter_index"] = i + 1
+        
+        # 2. Cấp Mục (Level 2 - Sections)
+        sections = ch.get("sections", [])
+        if sections:
+            sorted_secs, sec_swaps = _sort_items_by_tier(sections, lambda x: x.get("title", ""), f"Ch {i+1} Section")
+            ch["sections"] = sorted_secs
+            total_swaps += sec_swaps
+            
+            # 3. Cấp Tiểu mục (Level 3 - Subsections)
+            for j, sec in enumerate(sorted_secs):
+                subsections = sec.get("subsections", [])
+                if subsections:
+                    sorted_subsecs, subsec_swaps = _sort_items_by_tier(subsections, lambda x: x, f"Ch {i+1} Sec {j+1} Subsec")
+                    sec["subsections"] = sorted_subsecs
+                    total_swaps += subsec_swaps
+
+    if total_swaps > 0:
+        logger.info(f"[CogSeq] ✓ Đã sửa {total_swaps} vi phạm thứ tự nhận thức (toàn bộ chương, mục, tiểu mục).")
+    else:
+        logger.info("[CogSeq] ✓ Toàn bộ cấu trúc (đa cấp) đã đúng logic nhận thức (cơ bản → nâng cao).")
+
+    return sorted_outline
 
 
 def _polish_reorder(outline: list, chu_de: str, client, api_key: str):
@@ -1230,6 +1356,18 @@ def _apply_polish_layer(result: dict, chu_de: str, api_key: str, skip_rename: bo
     except Exception as e:
         logger.warning(f"[Polish] Step 1 (Reorder) FAILED: {e}. Skipping.")
     
+    # === Bước 1.5: Deterministic Cognitive Sequence Validator (V42) ===
+    try:
+        before_cogseq = [c.get("title", "") for c in current]
+        current = _cognitive_sequence_validate(current)
+        after_cogseq = [c.get("title", "") for c in current]
+        if before_cogseq != after_cogseq:
+            logger.info("[Polish] Step 1.5 (CogSeq Validator): Reordered to fix cognitive flow ✓")
+        else:
+            logger.info("[Polish] Step 1.5 (CogSeq Validator): Order already correct.")
+    except Exception as e:
+        logger.warning(f"[Polish] Step 1.5 (CogSeq Validator) FAILED: {e}. Skipping.")
+    
     # === Bước 2: Safe Rename (Skip if user-defined chapter names) ===
     if skip_rename:
         logger.info("[Polish] Step 2 (Rename): SKIPPED — user-defined chapter names.")
@@ -1289,10 +1427,11 @@ def _apply_polish_layer(result: dict, chu_de: str, api_key: str, skip_rename: bo
 # END OF POLISH LAYER
 # ===========================================================================
 
-def _programmatic_outline_builder(chu_de: str, terms_data: dict, target_ch: int, sec_min: int, sec_max: int):
+def _programmatic_outline_builder(chu_de: str, terms_data: dict, target_ch: int, sec_min: int, sec_max: int, danh_sach_chuong: list = None):
     """
     V28 Ultimate Fallback: Tự động xây dựng dàn ý từ danh sách thuật ngữ
     khi AI liên tục collapse. Chia terms đều vào các chương.
+    Hỗ trợ chèn danh sách tên chương tự chọn của người dùng.
     """
     core = terms_data.get("core_terms", [])
     supporting = terms_data.get("supporting_terms", [])
@@ -1315,8 +1454,11 @@ def _programmatic_outline_builder(chu_de: str, terms_data: dict, target_ch: int,
             # Tạo chapter placeholder từ topic
             chunk = [{"term": f"{chu_de} - Khía cạnh {ch_i + 1}"}]
         
-        # Tạo title từ term đầu tiên của chunk
-        ch_title = chunk[0].get("term", f"Chương {ch_i + 1}")
+        # Tạo title từ danh sách chương hoặc term đầu tiên của chunk
+        if danh_sach_chuong and ch_i < len(danh_sach_chuong):
+            ch_title = danh_sach_chuong[ch_i]
+        else:
+            ch_title = chunk[0].get("term", f"Chương {ch_i + 1}")
         
         # Tạo sections từ các terms trong chunk
         sections = []
@@ -1372,20 +1514,28 @@ def nhom_thuat_ngu_va_tao_dan_y(terms_data: dict, api_key: str, chu_de: str, so_
     ch_max = cfg.get("ch", (4, 8))[1]
     sec_min = cfg.get("sec", (3, 5))[0]
     sec_max = cfg.get("sec", (3, 5))[1]
-    
-    # 💎 Soft Scaling Safety Valve (V28 - Term-Count Based, min=12 for chuyen_sau)
+
+    # 💡 V35: Soft Scaling Safety Valve — giảm nhẹ nếu ít dữ liệu, ưu tiên max nếu đủ
     if quy_mo == "chuyen_sau":
+        if doc_count < 15:
+            ch_min, ch_max = 11, 12
+            logger.warning(f"[Architect] Low density ({doc_count} terms). Capping at 11-12 chapters.")
+        elif doc_count < 30:
+            ch_min, ch_max = 12, 13
+            logger.info(f"[Architect] Moderate density ({doc_count} terms). Scaling to 12-13 chapters.")
+        # else: đủ dữ liệu → giữ nguyên 11-14 từ config
+    elif quy_mo == "tieu_chuan":
         if doc_count < 10:
-            ch_min, ch_max = 12, 14
-            logger.warning(f"[Architect] Very low density ({doc_count} terms). Scaling to 12-14 chapters.")
-        elif doc_count < 25:
-            ch_min, ch_max = 12, 16
-            logger.info(f"[Architect] Low density ({doc_count} terms). Scaling to 12-16 chapters.")
-        elif doc_count < 50:
-            ch_min, ch_max = 14, 18
-            logger.info(f"[Architect] Moderate density ({doc_count} terms). Scaling to 14-18 chapters.")
-        # else: giữ nguyên 12-20 từ config
-    
+            ch_min, ch_max = 7, 8
+            logger.warning(f"[Architect] Low density ({doc_count} terms). Capping at 7-8 chapters.")
+        # else: đủ dữ liệu → giữ nguyên 7-10
+    elif quy_mo == "can_ban":
+        if doc_count < 8:
+            ch_min, ch_max = 3, 4
+            logger.warning(f"[Architect] Low density ({doc_count} terms). Capping at 3-4 chapters.")
+        # else: đủ dữ liệu → giữ nguyên 3-6
+
+
     # 💎 Final Target Calculation (V28: Range-based for auto, exact for custom)
     # 💎 Final Target Calculation (V31: Support custom count and list)
     target_ch = 0
@@ -1487,16 +1637,17 @@ def nhom_thuat_ngu_va_tao_dan_y(terms_data: dict, api_key: str, chu_de: str, so_
     if target_mode == "MANUAL_LIST":
         chapter_instruction = f"""- YOU MUST USE THIS EXACT CHAPTER LIST: {json.dumps(danh_sach_chuong, ensure_ascii=False)}
 - DO NOT RENAME, REWORD, OR MODIFY these chapter titles in any way. Use them EXACTLY as provided.
-- For each chapter in the list, create {sec_min} to {sec_max} detailed sections that are STRICTLY relevant to that chapter's title.
-- CRITICAL CONSTRAINT: Because the user has provided a strictly limited list of chapters, you MUST DISCARD any input terms or knowledge map data that do not naturally belong to these specific chapter titles. DO NOT force all terms into the outline. Your sections MUST be highly cohesive and strictly scoped to the chapter title.
+- CRITICAL HIERARCHY CONSTRAINT: For each chapter, the generated Level 2 titles (sections) and Level 3 titles (subsections) MUST strictly follow, align with, and be directly relevant to the specific semantics of that custom chapter's name.
+- CRITICAL FILTERING CONSTRAINT: Because the user has provided a strictly limited list of chapters, you MUST DISCARD any input terms or knowledge map data that do not naturally belong to these specific chapter titles. DO NOT force irrelevant terms into the outline just to use them. Your sections and subsections MUST be highly cohesive and strictly scoped to the chapter title.
 - The number of chapters MUST be EXACTLY {target_ch} (following the provided list)."""
     elif target_mode == "EXACT":
         chapter_instruction = f"""- EXACTLY {target_ch} chapters. THIS IS MANDATORY. Count them before returning.
 - Each chapter must have {sec_min} to {sec_max} sections.
 - You MUST generate EXACTLY {target_ch} chapters. Do not generate fewer under any circumstances."""
     else:
-        chapter_instruction = f"""- Between {ch_min} and {ch_max} chapters. Choose the number that best fits the depth and breadth of the input terms.
+        chapter_instruction = f"""- Generate EXACTLY {ch_max} chapters (the maximum for this scale). Only reduce to {ch_min} if there is genuinely insufficient data depth.
 - Each chapter must have {sec_min} to {sec_max} sections.
+- GOAL: Maximize chapter count to {ch_max}. Fill each chapter with substantive, distinct knowledge. Do NOT pad or repeat.
 - You MUST generate AT LEAST {ch_min} chapters. Do NOT generate fewer than {ch_min} under any circumstances."""
 
     translation_rule = ""
@@ -1504,8 +1655,14 @@ def nhom_thuat_ngu_va_tao_dan_y(terms_data: dict, api_key: str, chu_de: str, so_
         translation_rule = """
 9. TRANSLATION & LOCALIZATION (CRITICAL):
    - The requested output language is VIETNAMESE.
-   - If the KNOWLEDGE BASE MAP contains headings in English (e.g., "Mythology", "Folklore", "Supernatural powers"), you MUST translate them into Vietnamese BEFORE polishing.
-   - Example: "Mythology" -> "Thần thoại học và Nguồn gốc văn hóa". Do NOT leave any titles in English!"""
+   - If the KNOWLEDGE BASE MAP contains headings in English, you MUST translate them into Vietnamese BEFORE polishing.
+   - Do NOT leave any titles in English!"""
+    elif ngon_ngu == "en":
+        translation_rule = """
+9. TRANSLATION & LOCALIZATION (CRITICAL):
+   - The requested output language is ENGLISH.
+   - If the input terms or KNOWLEDGE BASE MAP are in Vietnamese, you MUST strictly TRANSLATE ALL OF THEM into Formal Academic English for the chapter and section titles.
+   - Do NOT leave any titles in Vietnamese! ALL OUTPUT MUST BE IN ENGLISH!"""
 
     system_prompt = f"""You are an expert university curriculum architect specializing in universal domain-adaptive academic textbook design across ALL academic, scientific, technical, professional, interdisciplinary, vocational, and emerging fields of human knowledge.
 Your task is NOT merely to generate chapters. Instead, you must first infer the intrinsic educational architecture of the `{domain_label}` discipline before constructing curriculum.
@@ -1545,14 +1702,12 @@ PHASE 4: OUTPUT REQUIREMENTS & STRICT CONSTRAINTS (CRITICAL)
    - ABSOLUTELY DO NOT invent topics not covered in the provided materials.
    - Expand raw terms into formal, comprehensive, university-level textbook titles. Example: "Smart contract" -> "Hợp đồng thông minh: Kiến trúc, Triển khai và Ứng dụng".
 
-3. GROUNDING & RESTRUCTURING CONSTRAINT (V41):
-   - ALL chapter and section CONTENT must be derivable from the INPUT TERMS and KNOWLEDGE BASE MAP.
-   - You ARE ALLOWED (and encouraged) to REORGANIZE, RENAME, and REGROUP Wikipedia headings into proper university-standard chapter/section titles.
-     Example: Wikipedia heading "== Lịch sử ==" + "== Phát triển ==" → Chapter "Lịch sử Hình thành và Phát triển"
-     Example: Wikipedia heading "== Mô hình OSI ==" buried inside an article → Can become its own dedicated Chapter.
-   - You MUST NOT invent entirely new topics that have ZERO coverage in the provided materials.
-   - If a concept appears in the KNOWLEDGE BASE MAP (even as a sub-heading or brief mention), you MAY elevate it to a chapter or section title.
-   - PRIORITIZE depth on core technical concepts over surface-level coverage of tangential topics.
+3. STRICT GROUNDING & ANTI-HALLUCINATION CONSTRAINT (CRITICAL):
+   - ALL chapter and section TITLES MUST be strictly extracted or summarized from the INPUT TERMS and KNOWLEDGE BASE MAP.
+   - YOU ARE ABSOLUTELY FORBIDDEN from creatively inventing, hallucinating, or guessing chapters/sections that do not exist in the provided source material.
+   - If a topic is logically related to the domain but NOT present in the provided sources, DO NOT include it in the outline.
+   - You ARE ALLOWED to REORGANIZE and RENAME Wikipedia headings into formal university titles, BUT the underlying concepts MUST exist in the provided text.
+   - Example: Wikipedia heading "== Lịch sử ==" + "== Phát triển ==" → Chapter "Lịch sử Hình thành và Phát triển".
 
 4. STRUCTURAL COHERENCE:
    - Generate 3-5 specific sub-topics (subsections) for each section based on the input terms to guide the content writer.
@@ -1725,7 +1880,7 @@ RETURN ONLY VALID JSON with at least {rescue_target} items in the "outline" arra
     # --- Lần 3: Programmatic Builder (Emergency) ---
     if result is None or actual_ch < effective_target * 0.75:
         logger.warning("[Architect] All LLMs failed. Falling back to programmatic builder.")
-        prog_result = _programmatic_outline_builder(chu_de, terms_data, effective_target, sec_min, sec_max)
+        prog_result = _programmatic_outline_builder(chu_de, terms_data, effective_target, sec_min, sec_max, danh_sach_chuong)
         if prog_result:
             result = prog_result
             actual_ch = len(prog_result.get("outline", []))
@@ -1987,7 +2142,7 @@ TUYỆT ĐỐI KHÔNG thêm số thứ tự chương/mục vào trường 'title
                     resp = client.chat.completions.create(
                         messages=[{"role": "user", "content": prompt}],
                         model=CauHinh.WRITER_MODEL,
-                        temperature=0.3 if mode != "NORMAL" else 0.7,
+                        temperature=0.3 if mode != "NORMAL" else 0.4,
                         response_format=CHAPTER_SCHEMA,
                         timeout=CauHinh.API_TIMEOUT
                     )
@@ -1995,7 +2150,7 @@ TUYỆT ĐỐI KHÔNG thêm số thứ tự chương/mục vào trường 'title
                 resp = client.chat.completions.create(
                     messages=[{"role": "user", "content": prompt}],
                     model=CauHinh.WRITER_MODEL,
-                    temperature=0.3 if mode != "NORMAL" else 0.7,
+                    temperature=0.3 if mode != "NORMAL" else 0.4,
                     response_format=CHAPTER_SCHEMA,
                     timeout=CauHinh.API_TIMEOUT
                 )
@@ -2203,9 +2358,10 @@ INTERPRETATION RULES:
 - CHỈ ĐƯỢC PHÉP làm rõ ý nghĩa của fact đã có trong span.
 - TUYỆT ĐỐI KHÔNG: mở rộng sang lĩnh vực khác, đưa ví dụ mới không có trong span, hoặc tổng quát hóa vượt phạm vi fact.
 
-QUY TẮC SỐNG CÒN VỀ TRÍCH DẪN (STRICT INLINE CITATION):
-- MỌI LUẬN ĐIỂM THÔNG TIN (Factual Claims) bạn đưa ra đều BẮT BUỘC phải đi kèm trích dẫn [ID] tương ứng với nguồn gốc của thông tin đó.
-- Các câu văn mang tính chất diễn giải, giải thích thêm, chuyển ý hoặc kết nối logic thì KHÔNG CẦN có [ID] trích dẫn.
+QUY TẮC SỐNG CÒN VỀ TRÍCH DẪN (STRICT INLINE CITATION ENFORCEMENT):
+- Mỗi khi bạn đưa ra một định nghĩa, con số, hoặc sự kiện, bạn BẮT BUỘC phải đặt mã nguồn ở cuối câu, ví dụ: [Doc 1], [Doc 3].
+- Nếu một câu không thể tìm được Doc tương ứng trong Context, bạn KHÔNG ĐƯỢC PHÉP viết câu đó. Không được tự bịa ra thông tin.
+- Các câu văn mang tính chất diễn giải, chuyển ý thuần túy (không chứa factual claim) thì không cần mã nguồn.
 - TUYỆT ĐỐI KHÔNG viết bất kỳ sự kiện, số liệu hay nhận định khoa học nào mà không có [ID] trích dẫn đi kèm.
 - TUYỆT ĐỐI KHÔNG "gom cite đại diện" ở cuối đoạn (ví dụ sai: "Nội dung phân tích... [1][2][3]").
 - PHẢI gắn chính xác [source_id] NGAY SÁT SAU luận điểm thông tin (ví dụ đúng: "Ý A [1]. Còn ý B [2]. Do đó, điều này mang ý nghĩa rất lớn.").
@@ -2230,7 +2386,7 @@ SELF-AUDIT INSTRUCTION (V22)
                     resp = client.chat.completions.create(
                         messages=[{"role": "user", "content": prompt}],
                         model=CauHinh.WRITER_MODEL,
-                        temperature=0.3 if mode != "NORMAL" else 0.7,
+                        temperature=0.3 if mode != "NORMAL" else 0.4,
                         response_format=SECTION_SCHEMA,
                         timeout=CauHinh.API_TIMEOUT
                     )
@@ -2238,7 +2394,7 @@ SELF-AUDIT INSTRUCTION (V22)
                 resp = client.chat.completions.create(
                     messages=[{"role": "user", "content": prompt}],
                     model=CauHinh.WRITER_MODEL,
-                    temperature=0.3 if mode != "NORMAL" else 0.7,
+                    temperature=0.3 if mode != "NORMAL" else 0.4,
                     response_format=SECTION_SCHEMA,
                     timeout=CauHinh.API_TIMEOUT
                 )
@@ -2433,6 +2589,27 @@ def viet_noi_dung_batch_sections(
     max_output_tokens = MAX_TOKENS_MAP.get(quy_mo, 4096)
 
     # 3. Prompt Batching & Self-Audit
+    if kwargs.get('ngon_ngu', 'vi') == "en":
+        exercise_rule = """7. EXERCISES (CRITICAL): You MUST generate EXACTLY 4 review questions strictly based on the section's knowledge and place them in the `review_questions` JSON array (DO NOT put them in the `content` field):
+   a) 2 Conceptual Questions: Ask students to explain, compare, or analyze core concepts.
+   b) 1 Applied Question: Present a practical scenario or problem and ask students to apply the knowledge to solve it.
+   c) 1 Critical Thinking Question: Ask students to evaluate, debate, or provide a reasoned personal opinion.
+   DO NOT generate multiple-choice questions. All questions must be open-ended essay/discussion format suitable for university-level assessment."""
+        en_density_boost = """\nCRITICAL DENSITY REQUIREMENT (ENGLISH SYLLABUS):
+- English academic writing in this pipeline requires STRICTER citation density.
+- You MUST provide AT LEAST 2 to 3 [ID] citations per paragraph.
+- Every major sentence introducing a new concept MUST have a citation. Do NOT write long explanatory paragraphs without citing the source facts."""
+    else:
+        exercise_rule = """7. EXERCISES (CRITICAL): You MUST generate EXACTLY 4 review questions strictly based on the section's knowledge and place them in the `review_questions` JSON array (DO NOT put them in the `content` field):
+   a) 2 Câu hỏi Hiểu khái niệm (Conceptual): Yêu cầu sinh viên giải thích, so sánh, hoặc phân tích các khái niệm cốt lõi trong mục.
+   b) 1 Câu hỏi Ứng dụng/Tình huống (Applied): Đưa ra một tình huống thực tế hoặc bài toán cụ thể, yêu cầu sinh viên vận dụng kiến thức để giải quyết.
+   c) 1 Câu hỏi Thảo luận/Phản biện (Critical Thinking): Yêu cầu sinh viên đánh giá, tranh luận, hoặc đưa ra quan điểm cá nhân có lập luận.
+   DO NOT generate multiple-choice questions. All questions must be open-ended essay/discussion format suitable for university-level assessment."""
+        en_density_boost = """\nYÊU CẦU MẬT ĐỘ TRÍCH DẪN NGHIÊM NGẶT (DENSITY BOOST):
+- Mỗi đoạn văn học thuật trong giáo trình yêu cầu mật độ trích dẫn cực kỳ đầy đủ.
+- Bạn PHẢI cung cấp ÍT NHẤT 2 đến 3 trích dẫn [ID] cho mỗi đoạn văn.
+- Mỗi câu giới thiệu một khái niệm, thông tin hoặc số liệu mới đều PHẢI có trích dẫn nguồn [ID] ngay sau đó. TUYỆT ĐỐI KHÔNG viết các đoạn văn giải thích dài dòng mà không trích dẫn các tài liệu thực tế [ID] đi kèm."""
+
     prompt = f"""You are a university professor writing {len(sections_info)} sections for the book "{chu_de}".
 Chapter: "{chapter_title}"
 Sections to write (including required subsections): {json.dumps([{"title": s['title'], "subsections": s.get('subsections', [])} for s in sections_info], ensure_ascii=False)}
@@ -2459,29 +2636,28 @@ RỦI RO CẦN LƯU Ý (OVER-EXTRACTION):
 - Format: {{ "term": "...", "meaning": "..." }}.
 
 6. TABLES (CRITICAL): If the SOURCE FACTS contain Markdown tables or structured comparative data, you MUST include them natively as Markdown Tables in your content to ensure a university-standard presentation.
-7. EXERCISES (CRITICAL): At the very end of the `content` field for each section, you MUST add the header **Câu hỏi Ôn tập** (bold text, NO markdown heading symbols like #). Under it, generate EXACTLY 4 questions strictly based on the section's knowledge:
-   a) 2 Câu hỏi Hiểu khái niệm (Conceptual): Yêu cầu sinh viên giải thích, so sánh, hoặc phân tích các khái niệm cốt lõi trong mục. Ví dụ: "Phân tích sự khác biệt giữa X và Y. Vì sao sự khác biệt này quan trọng trong thực tiễn?"
-   b) 1 Câu hỏi Ứng dụng/Tình huống (Applied): Đưa ra một tình huống thực tế hoặc bài toán cụ thể, yêu cầu sinh viên vận dụng kiến thức để giải quyết. Ví dụ: "Một doanh nghiệp gặp tình huống Z. Hãy đề xuất giải pháp dựa trên các nguyên lý đã học."
-   c) 1 Câu hỏi Thảo luận/Phản biện (Critical Thinking): Yêu cầu sinh viên đánh giá, tranh luận, hoặc đưa ra quan điểm cá nhân có lập luận. Ví dụ: "Đánh giá ưu và nhược điểm của phương pháp X so với Y trong bối cảnh hiện đại."
-   DO NOT generate multiple-choice questions. All questions must be open-ended essay/discussion format suitable for university-level assessment.
+{exercise_rule}
 8. ACADEMIC TONE (CRITICAL): You must write in a strictly formal, objective academic tone. DO NOT use conversational phrases, excitement, or transitions like "In conclusion" or "Let's explore".
 9. NO OMISSION: You must return ALL {len(sections_info)} sections requested.
 
 ################################################################################
-GROUNDING-FIRST QUALITY REQUIREMENT (V34.1)
+GROUNDED ACADEMIC SYNTHESIS PROTOCOL (V35.0)
 ################################################################################
 Target: ~{min_words} words per section.
-CRITICAL ANTI-HALLUCINATION RULE:
-- NEVER write content that cannot be supported by the SOURCE FACTS above.
-- If you run out of facts to cite, STOP writing. A shorter section WITH citations
-  is ALWAYS better than a longer section WITHOUT citations.
-- Every paragraph MUST contain at least one [ID] citation.
-- Do NOT pad content with generic statements, opinions, or unsourced claims.
-To expand content while maintaining grounding:
-- Elaborate on existing facts with deeper explanations
-- Connect multiple facts to show relationships
-- Add analytical interpretation OF the cited facts
 
+CRITICAL ANTI-HALLUCINATION RULE (GROUNDED SYNTHESIS):
+1. ALL factual claims, definitions, mechanisms, technical statements, and numerical information MUST be explicitly grounded in the provided SOURCE FACTS.
+2. Pedagogical paraphrasing, explanatory transitions, and educational restructuring are ENCOURAGED, ONLY IF they do not introduce new factual claims beyond the cited evidence.
+3. Every paragraph MUST contain at least one [ID] citation placed immediately after the factual claim it supports.
+4. You are ALLOWED to:
+   - Reorganize facts for logical pedagogical flow.
+   - Synthesize multiple facts to explain a broader concept.
+   - Add academic prose and transitions (e.g., "Therefore", "In practice") to connect ideas.
+5. You are STRICTLY FORBIDDEN to:
+   - Invent new definitions, examples, or mechanisms not present in the SOURCE FACTS.
+   - Use internal knowledge to add factual padding.
+
+{en_density_boost}
 ################################################################################
 SELF-AUDIT INSTRUCTIONS
 ################################################################################
@@ -2502,11 +2678,26 @@ RETURN VALID JSON matching BATCH_SECTION_SCHEMA:
       "content": "...",
       "fact_mappings": [ {{ "source_id": "...", "span": "...", "claim": "...", "confidence": 1.0 }} ],
       "summary": "...",
-      "new_terms": [ {{ "term": "...", "meaning": "..." }} ]
+      "new_terms": [ {{ "term": "...", "meaning": "..." }} ],
+      "review_questions": [ "Question 1", "Question 2", "Question 3", "Question 4" ]
     }}
   ]
 }}
 """
+
+    def _inject_review_questions(json_text):
+        try:
+            data = json.loads(json_text)
+            for s in data.get("sections", []):
+                rqs = s.get("review_questions", [])
+                if rqs and isinstance(rqs, list):
+                    header = "\n\n### Review Questions\n" if kwargs.get('ngon_ngu', 'vi') == 'en' else "\n\n### Câu hỏi Ôn tập\n"
+                    q_text = "\n".join([f"- {q}" for q in rqs])
+                    s["content"] = str(s.get("content", "")) + header + q_text
+                    s["review_questions"] = []
+            return json.dumps(data, ensure_ascii=False)
+        except Exception:
+            return json_text
 
     def _repair_with_gemini(broken_text, error_reason):
         try:
@@ -2525,7 +2716,8 @@ EXPECTED SCHEMA:
       "content": "...",
       "fact_mappings": [...],
       "summary": "...",
-      "new_terms": [{"term": "...", "meaning": "..."}]
+      "new_terms": [{{"term": "...", "meaning": "..."}}],
+      "review_questions": ["..."]
     }}
   ]
 }}
@@ -2544,7 +2736,7 @@ BROKEN TEXT TO REPAIR:
                             response_mime_type="application/json"
                         )
                     )
-                    return {"status": "success", "raw_text": g_res.text}
+                    return {"status": "success", "raw_text": _inject_review_questions(g_res.text)}
                 except Exception as ex:
                     continue
             return {"status": "error", "message": "All Gemini repair keys failed."}
@@ -2710,13 +2902,13 @@ Return the COMPLETE JSON with ALL sections.
                     logging.getLogger(__name__).info(
                         f"[V34-Validator] Retry thành công! {total_len} → {retry_total} chars (+{retry_total - total_len})"
                     )
-                    return {"status": "success", "raw_text": retry_text}
+                    return {"status": "success", "raw_text": _inject_review_questions(retry_text)}
                 else:
                     logging.getLogger(__name__).info(f"[V34-Validator] Retry không cải thiện. Giữ bản gốc.")
             except Exception as retry_err:
                 logging.getLogger(__name__).warning(f"[V34-Validator] Retry failed: {retry_err}. Giữ bản gốc.")
             
-        return {"status": "success", "raw_text": raw_text}
+        return {"status": "success", "raw_text": _inject_review_questions(raw_text)}
         
     except Exception as e:
         import logging
@@ -2729,7 +2921,7 @@ Return the COMPLETE JSON with ALL sections.
 # =========================================================================
 
 def sinh_tom_tat_chuong(chu_de: str, chap_title: str, sections_content: str,
-                        api_key: str, semaphore=None) -> str:
+                        api_key: str, semaphore=None, ngon_ngu: str = "vi") -> str:
     """
     Sinh đoạn tóm tắt 3-5 câu cho 1 chương dựa trên nội dung đã biên soạn.
     Trả về plain text. Fallback: chuỗi rỗng nếu lỗi.
@@ -2740,6 +2932,7 @@ def sinh_tom_tat_chuong(chu_de: str, chap_title: str, sections_content: str,
     client = OpenAI(api_key=api_key, max_retries=0)
     # Cắt nội dung để tiết kiệm token (tối đa ~3000 chars)
     truncated = sections_content[:3000]
+    lang_dir = _lang_directive(ngon_ngu)
 
     prompt = f"""Bạn là biên tập viên giáo trình đại học về "{chu_de}".
 Hãy viết đoạn TÓM TẮT CHƯƠNG (3-5 câu) cho chương "{chap_title}" dựa trên nội dung sau:
@@ -2751,7 +2944,8 @@ YÊU CẦU NGHIÊM NGẶT:
 - Nêu bật các khái niệm then chốt và mối liên hệ giữa chúng
 - Viết bằng giọng học thuật, KHÔNG dùng bullet points hay markdown
 - Trả về PLAIN TEXT thuần (không JSON, không heading, không ký hiệu đặc biệt)
-- Tối đa 5 câu"""
+- Tối đa 5 câu
+- {lang_dir}"""
 
     try:
         def _call():
@@ -2778,7 +2972,7 @@ YÊU CẦU NGHIÊM NGẶT:
 
 
 def sinh_bang_thuat_ngu(terms_list: list, chu_de: str,
-                        api_key: str, semaphore=None) -> list:
+                        api_key: str, semaphore=None, ngon_ngu: str = "vi") -> list:
     """
     Sinh định nghĩa ngắn (1-2 câu) cho danh sách thuật ngữ.
     Trả về list[{"term": "...", "definition": "..."}]. Fallback: list rỗng.
@@ -2787,25 +2981,41 @@ def sinh_bang_thuat_ngu(terms_list: list, chu_de: str,
         return []
 
     client = OpenAI(api_key=api_key, max_retries=0)
-    # Lấy tối đa 40 thuật ngữ
-    terms_names = [t.get("term", "") for t in terms_list[:40] if t.get("term")]
+    
+    # Rút trích tên thuật ngữ (hỗ trợ cả dict và string)
+    raw_terms = []
+    for t in terms_list:
+        if isinstance(t, dict):
+            if t.get("term"): raw_terms.append(t["term"])
+        elif isinstance(t, str):
+            raw_terms.append(t)
+            
+    # Lọc trùng lặp và giới hạn an toàn (tránh vỡ token)
+    terms_names = list(dict.fromkeys([t.strip() for t in raw_terms if t.strip()]))
+    
+    # V42.2: Nâng giới hạn từ 120 lên 200 để đáp ứng độ phủ rộng nhất
+    terms_names = terms_names[:200]
+    
     if not terms_names:
         return []
 
     terms_text = ", ".join(terms_names)
+    lang_dir = _lang_directive(ngon_ngu)
 
-    prompt = f"""Bạn là chuyên gia biên soạn từ điển thuật ngữ cho giáo trình "{chu_de}".
+    prompt = f"""Bạn là chuyên gia biên soạn từ điển thuật ngữ khoa học toàn diện cho giáo trình "{chu_de}".
 
-DANH SÁCH THUẬT NGỮ CẦN ĐỊNH NGHĨA:
+TÀI LIỆU ĐẦU VÀO (Bao gồm các tiêu đề chương/mục và thuật ngữ thô):
 {terms_text}
 
-YÊU CẦU:
-- Viết định nghĩa ngắn gọn (1-2 câu) cho MỖI thuật ngữ
-- Định nghĩa phải chính xác về mặt học thuật
-- Sắp xếp theo thứ tự bảng chữ cái
+YÊU CẦU BẮT BUỘC:
+1. TRÍCH XUẤT TOÀN DIỆN: Từ danh sách đầu vào trên, hãy trích xuất ra TẤT CẢ các thuật ngữ khoa học/chuyên ngành cốt lõi. KHÔNG ĐƯỢC BỎ SÓT bất kỳ khái niệm hợp lệ nào. (Ví dụ: Từ tiêu đề "Tổng quan và Lịch sử Mạng Máy Tính", lấy thuật ngữ "Mạng Máy Tính"). Bỏ qua các từ nối, từ chung chung (tổng quan, giới thiệu, ứng dụng...).
+2. ĐỊNH NGHĨA: Viết định nghĩa ngắn gọn (1-2 câu) cho MỖI thuật ngữ đã trích xuất. Định nghĩa phải chính xác về mặt học thuật.
+3. Sắp xếp danh sách cuối cùng theo thứ tự bảng chữ cái.
+4. Lọc bỏ trùng lặp. Đảm bảo Bảng thuật ngữ càng phong phú càng tốt (có thể lên đến 100+ thuật ngữ).
+5. {lang_dir}
 
 Trả về JSON:
-{{"glossary": [{{"term": "Tên thuật ngữ", "definition": "Định nghĩa ngắn"}}]}}"""
+{{"glossary": [{{"term": "Tên thuật ngữ lõi", "definition": "Định nghĩa ngắn"}}]}}"""
 
     try:
         def _call():

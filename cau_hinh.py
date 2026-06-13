@@ -8,6 +8,14 @@ class CauHinh:
     # Google OAuth
     GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 
+    # Mail Config (SMTP)
+    MAIL_SERVER = os.getenv("MAIL_SERVER", "smtp.gmail.com")
+    MAIL_PORT = int(os.getenv("MAIL_PORT", "587"))
+    MAIL_USE_TLS = os.getenv("MAIL_USE_TLS", "True").lower() == "true"
+    MAIL_USERNAME = os.getenv("MAIL_USERNAME", "phanvantho082019@gmail.com")
+    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "ylifjkrtmpzpbomh")
+    MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER", "phanvantho082019@gmail.com")
+
 
 
     # OpenAI
@@ -25,7 +33,8 @@ class CauHinh:
     LOCAL_MODEL = os.getenv("LOCAL_MODEL", "gemma:2b")
 
     # Supervisor Architecture Config
-    WRITER_MODEL = os.getenv("WRITER_MODEL", "gpt-4o-mini")  # Mặc định dùng OpenAI
+    SEARCH_MODEL = os.getenv("SEARCH_MODEL", "gpt-4o")  # Model thông minh dùng cho Crawler/Spider
+    WRITER_MODEL = os.getenv("WRITER_MODEL", "gpt-4o-mini")  # Model viết bài
     SUPERVISOR_MODEL_LITE = os.getenv("SUPERVISOR_MODEL_LITE", "gemini-2.5-flash-lite")
     SUPERVISOR_MODEL_PRO = os.getenv("SUPERVISOR_MODEL_PRO", "gemini-2.5-flash")
 
@@ -103,3 +112,20 @@ class CauHinh:
 
     # --- Diversity Control ---
     EKRE_MAX_CHUNKS_PER_SOURCE = 3  # Tối đa 3 chunks từ cùng 1 nguồn
+
+    # VNPAY Config
+    VNPAY_TMN_CODE = os.getenv("VNPAY_TMN_CODE", "V2ZFH4ZT")
+    VNPAY_HASH_SECRET = os.getenv("VNPAY_HASH_SECRET", "V830F79D7834Q4M5F9VCZY5XFCWEWWUA")
+    VNPAY_PAYMENT_URL = os.getenv("VNPAY_PAYMENT_URL", "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html")
+    VNPAY_RETURN_URL = os.getenv("VNPAY_RETURN_URL", "http://127.0.0.1:5000/payment/callback")
+
+    # SePay Config
+    SEPAY_API_KEY = os.getenv("SEPAY_API_KEY", "")
+    SEPAY_ACCOUNT_NUMBER = os.getenv("SEPAY_ACCOUNT_NUMBER", "0327152710")
+    SEPAY_BANK_BRAND = os.getenv("SEPAY_BANK_BRAND", "MBBank")
+    SEPAY_WEB_NAME = os.getenv("SEPAY_WEB_NAME", "GTAI")
+    SEPAY_XOR_KEY = int(os.getenv("SEPAY_XOR_KEY", "0x5EAFB"), 16) if os.getenv("SEPAY_XOR_KEY") else 0x5EAFB
+
+    # Toggle payments active status
+    PAYMENT_VNPAY_ACTIVE = os.getenv("PAYMENT_VNPAY_ACTIVE", "True") == "True"
+    PAYMENT_SEPAY_ACTIVE = os.getenv("PAYMENT_SEPAY_ACTIVE", "True") == "True"

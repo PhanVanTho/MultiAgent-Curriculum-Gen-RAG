@@ -1,0 +1,270 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}Quản lý Gói cước{% endblock %}
+
+{% block header_title %}<span data-i18n="admin.packages.title">Quản lý gói cước</span>{% endblock %}
+{% block header_subtitle %}<span data-i18n="admin.packages.subtitle">Thiết lập và tùy chỉnh các gói cước nạp Token động cho người dùng.</span>{% endblock %}
+
+{% block content %}
+<!-- Add Package Form -->
+<div class="table-card" style="margin-top: 1.5rem;">
+    <div class="table-card-header">
+        <h5><i class="fa-solid fa-box-archive me-2" style="color: var(--primary);"></i><span data-i18n="admin.packages.add_title">Thêm gói cước mới</span></h5>
+    </div>
+    <div style="padding: 1.25rem 1.5rem;">
+        <form action="{{ url_for('admin_save_package') }}" method="POST" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label" data-i18n="admin.packages.pkg_name">Tên gói cước</label>
+                <input type="text" class="form-control" name="ten_goi" required placeholder="Ví dụ: Premium">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" data-i18n="admin.packages.pkg_price">Giá tiền (VND)</label>
+                <input type="number" class="form-control" name="gia_tien" required placeholder="Ví dụ: 50000">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" data-i18n="admin.packages.pkg_token">Số Token nhận được</label>
+                <input type="number" class="form-control" name="so_token" required placeholder="Ví dụ: 80">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" data-i18n="admin.packages.pkg_features">Tính năng (Ngăn cách bằng dấu phẩy)</label>
+                <input type="text" class="form-control" name="mo_ta" placeholder="Tạo giáo trình chuyên sâu, Tốc độ cao">
+            </div>
+            <div class="col-md-10 d-flex align-items-center" style="padding-bottom: 6px;">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="kich_hoat" id="kich_hoat" checked>
+                    <label class="form-check-label fw-semibold text-success" for="kich_hoat" data-i18n="admin.packages.pkg_active">Kích hoạt ngay</label>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fa-solid fa-plus me-1"></i><span data-i18n="admin.packages.add_btn">Thêm Gói</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Packages List Table -->
+<div class="table-card" id="packages-section">
+    <div class="table-card-header d-flex justify-content-between align-items-center">
+        <h5 data-i18n="admin.packages.list_title">Danh sách gói cước hiện tại</h5>
+        <span class="badge bg-primary" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;" data-i18n="admin.packages.exchange_rate_badge">Tỷ giá mặc định: 1 Token = 1,000 VND</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th data-i18n="admin.packages.col_name">Tên gói cước</th>
+                    <th data-i18n="admin.packages.col_price">Giá tiền</th>
+                    <th data-i18n="admin.packages.col_tokens">Số Token</th>
+                    <th data-i18n="admin.packages.col_features">Các tính năng / Mô tả</th>
+                    <th data-i18n="admin.packages.col_status">Trạng thái</th>
+                    <th data-i18n="admin.packages.col_action">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pkg in packages %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="avatar-circle text-primary" style="background: rgba(var(--primary-rgb), 0.1); width: 35px; height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                                <i class="fa-solid fa-gem"></i>
+                            </div>
+                            <strong>{{ pkg.ten_goi }}</strong>
+                        </div>
+                    </td>
+                    <td class="fw-bold text-light">{{ "{:,}".format(pkg.gia_tien) }} VND</td>
+                    <td>
+                        <span class="badge bg-success" style="font-size: 0.9rem; font-weight: bold;"><i class="fa-solid fa-coins me-1"></i>{{ pkg.so_token }} Token</span>
+                    </td>
+                    <td>
+                        {% if pkg.mo_ta %}
+                            {% for feature in pkg.mo_ta.split(',') %}
+                            <span class="badge bg-dark text-muted me-1 mb-1" style="border: 1px solid rgba(255,255,255,0.05);"><i class="fa-solid fa-check text-success me-1"></i>{{ feature.strip() }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="text-muted small" data-i18n="result.not_available">Không có mô tả</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="form-check form-switch mt-1">
+                            <input class="form-check-input" type="checkbox" role="switch" id="switch-{{ pkg.id }}" {% if pkg.kich_hoat %}checked{% endif %} onchange="togglePackageKichHoat({{ pkg.id }}, '{{ pkg.ten_goi }}')">
+                            <label class="form-check-label small" for="switch-{{ pkg.id }}" id="label-switch-{{ pkg.id }}">
+                                {% if pkg.kich_hoat %}
+                                <span class="text-success fw-semibold" data-i18n="admin.packages.status_selling">Đang bán</span>
+                                {% else %}
+                                <span class="text-danger" data-i18n="admin.packages.status_hidden">Tạm ẩn</span>
+                                {% endif %}
+                            </label>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <button class="btn btn-sm btn-outline-primary" onclick="openEditPackageModal('{{ pkg.id }}', '{{ pkg.ten_goi }}', '{{ pkg.gia_tien }}', '{{ pkg.so_token }}', '{{ pkg.mo_ta or '' }}', {{ 'true' if pkg.kich_hoat else 'false' }})" title="Chỉnh sửa">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deletePackage({{ pkg.id }}, '{{ pkg.ten_goi }}')" title="Xóa">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not packages %}
+                <tr>
+                    <td colspan="6" class="text-center py-4 text-muted" data-i18n="admin.packages.no_packages">
+                        <i class="fa-solid fa-circle-info me-2 fs-5"></i>Chưa có gói cước nào được thiết lập. Hãy tạo gói cước đầu tiên ở trên!
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    <div style="padding: 0.75rem 1.5rem; border-top: 1px solid var(--glass-border);">
+        <span style="font-size: 0.78rem; color: var(--text-dim);" data-i18n="admin.packages.show_count" data-i18n-count="{{ packages|length }}">Tổng số: {{ packages|length }} gói cước</span>
+    </div>
+</div>
+
+<!-- Edit Package Modal -->
+<div id="editPackageModal" class="modal-backdrop-custom" style="display: none;">
+    <div class="modal-content-custom" style="max-width: 500px;">
+        <div class="modal-header-custom">
+            <h5><i class="fa-solid fa-pen-to-square me-2 text-primary"></i><span data-i18n="admin.packages.edit_title">Chỉnh sửa gói cước</span></h5>
+            <button type="button" class="btn-close-custom" onclick="closeEditPackageModal()">&times;</button>
+        </div>
+        <form id="edit-package-form" action="{{ url_for('admin_save_package') }}" method="POST">
+            <input type="hidden" id="edit-pkg-id" name="id">
+            <div class="mb-3">
+                <label class="form-label fw-bold" data-i18n="admin.packages.pkg_name">Tên gói cước</label>
+                <input type="text" class="form-control" id="edit-pkg-ten-goi" name="ten_goi" required style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--text-main);">
+            </div>
+            <div class="mb-3 row">
+                <div class="col-6">
+                    <label class="form-label fw-bold" data-i18n="admin.packages.pkg_price">Giá bán (VND)</label>
+                    <input type="number" class="form-control" id="edit-pkg-gia-tien" name="gia_tien" required style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--text-main);">
+                </div>
+                <div class="col-6">
+                    <label class="form-label fw-bold" data-i18n="admin.packages.pkg_token">Số Token nhận</label>
+                    <input type="number" class="form-control" id="edit-pkg-so-token" name="so_token" required style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--text-main);">
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold" data-i18n="admin.packages.pkg_features">Mô tả / Tính năng (Ngăn cách bằng dấu phẩy)</label>
+                <textarea class="form-control" id="edit-pkg-mo-ta" name="mo_ta" rows="3" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--text-main); resize: none;"></textarea>
+            </div>
+            <div class="mb-4 form-check">
+                <input type="checkbox" class="form-check-input" id="edit-pkg-kich-hoat" name="kich_hoat" value="true">
+                <label class="form-check-label fw-bold text-success" for="edit-pkg-kich-hoat" data-i18n="admin.packages.edit_pkg_active">Kích hoạt bán gói cước này</label>
+            </div>
+            <div class="text-end">
+                <button type="button" class="btn btn-outline-secondary me-2" onclick="closeEditPackageModal()" data-i18n="admin.users.btn_cancel">Hủy</button>
+                <button type="submit" class="btn btn-success"><i class="fa-solid fa-floppy-disk me-1"></i><span data-i18n="admin.users.btn_save">Lưu thay đổi</span></button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function openEditPackageModal(id, tenGoi, giaTien, soToken, moTa, kichHoat) {
+        document.getElementById('edit-pkg-id').value = id;
+        document.getElementById('edit-pkg-ten-goi').value = tenGoi;
+        document.getElementById('edit-pkg-gia-tien').value = giaTien;
+        document.getElementById('edit-pkg-so-token').value = soToken;
+        document.getElementById('edit-pkg-mo-ta').value = moTa;
+        document.getElementById('edit-pkg-kich-hoat').checked = kichHoat;
+        document.getElementById('editPackageModal').style.display = 'flex';
+    }
+
+    function closeEditPackageModal() {
+        document.getElementById('editPackageModal').style.display = 'none';
+    }
+
+    async function togglePackageKichHoat(id, name) {
+        const switchBtn = document.getElementById(`switch-${id}`);
+        const label = document.getElementById(`label-switch-${id}`);
+        const lang = getCurrentLang();
+        
+        try {
+            const res = await fetch(`/admin/packages/toggle/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+            if (data.success) {
+                if (data.kich_hoat) {
+                    label.innerHTML = `<span class="text-success fw-semibold" data-i18n="admin.packages.status_selling">${lang === 'vi' ? 'Đang bán' : 'Active'}</span>`;
+                    switchBtn.checked = true;
+                } else {
+                    label.innerHTML = `<span class="text-danger" data-i18n="admin.packages.status_hidden">${lang === 'vi' ? 'Tạm ẩn' : 'Hidden'}</span>`;
+                    switchBtn.checked = false;
+                }
+                
+                // Show tiny toast or alert
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 2000,
+                    timerProgressBar: true
+                });
+                Toast.fire({
+                    icon: 'success',
+                    title: data.message
+                });
+            } else {
+                switchBtn.checked = !switchBtn.checked;
+                Swal.fire(lang === 'vi' ? 'Lỗi' : 'Error', data.error || (lang === 'vi' ? 'Có lỗi xảy ra' : 'An error occurred'), 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            switchBtn.checked = !switchBtn.checked;
+            Swal.fire(lang === 'vi' ? 'Lỗi kết nối' : 'Connection Error', lang === 'vi' ? 'Không thể kết nối tới máy chủ' : 'Could not connect to server', 'error');
+        }
+    }
+
+    async function deletePackage(id, name) {
+        const lang = getCurrentLang();
+        const confirmResult = await Swal.fire({
+            title: lang === 'vi' ? 'Xác nhận xóa?' : 'Confirm delete?',
+            text: lang === 'vi' 
+                ? `Bạn có chắc muốn xóa gói cước "${name}" không? Người dùng sẽ không thể chọn gói này nữa.`
+                : `Are you sure you want to delete package "${name}"? Users will no longer be able to select this package.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: lang === 'vi' ? 'Xóa ngay' : 'Delete Now',
+            cancelButtonText: lang === 'vi' ? 'Hủy bỏ' : 'Cancel'
+        });
+
+        if (confirmResult.isConfirmed) {
+            try {
+                const res = await fetch(`/admin/packages/delete/${id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    Swal.fire(lang === 'vi' ? 'Đã xóa' : 'Deleted', data.message, 'success').then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire(lang === 'vi' ? 'Lỗi' : 'Error', data.error || (lang === 'vi' ? 'Không thể xóa' : 'Could not delete'), 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                Swal.fire(lang === 'vi' ? 'Lỗi' : 'Error', lang === 'vi' ? 'Lỗi kết nối tới máy chủ' : 'Error connecting to server', 'error');
+            }
+        }
+    }
+
+    window.onclick = function(event) {
+        const modal = document.getElementById('editPackageModal');
+        if (event.target == modal) {
+            closeEditPackageModal();
+        }
+    }
+</script>
+{% endblock %}

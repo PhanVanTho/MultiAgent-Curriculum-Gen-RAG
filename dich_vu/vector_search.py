@@ -579,3 +579,126 @@ def tim_kiem_vector(query: str, passages_db: list, api_key: str, top_k: int = 8)
                 used_ids.add(p["id"])
                 
     return results
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GENERATIVE SEMANTIC RERANKING (LLM-based Two-Stage Retrieval)
+# Kiến trúc: Embedding Search (top-N candidates) → GPT-4o-mini Reranker (top-K)
+# Lý do: GPT hiểu ngữ nghĩa giáo dục (educational usefulness, mechanism richness)
+#         sâu hơn bất kỳ cross-encoder nào, đặc biệt với tiếng Việt học thuật.
+# ─────────────────────────────────────────────────────────────────────────────
+
+def tim_kiem_vector_with_llm_rerank(
+    query: str,
+    passages_db: list,
+    api_key: str,
+    top_k: int = 8,
+    candidate_n: int = 30,
+    chapter_title: str = "",
+    section_title: str = ""
+) -> list:
+    """
+    Two-Stage Generative Reranking:
+    Stage 1: Embedding Search → lấy top-N candidates (candidate_n, mặc định 30).
+    Stage 2: GPT-4o-mini Pedagogical Reranker → chọn top-K xuất sắc nhất (top_k, mặc định 8).
+
+    Args:
+        query: Câu truy vấn tìm kiếm (thường là "{chap_title} {sec_title}").
+        passages_db: Cơ sở dữ liệu vector passages.
+        api_key: OpenAI API key.
+        top_k: Số passages trả về sau reranking.
+        candidate_n: Số passages đưa vào GPT để rerank.
+        chapter_title: Tên chương (dùng để làm phong phú context cho GPT).
+        section_title: Tên mục (dùng để làm phong phú context cho GPT).
+
+    Returns:
+        Danh sách top_k passages chất lượng cao nhất theo tiêu chí giáo dục.
+    """
+    import json as _json
+
+    # ── Stage 1: Lấy top candidates_n bằng Vector Search ──
+    candidates = tim_kiem_vector(query, passages_db, api_key, top_k=candidate_n)
+
+    # Nếu số lượng candidates nhỏ hơn top_k thì trả về luôn (không cần rerank)
+    if len(candidates) <= top_k:
+        logger.info(f"[LLMRerank] Only {len(candidates)} candidates, skipping rerank.")
+        return candidates
+
+    # ── Stage 2: Xây dựng Prompt Pedagogical Reranker ──
+    context_label = section_title or query
+    chapter_label = chapter_title or ""
+
+    passages_text = ""
+    for i, p in enumerate(candidates):
+        snippet = p.get("text", "")[:400].replace("\n", " ")
+        title = p.get("title", f"Doc {i}")
+        passages_text += f"[ID: {i}] Tiêu đề: {title}\nNội dung: {snippet}...\n\n"
+
+    rerank_prompt = f"""Bạn là Retrieval Relevance Judge chuyên về giáo dục đại học.
+
+Nhiệm vụ: Từ {len(candidates)} đoạn văn sau, hãy chọn đúng {top_k} đoạn chứa thông tin quan trọng và liên quan trực tiếp nhất tới mục giáo trình:
+
+Chương: "{chapter_label}"
+Mục: "{context_label}"
+
+Tiêu chí lựa chọn:
+1. ƯU TIÊN: Định nghĩa, cơ chế hoạt động, kiến thức cốt lõi, số liệu cụ thể.
+2. ƯU TIÊN: Độ sâu giải thích (explanatory richness), không chỉ nhắc tên khái niệm.
+3. LOẠI BỎ: Đoạn lạc đề, mơ hồ, trùng lặp với đoạn khác trong danh sách.
+4. LOẠI BỎ: Đoạn chỉ liệt kê tên mà không có nội dung thực chất.
+
+Danh sách đoạn văn:
+{passages_text}
+Trả về đúng một JSON array gồm {top_k} số nguyên là ID của các đoạn được chọn, xếp theo thứ tự ưu tiên giảm dần.
+Ví dụ: [3, 0, 12, 7, 2, 15, 9, 4]
+Chỉ trả về JSON array, không giải thích gì thêm."""
+
+    # ── Stage 2: Gọi GPT-4o-mini Reranker ──
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=api_key)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": rerank_prompt}],
+            temperature=0,          # Deterministic để reproducibility
+            max_tokens=100,
+        )
+        raw = response.choices[0].message.content.strip()
+
+        # Parse JSON array từ response
+        # Tìm dãy số nguyên trong response phòng khi GPT thêm text thừa
+        import re as _re
+        match = _re.search(r'\[[\d,\s]+\]', raw)
+        if not match:
+            raise ValueError(f"GPT không trả về JSON array hợp lệ: {raw}")
+
+        selected_ids = _json.loads(match.group())
+
+        # Lọc và sắp xếp candidates theo thứ tự GPT chọn
+        reranked = []
+        for sid in selected_ids:
+            if 0 <= sid < len(candidates):
+                reranked.append(candidates[sid])
+            if len(reranked) >= top_k:
+                break
+
+        # Fallback: nếu GPT không chọn đủ, bổ sung từ candidates gốc
+        if len(reranked) < top_k:
+            used_ids = {id(p) for p in reranked}
+            for p in candidates:
+                if id(p) not in used_ids:
+                    reranked.append(p)
+                if len(reranked) >= top_k:
+                    break
+
+        logger.info(
+            f"[LLMRerank] Stage1={len(candidates)} candidates → Stage2 GPT selected {len(reranked)} passages "
+            f"for '{context_label}'"
+        )
+        return reranked
+
+    except Exception as e:
+        logger.warning(
+            f"[LLMRerank] GPT reranking failed ('{e}'). Falling back to vector-only top-{top_k}."
+        )
+        return candidates[:top_k]

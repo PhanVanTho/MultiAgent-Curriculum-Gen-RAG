@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime
+from sqlalchemy.dialects.mysql import INTEGER as mysql_INTEGER, LONGTEXT
 
 db = SQLAlchemy()
 
@@ -10,6 +11,7 @@ class NguoiDung(UserMixin, db.Model):
     ten_dang_nhap = db.Column(db.String(150), unique=True, nullable=False)
     mat_khau = db.Column("mat_khau_hash", db.String(255), nullable=True)
     la_admin = db.Column(db.Boolean, default=False)
+    bi_khoa = db.Column(db.Boolean, default=False, nullable=False)
     email = db.Column(db.String(150), unique=True, nullable=True)
     google_id = db.Column(db.String(255), unique=True, nullable=True)
     ho_ten = db.Column(db.String(255), nullable=True)
@@ -24,11 +26,12 @@ class LichSuGiaoTrinh(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nguoi_dung_id = db.Column(db.Integer, db.ForeignKey('nguoi_dung.id'), nullable=True)
     chu_de = db.Column(db.String(255), nullable=False)
-    noi_dung_html = db.Column(db.Text) # LongText in MySQL
+    noi_dung_html = db.Column(db.Text().with_variant(LONGTEXT, "mysql")) # LongText in MySQL
     duong_dan_file = db.Column(db.String(255))
     do_dai_ky_tu = db.Column(db.Integer, default=0)
     ngay_tao = db.Column(db.DateTime, default=datetime.utcnow)
     da_xuat_file = db.Column(db.Boolean, default=False)
+    noi_bat = db.Column(db.Boolean, default=False, nullable=False)
 
     @property
     def ma_cv(self):
@@ -41,3 +44,43 @@ class LichSuGiaoTrinh(db.Model):
 
     def __repr__(self):
         return f'<GiaoTrinh {self.chu_de}>'
+
+class XacThucOTP(db.Model):
+    __tablename__ = 'xac_thuc_otp'
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(150), nullable=False)
+    ten_dang_nhap = db.Column(db.String(150), nullable=False)
+    mat_khau_hash = db.Column(db.String(255), nullable=False)
+    otp = db.Column(db.String(6), nullable=False)
+    ngay_tao = db.Column(db.DateTime, default=datetime.utcnow)
+    het_han = db.Column(db.DateTime, nullable=False)
+    da_dung = db.Column(db.Boolean, default=False)
+    google_id = db.Column(db.String(255), nullable=True)
+    ho_ten = db.Column(db.String(255), nullable=True)
+    anh_dai_dien = db.Column(db.String(500), nullable=True)
+    nguoi_dung_id = db.Column(db.Integer, db.ForeignKey('nguoi_dung.id', ondelete='CASCADE'), nullable=True)
+    nguoi_dung = db.relationship('NguoiDung', backref='otps', lazy=True)
+
+class GiaoDichNapToken(db.Model):
+    __tablename__ = 'giao_dich_nap_token'
+    id = db.Column(db.Integer, primary_key=True)
+    ma_giao_dich = db.Column(db.String(100), unique=True, nullable=False)
+    nguoi_dung_id = db.Column(db.Integer, db.ForeignKey('nguoi_dung.id'), nullable=False)
+    so_tien = db.Column(db.Integer, nullable=False)
+    so_token = db.Column(db.Integer, nullable=False)
+    phuong_thuc = db.Column(db.String(50), nullable=False)
+    trang_thai = db.Column(db.String(50), default='cho_thanh_toan')
+    ngay_tao = db.Column(db.DateTime, default=datetime.utcnow)
+    ngay_hoan_thanh = db.Column(db.DateTime, nullable=True)
+    goi_cuoc_id = db.Column(db.Integer, db.ForeignKey('goi_cuoc.id'), nullable=True)
+    goi_cuoc = db.relationship('GoiCuoc', backref='giao_dich', lazy=True)
+
+class GoiCuoc(db.Model):
+    __tablename__ = 'goi_cuoc'
+    id = db.Column(db.Integer, primary_key=True)
+    ten_goi = db.Column(db.String(100), nullable=False)
+    gia_tien = db.Column(db.Integer, nullable=False)
+    so_token = db.Column(db.Integer, nullable=False)
+    mo_ta = db.Column(db.String(500), nullable=True)
+    kich_hoat = db.Column(db.Boolean, default=True, nullable=False)
+

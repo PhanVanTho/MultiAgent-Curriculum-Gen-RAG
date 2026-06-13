@@ -232,7 +232,8 @@ def tao_dan_y(
    - NGƯỜI DÙNG ĐÃ YÊU CẦU DANH SÁCH CHƯƠNG CỐ ĐỊNH NHƯ SAU:
      {danh_sach_chuong}
    - BẮT BUỘC: Bạn PHẢI TẠO CẤU TRÚC ĐÚNG THEO DANH SÁCH CHƯƠNG NÀY (Đúng số lượng chương, đúng tên chương).
-   - Hãy phân bổ thông minh các thuật ngữ đã lọc vào các chương đã cố định ở trên."""
+   - RÀNG BUỘC PHÂN CẤP: Đối với mỗi chương, các tiêu đề cấp 2 (sections) và cấp 3 (subsections) được sinh ra BẮT BUỘC phải bám sát, phù hợp và liên quan trực tiếp đến ý nghĩa của tên chương đó.
+   - RÀNG BUỘC LỌC: Hãy CHỈ phân bổ thông minh các thuật ngữ thực sự phù hợp vào các chương. Loại bỏ ngay những thuật ngữ không liên quan đến tên chương được chỉ định, không gượng ép đưa vào."""
     else: # auto
         if quy_mo == "can_ban":
             cau_truc_prompt = f"""
@@ -269,6 +270,8 @@ NHIỆM VỤ:
 
 2. XÂY DỰNG CẤU TRÚC (Structure Building):{cau_truc_prompt}
    - QUY TẮC ĐẶT TÊN CHƯƠNG/MỤC: TUYỆT ĐỐI KHÔNG ĐƯỢC thêm số thứ tự, prefix (ví dụ: "1.", "1.1", "Chương 1", "Mục 2",...) vào tên. CHỈ trả về tiêu đề thuần văn bản (Ví dụ xuất: "Khái niệm AI" thay vì "1.1 Khái niệm AI").
+   - BẮT BUỘC (ANTI-HALLUCINATION): Toàn bộ Tên Chương và Tên Mục (sections, subsections) PHẢI được xây dựng TRỰC TIẾP dựa trên nội dung có thật trong dữ liệu tham khảo (CORPUS_SUMMARY).
+   - TUYỆT ĐỐI KHÔNG sáng tạo thêm, bịa đặt thêm, hoặc đoán thêm các chương/mục không có trong nguồn. Nếu một chủ đề không có trong corpus, KHÔNG được phép đưa vào dàn ý.
 
 3. CRITICAL JSON FORMATTING RULES:
    - Return valid JSON only. Ensure proper escaping.

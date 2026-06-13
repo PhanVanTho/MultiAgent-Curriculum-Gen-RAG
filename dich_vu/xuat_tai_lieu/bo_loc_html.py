@@ -17,8 +17,14 @@ def clean_for_reportlab(html_text):
     if not html_text:
         return ""
 
+    # 0. Selective unescape of supported tags only (e.g. span class="citation-apa", a, b, i, u, sup, sub, br)
+    # This prevents unescaping &lt; and &gt; for math and code operators (like generics List<string> or a < b),
+    # but allows BeautifulSoup to parse and unwrap supported tags correctly.
+    pattern = r'&lt;(\/?(?:span|a|b|i|u|sup|sub|br)(?:\s+[^&]*?)?)&gt;'
+    html_text = re.sub(pattern, lambda m: f"<{m.group(1)}>", str(html_text), flags=re.IGNORECASE)
+
     # 1. Khởi tạo BeautifulSoup để normalize HTML
-    soup = BeautifulSoup(str(html_text), "html.parser")
+    soup = BeautifulSoup(html_text, "html.parser")
 
     # 2. Security: Loại bỏ hoàn toàn script và style
     for script_or_style in soup(["script", "style"]):
@@ -70,8 +76,6 @@ def clean_for_reportlab(html_text):
     clean_html = str(soup)
 
     # 6. Unicode & Entity Fix (Enterprise Final Touch)
-    # Giải mã &nbsp;, &quot;...
-    clean_html = html.unescape(clean_html)
     # Thay thế \xa0 (non-breaking space) bằng dấu cách thường để ReportLab không lỗi font
     clean_html = clean_html.replace("\xa0", " ")
     

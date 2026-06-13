@@ -460,6 +460,120 @@
             justify-content: center;
             text-align: center;
         }
+        .lang-btn {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            color: #475569;
+            cursor: pointer;
+            font-size: 0.82rem;
+            font-weight: 700;
+            padding: 5px 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.2s;
+            margin-right: 15px;
+            margin-left: auto;
+        }
+        .lang-btn:hover { background: #e2e8f0; }
+        .top-header { display: flex; align-items: center; justify-content: flex-end; }
+
+        /* Mobile nav toggle button */
+        .mobile-nav-toggle {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            cursor: pointer;
+            color: var(--text-dark);
+            font-size: 1.25rem;
+            transition: all 0.2s;
+        }
+        .mobile-nav-toggle:hover {
+            background: #f1f5f9;
+        }
+
+        /* Sidebar backdrop for mobile */
+        .sidebar-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .sidebar-backdrop.show {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Mobile responsive layout adjustment */
+        @media (max-width: 991.98px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease-in-out;
+                box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0 !important;
+                padding: 1.5rem 1rem !important;
+            }
+            .mobile-nav-toggle {
+                display: flex !important;
+            }
+            /* Reposition top-header for mobile */
+            .top-header {
+                justify-content: space-between !important;
+                margin-bottom: 2rem !important;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+            .top-header > div:first-of-type {
+                width: 100%;
+                order: 2;
+                margin-top: 1rem;
+                margin-right: 0 !important;
+            }
+            .top-header .mobile-nav-toggle {
+                order: 1;
+            }
+            .top-header .lang-btn {
+                margin-left: auto !important;
+                margin-right: 0 !important;
+                order: 1;
+            }
+            .top-header .token-badge {
+                order: 1;
+            }
+            
+            /* Responsive Grid scaling */
+            .mode-grid {
+                grid-template-columns: 1fr !important;
+                gap: 0.75rem !important;
+            }
+            .scale-grid {
+                grid-template-columns: 1fr !important;
+                gap: 1rem !important;
+            }
+            .config-card {
+                padding: 1.5rem !important;
+                border-radius: var(--radius-lg) !important;
+            }
+            .chapter-input-grid {
+                grid-template-columns: 1fr !important;
+                gap: 0.75rem !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -470,11 +584,11 @@
             <span>Giáo Trình AI</span>
         </a>
         <ul class="nav-menu">
-            <li class="nav-item"><a href="/" class="nav-link"><i class="fa-solid fa-house"></i> Trang Chủ</a></li>
-            <li class="nav-item"><a href="{{ url_for('profile') }}" class="nav-link"><i class="fa-solid fa-grid-2"></i> Tổng Quan</a></li>
-            <li class="nav-item"><a href="{{ url_for('trang_tao_giao_trinh') }}" class="nav-link active"><i class="fa-solid fa-wand-magic-sparkles"></i> Tạo Giáo Trình</a></li>
-            <li class="nav-item"><a href="{{ url_for('buy_tokens') }}" class="nav-link"><i class="fa-solid fa-credit-card"></i> Gói Cước</a></li>
-            <li class="nav-item"><a href="{{ url_for('lich_su') }}" class="nav-link"><i class="fa-solid fa-clock-rotate-left"></i> Lịch Sử</a></li>
+            <li class="nav-item"><a href="/" class="nav-link"><i class="fa-solid fa-house"></i> <span data-i18n="nav.home">Trang Chủ</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('profile') }}" class="nav-link"><i class="fa-solid fa-grid-2"></i> <span data-i18n="nav.overview">Tổng Quan</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('trang_tao_giao_trinh') }}" class="nav-link active"><i class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n="nav.create">Tạo Giáo Trình</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('buy_tokens') }}" class="nav-link"><i class="fa-solid fa-credit-card"></i> <span data-i18n="nav.pricing">Gói Cước</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('lich_su') }}" class="nav-link"><i class="fa-solid fa-clock-rotate-left"></i> <span data-i18n="nav.history">Lịch Sử</span></a></li>
             
             {% if current_user.la_admin %}
             <div style="margin: 1.5rem 0 0.5rem 1rem; font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Admin</div>
@@ -490,23 +604,29 @@
             </li>
             {% endif %}
         </ul>
-        <a href="{{ url_for('logout') }}" class="logout-link"><i class="fa-solid fa-right-from-bracket"></i> Đăng Xuất</a>
+        <a href="{{ url_for('logout') }}" class="logout-link"><i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="nav.logout">Đăng Xuất</span></a>
     </aside>
 
     <main class="main-content">
         <div class="content-container">
             <header class="top-header">
-                <div>
-                    <h4 class="fw-bold mb-0">Thiết lập giáo trình</h4>
-                    <p class="text-muted small">Cấu hình các tham số để AI bắt đầu biên soạn.</p>
+                <button class="mobile-nav-toggle" id="sidebar-toggle" title="Menu">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div style="margin-right: auto;">
+                    <h4 class="fw-bold mb-0" data-i18n="app.title">Thiết lập giáo trình</h4>
+                    <p class="text-muted small" data-i18n="app.subtitle">Cấu hình các tham số để AI bắt đầu biên soạn.</p>
                 </div>
+                <button class="lang-btn" onclick="toggleLanguage()" title="Switch Language" style="margin-right: 15px;">
+                    <span id="langFlag">🇻🇳</span><span id="langLabel">VI</span>
+                </button>
                 <div class="token-badge">
                     <i class="fa-solid fa-coins text-warning"></i>
                     <span>
                         {% if current_user.la_admin %}
                             ∞ Unlimited
                         {% else %}
-                            {{ current_user.token }} Credits
+                            {{ current_user.token }} <span data-i18n="profile.credits">Credits</span>
                         {% endif %}
                     </span>
                 </div>
@@ -514,20 +634,20 @@
 
             <section class="config-card">
             <div class="header-section">
-                <h2><i class="fa-solid fa-sliders"></i> Thông số AI</h2>
+                <h2><i class="fa-solid fa-sliders"></i> <span data-i18n="app.ai_params">Thông số AI</span></h2>
             </div>
 
             <form id="tao-form" onsubmit="handleFormSubmit(event)">
                 <div class="input-group-custom">
-                    <label class="form-label">Chủ đề giáo trình</label>
-                    <input type="text" id="chu_de" class="form-control-custom" placeholder="Ví dụ: Cơ học lượng tử, Kinh tế vĩ mô nâng cao..." oninput="validateChuDe()" required>
+                    <label class="form-label" data-i18n="app.label_topic">Chủ đề giáo trình</label>
+                    <input type="text" id="chu_de" class="form-control-custom" placeholder="Ví dụ: Cơ học lượng tử, Kinh tế vĩ mô nâng cao..." data-i18n="app.placeholder_topic" maxlength="100" oninput="validateChuDe()" required>
                     <div id="chu_de_warning" class="text-danger mt-2" style="display: none; font-size: 0.8rem; font-weight: 500;"></div>
                 </div>
 
                 <div class="toggle-group">
                     <div class="row g-4">
                         <div class="col-md-4">
-                            <label class="form-label">Ngôn ngữ đầu ra</label>
+                            <label class="form-label" data-i18n="app.label_output_lang">Ngôn ngữ đầu ra</label>
                             <div class="chip-group" id="lang-group">
                                 <button type="button" class="chip-item active" onclick="setLang('vi', this)">Tiếng Việt</button>
                                 <button type="button" class="chip-item" onclick="setLang('en', this)">English</button>
@@ -535,25 +655,25 @@
                             <input type="hidden" id="ngon_ngu" value="vi">
                         </div>
                         <div class="col-md-8">
-                            <label class="form-label">Chế độ biên soạn</label>
+                            <label class="form-label" data-i18n="app.label_mode">Chế độ biên soạn</label>
                             <div class="mode-grid" id="mode-group">
                                 <div class="mode-card active" onclick="setMode('auto', this)">
                                     <span class="token-cost-badge">1 Token</span>
                                     <i class="fa-solid fa-wand-magic-sparkles mode-icon"></i>
                                     <span class="mode-title">Auto</span>
-                                    <span class="mode-desc">Tự động hoàn toàn</span>
+                                    <span class="mode-desc" data-i18n="app.mode_auto_desc">Tự động hoàn toàn</span>
                                 </div>
                                 <div class="mode-card" onclick="setMode('expert', this)">
                                     <span class="token-cost-badge">2 Tokens</span>
                                     <i class="fa-solid fa-shield-halved mode-icon"></i>
                                     <span class="mode-title">Expert</span>
-                                    <span class="mode-desc">Chuyên gia audit</span>
+                                    <span class="mode-desc" data-i18n="app.mode_expert_desc">Chuyên gia audit</span>
                                 </div>
                                 <div class="mode-card" onclick="setMode('creative', this)">
                                     <span class="token-cost-badge">3 Tokens</span>
                                     <i class="fa-solid fa-lightbulb mode-icon"></i>
                                     <span class="mode-title">Creative</span>
-                                    <span class="mode-desc">Sáng tạo nội dung</span>
+                                    <span class="mode-desc" data-i18n="app.mode_creative_desc">Sáng tạo nội dung</span>
                                 </div>
                             </div>
                             <input type="hidden" id="che_do" value="auto">
@@ -563,28 +683,28 @@
 
                 <div class="mb-5">
                     <div class="label-group">
-                        <label>QUY MÔ GIÁO TRÌNH</label>
-                        <div class="current-scale-val" id="scale-display">Tiêu chuẩn</div>
+                        <label data-i18n="app.scale">QUY MÔ GIÁO TRÌNH</label>
+                        <div class="current-scale-val" id="scale-display" data-i18n="app.scale_standard">Tiêu chuẩn</div>
                     </div>
                     
                     <div class="scale-grid">
                         <div class="scale-card" onclick="selectScale(1, 'Căn bản')" id="scale-1">
                             <div class="badge-check"><i class="fa-solid fa-check"></i></div>
                             <div class="icon"><i class="fa-solid fa-leaf"></i></div>
-                            <div class="title">Căn bản</div>
-                            <p class="info">~3-5 phút • 3-5 chương. Tóm tắt cốt lõi, nhanh chóng.</p>
+                            <div class="title" data-i18n="app.scale_basic">Căn bản</div>
+                            <p class="info" data-i18n="app.scale_basic_desc">~4-7 phút • 3-6 chương. Tóm tắt cốt lõi, nhanh chóng.</p>
                         </div>
                         <div class="scale-card active" onclick="selectScale(2, 'Tiêu chuẩn')" id="scale-2">
                             <div class="badge-check"><i class="fa-solid fa-check"></i></div>
                             <div class="icon"><i class="fa-solid fa-book-open"></i></div>
-                            <div class="title">Tiêu chuẩn</div>
-                            <p class="info">~5-8 phút • 7-10 chương. Chuẩn đại học, đầy đủ kiến thức.</p>
+                            <div class="title" data-i18n="app.scale_standard">Tiêu chuẩn</div>
+                            <p class="info" data-i18n="app.scale_standard_desc">~7-11 phút • 7-10 chương. Chuẩn đại học, đầy đủ kiến thức.</p>
                         </div>
                         <div class="scale-card" onclick="selectScale(3, 'Chuyên sâu')" id="scale-3">
                             <div class="badge-check"><i class="fa-solid fa-check"></i></div>
                             <div class="icon"><i class="fa-solid fa-graduation-cap"></i></div>
-                            <div class="title">Chuyên sâu</div>
-                            <p class="info">~10-15 phút • 12-15 chương. Nghiên cứu sâu, học thuật.</p>
+                            <div class="title" data-i18n="app.scale_advanced">Chuyên sâu</div>
+                            <p class="info" data-i18n="app.scale_advanced_desc">~11-16 phút • 11-14 chương. Nghiên cứu sâu, học thuật.</p>
                         </div>
                     </div>
                     <input type="hidden" name="quy_mo" id="quy_mo_input" value="2">
@@ -593,18 +713,18 @@
                 <!-- Cấu hình nâng cao -->
                 <div class="advanced-toggle" onclick="toggleAdvanced()">
                     <i class="fa-solid fa-gear" id="gear-icon"></i>
-                    <span>Cấu hình nâng cao (Tùy chọn số chương & Tên chương)</span>
+                    <span data-i18n="app.advanced_toggle">Cấu hình nâng cao (Tùy chọn số chương & Tên chương)</span>
                 </div>
 
                 <div class="advanced-panel" id="advanced-panel">
                     <div class="row align-items-center mb-4">
                         <div class="col-md-6">
-                            <label class="form-label fw-bold text-muted small mb-0">SỐ LƯỢNG CHƯƠNG TỰ CHỌN (1-15)</label>
+                            <label class="form-label fw-bold text-muted small mb-0" data-i18n="app.chapters_count">SỐ LƯỢNG CHƯƠNG TỰ CHỌN (1-15)</label>
                         </div>
                         <div class="col-md-6 d-flex align-items-center gap-2">
                             <input type="number" id="custom_so_chuong" name="custom_so_chuong" 
                                    class="form-control fw-bold text-center" min="1" max="15" 
-                                   placeholder="Chọn số chương..." 
+                                   placeholder="Chọn số chương..." data-i18n="app.chapters_hint"
                                    oninput="updateTimeEstimate(); generateChapterInputs()">
                             <div id="time-estimate-badge" class="badge bg-primary-light text-primary py-2 px-3 rounded-3" style="display: none; min-width: 110px; font-weight: 700;">
                                 <i class="fa-solid fa-clock me-1"></i> <span id="est-time"></span>
@@ -614,7 +734,7 @@
 
                     <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" id="manual_titles_toggle" onchange="generateChapterInputs()">
-                        <label class="form-check-label fw-600" for="manual_titles_toggle" style="font-size: 0.9rem;">Tôi muốn tự đặt tên cho từng chương</label>
+                        <label class="form-check-label fw-600" for="manual_titles_toggle" style="font-size: 0.9rem;" data-i18n="app.chapter_names">Tôi muốn tự đặt tên cho từng chương</label>
                     </div>
 
                     <div id="chapter-inputs-container" class="chapter-input-grid">
@@ -623,7 +743,7 @@
                 </div>
 
                 <button type="submit" class="btn-submit" id="submit-btn">
-                    <span>KHỞI TẠO GIÁO TRÌNH</span>
+                    <span data-i18n="app.btn_submit">KHỞI TẠO GIÁO TRÌNH</span>
                     <i class="fa-solid fa-bolt"></i>
                 </button>
             </form>
@@ -772,8 +892,9 @@
             if (count > 0) {
                 badge.style.display = 'flex';
                 badge.style.alignItems = 'center';
-                const min = Math.ceil(count * 0.7);
-                const max = Math.ceil(count * 1.1);
+                // ~1.1 phút/chương (min), ~1.5 phút/chương (max)
+                const min = Math.ceil(count * 1.1);
+                const max = Math.ceil(count * 1.5);
                 span.innerText = `~${min}-${max} phút`;
             } else {
                 badge.style.display = 'none';
@@ -879,12 +1000,67 @@
             }
         }
 
+        function validateChuDe() {
+            const input = document.getElementById('chu_de');
+            const warning = document.getElementById('chu_de_warning');
+            
+            // Cắt chuỗi nếu vượt quá 100 ký tự (đề phòng copy paste)
+            if (input.value.length > 100) {
+                input.value = input.value.slice(0, 100);
+            }
+            
+            const len = input.value.length;
+            if (len >= 100) {
+                warning.style.display = 'block';
+                warning.style.color = '#ef4444'; // Red color for max limit
+                warning.innerText = `Đã đạt giới hạn tối đa: 100/100 ký tự`;
+            } else if (len >= 85) {
+                warning.style.display = 'block';
+                warning.style.color = '#eab308'; // Orange/yellow color for warning
+                warning.innerText = `Độ dài chủ đề: ${len}/100 ký tự (Sắp đạt giới hạn)`;
+            } else {
+                warning.style.display = 'none';
+            }
+        }
+
+        function isGibberish(text) {
+            const txt = text.toLowerCase().trim();
+            const words = txt.split(/\s+/);
+            const vowels = "aeiouyàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ";
+            const consonants = "bcdfghjklmnpqrstvwxzđ";
+            
+            for (let word of words) {
+                let consecConsonants = 0;
+                let maxConsec = 0;
+                for (let char of word) {
+                    if (consonants.includes(char)) {
+                        consecConsonants++;
+                        if (consecConsonants > maxConsec) maxConsec = consecConsonants;
+                    } else {
+                        consecConsonants = 0;
+                    }
+                }
+                
+                if (maxConsec >= 6) return true;
+                
+                if (word.length > 5) {
+                    let vowelCount = 0;
+                    for (let char of word) {
+                        if (vowels.includes(char)) vowelCount++;
+                    }
+                    if (vowelCount === 0) return true;
+                    if (word.length > 8 && (vowelCount / word.length) < 0.15) return true;
+                }
+            }
+            return false;
+        }
+
         async function handleFormSubmit(e) {
             e.preventDefault();
             const btn = document.getElementById('submit-btn');
             const chuDe = document.getElementById('chu_de').value.trim();
             
-            // V33.5: Validation chủ đề (Tối thiểu 2 ký tự)
+            // V33.5: Validation chủ đề (Tối thiểu 2 ký tự, tối đa 100 ký tự)
             const hasLetters = /[a-zA-ZÀ-ỹ]/.test(chuDe); // Kiểm tra có ít nhất 1 chữ cái
             if (!chuDe || chuDe.length < 2 || !hasLetters) {
                 Swal.fire({
@@ -892,6 +1068,27 @@
                     title: 'Thông báo',
                     text: 'Hãy nhập đầy đủ tiêu đề để đạt được kết quả tốt nhất',
                     confirmButtonText: 'Tôi sẽ bổ sung',
+                    confirmButtonColor: '#059669'
+                });
+                return;
+            }
+            
+            if (isGibberish(chuDe)) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Thông báo',
+                    text: 'Chủ đề dường như được nhập ngẫu nhiên hoặc không có nghĩa. Vui lòng nhập chủ đề rõ ràng.',
+                    confirmButtonText: 'Tôi sẽ sửa lại',
+                    confirmButtonColor: '#059669'
+                });
+                return;
+            }
+            if (chuDe.length > 100) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Thông báo',
+                    text: 'Chủ đề giáo trình quá dài (tối đa 100 ký tự). Vui lòng rút gọn.',
+                    confirmButtonText: 'Tôi hiểu',
                     confirmButtonColor: '#059669'
                 });
                 return;
@@ -1137,5 +1334,28 @@
             }
         }
     </script>
+    <script>
+        // Sidebar toggle logic for mobile
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleBtn = document.getElementById('sidebar-toggle');
+            const sidebar = document.querySelector('.sidebar');
+            if (toggleBtn && sidebar) {
+                const backdrop = document.createElement('div');
+                backdrop.className = 'sidebar-backdrop';
+                document.body.appendChild(backdrop);
+
+                toggleBtn.addEventListener('click', function() {
+                    sidebar.classList.toggle('show');
+                    backdrop.classList.toggle('show');
+                });
+
+                backdrop.addEventListener('click', function() {
+                    sidebar.classList.remove('show');
+                    backdrop.classList.remove('show');
+                });
+            }
+        });
+    </script>
+    <script src="{{ url_for('static', filename='i18n.js') }}"></script>
 </body>
 </html>

@@ -48,6 +48,21 @@
             animation: pulse-dot 1.5s infinite ease-in-out;
             margin-right: 8px;
         }
+        .lang-btn {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            color: #475569;
+            cursor: pointer;
+            font-size: 0.82rem;
+            font-weight: 700;
+            padding: 5px 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.2s;
+        }
+        .lang-btn:hover { background: #e2e8f0; }
     </style>
 </head>
 
@@ -59,17 +74,30 @@
                 <span>Giáo Trình AI</span>
             </a>
             <div class="d-flex align-items-center gap-3">
+                <button class="lang-btn" onclick="toggleLanguage()" title="Switch Language" style="margin-right: 0;">
+                    <span id="langFlag">🇻🇳</span><span id="langLabel">VI</span>
+                </button>
                 <a href="{{ url_for('profile') }}" class="btn d-flex align-items-center" style="background: var(--bg-surface-1); border-radius: 10px; border: 1px solid var(--glass-border); padding: 5px 12px; text-decoration: none;">
-                    <i class="fa-solid fa-circle-user fs-5 text-primary me-2"></i>
+                    {% if current_user.anh_dai_dien %}
+                        {% if current_user.anh_dai_dien.startswith('http') %}
+                            <img src="{{ current_user.anh_dai_dien }}" alt="Avatar" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;" class="me-2">
+                        {% else %}
+                            <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.anh_dai_dien) }}" alt="Avatar" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;" class="me-2">
+                        {% endif %}
+                    {% else %}
+                        <div class="avatar-fallback me-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; border-radius: 50%; background: var(--primary, #10b981); color: white; font-weight: bold; font-size: 0.75rem;">
+                            {{ (current_user.ho_ten or current_user.ten_dang_nhap)[0] | upper }}
+                        </div>
+                    {% endif %}
                     <div class="text-start">
                         <div style="font-size: 0.6rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Token</div>
                         <div style="font-size: 0.9rem; color: var(--text-primary); font-weight: 700; line-height: 1;">{{ current_user.token }}</div>
                     </div>
                 </a>
                 <a href="{{ url_for('trang_tao_giao_trinh') }}" class="btn btn-primary btn-sm" id="btn-tao-moi">
-                    <i class="fa-solid fa-plus me-1"></i>Tạo mới
+                    <i class="fa-solid fa-plus me-1"></i><span data-i18n="history.create_btn">Tạo mới</span>
                 </a>
-                <a href="{{ url_for('logout') }}" class="btn btn-light btn-sm">Đăng xuất</a>
+                <a href="{{ url_for('logout') }}" class="btn btn-light btn-sm" data-i18n="nav.logout">Đăng xuất</a>
             </div>
         </div>
     </nav>
@@ -77,60 +105,124 @@
     <div class="container" style="max-width: 960px; padding-top: 2rem;">
         <div class="d-flex justify-content-between align-items-center mb-4 animate-fade-in-up">
             <div>
-                <div class="section-label">Tài liệu đã tạo</div>
+                <div class="section-label" data-i18n="history.label">Tài liệu đã tạo</div>
                 <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 1.6rem; font-weight: 700;">
-                    <i class="fa-solid fa-folder-open me-2" style="color: var(--primary);"></i>Lịch sử giáo trình
+                    <i class="fa-solid fa-folder-open me-2" style="color: var(--primary);"></i><span data-i18n="history.title">Lịch sử giáo trình</span>
                 </h2>
             </div>
-            <span class="badge bg-primary" style="font-size:0.78rem;">{{ history|length }} mục</span>
+            <span class="badge bg-primary" style="font-size:0.78rem;">{{ history|length }} <span data-i18n="history.badge_items">mục</span></span>
         </div>
 
-        <div class="row g-3">
-            {% if history %}
-            {% for item in history %}
-            <div class="col-md-6">
-                {% set delay_attr = 'style="animation-delay: ' ~ (loop.index0 * 0.04) ~ 's;"' %}
-                <div class="glass-card animate-fade-in-up" {{ delay_attr|safe }}>
-                    <div class="card-body p-4 d-flex flex-column" style="min-height: 180px;">
-                        <h5 class="fw-bold mb-2" style="color: var(--primary); font-size:1rem; line-height:1.3;">{{
-                            item.chu_de }}</h5>
-                        <div class="flex-grow-1" style="font-size:0.78rem; color: var(--text-dim);">
-                            <div class="mb-1"><i class="fa-regular fa-calendar me-1"></i> {{
-                                item.ngay_tao.strftime('%d/%m/%Y %H:%M') }}</div>
-                            <div><i class="fa-regular fa-file-lines me-1"></i> {% if item.do_dai_ky_tu > 0 %}{{ '{:,}'.format(item.do_dai_ky_tu) }} ký tự{% else %}—{% endif %}</div>
-                        </div>
-                        <div class="mt-3 pt-3 d-flex gap-2 flex-wrap"
-                            style="border-top: 1px solid var(--glass-border);">
-                            <a href="{{ url_for('hien_thi_lich_su', id=item.id) }}"
-                                class="btn btn-outline-primary btn-sm flex-grow-1">
-                                <i class="fa-solid fa-eye me-1"></i>Xem
-                            </a>
-                            {% if item.ma_cv %}
-                            <a href="{{ url_for('tai_file', loai='pdf', ma=item.ma_cv) }}"
-                                class="btn btn-danger btn-sm"><i class="fa-solid fa-file-pdf me-1"></i>PDF</a>
-                            <a href="{{ url_for('tai_file', loai='docx', ma=item.ma_cv) }}"
-                                class="btn btn-primary btn-sm"><i class="fa-solid fa-file-word me-1"></i>Word</a>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
+        <div class="glass-card p-0 overflow-hidden animate-fade-in-up" style="border-radius: var(--radius-lg);">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="color: var(--text-primary); background: transparent;">
+                    <thead style="background: rgba(var(--primary-rgb), 0.05); border-bottom: 1px solid var(--glass-border);">
+                        <tr>
+                            <th scope="col" style="padding: 1rem 1.5rem; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted);" data-i18n="history.col_topic">Chủ đề giáo trình</th>
+                            <th scope="col" style="padding: 1rem 1.5rem; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); width: 180px;" data-i18n="history.col_time">Thời gian</th>
+                            <th scope="col" style="padding: 1rem 1.5rem; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); width: 200px;" data-i18n="history.col_status">Trạng thái</th>
+                            <th scope="col" style="padding: 1rem 1.5rem; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); width: 220px; text-align: right;" data-i18n="history.col_action">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if history %}
+                        {% for item in history %}
+                        <tr style="border-bottom: 1px solid var(--glass-border); transition: background 0.2s;">
+                            <!-- Chủ đề -->
+                            <td style="padding: 1.2rem 1.5rem;">
+                                <div class="fw-bold" style="color: var(--primary); font-size: 0.95rem; max-width: 320px; word-wrap: break-word;">
+                                    {{ item.chu_de }}
+                                </div>
+                                {% if item.trang_thai == 'hoan_thanh' %}
+                                <div style="font-size: 0.75rem; color: var(--text-dim);" class="mt-1">
+                                    <i class="fa-regular fa-file-lines me-1"></i> {% if item.do_dai_ky_tu > 0 %}{{ '{:,}'.format(item.do_dai_ky_tu) }} <span data-i18n="history.char_count">ký tự</span>{% else %}—{% endif %}
+                                </div>
+                                {% elif item.trang_thai == 'dang_chay' %}
+                                <div style="font-size: 0.75rem; color: var(--primary);" class="mt-1">
+                                    <i class="fa-solid fa-spinner fa-spin me-1"></i> <span data-i18n="history.step_label">Bước</span>: {{ item.buoc }}
+                                </div>
+                                {% elif item.trang_thai == 'that_bai' %}
+                                <div style="font-size: 0.75rem; color: var(--danger); max-width: 320px; word-wrap: break-word;" class="mt-1">
+                                    <i class="fa-solid fa-circle-exclamation me-1"></i> <span data-i18n="history.error_label">Lỗi</span>: {{ item.loi }}
+                                </div>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Thời gian -->
+                            <td style="padding: 1.2rem 1.5rem; font-size: 0.85rem; color: var(--text-secondary);">
+                                <i class="fa-regular fa-calendar me-1"></i> {{ item.ngay_tao.strftime('%d/%m/%Y %H:%M') if item.ngay_tao else '—' }}
+                            </td>
+                            
+                            <!-- Trạng thái -->
+                            <td style="padding: 1.2rem 1.5rem;">
+                                {% if item.trang_thai == 'hoan_thanh' %}
+                                <span class="badge bg-success text-success bg-opacity-10 border border-success border-opacity-25 px-2 py-1" style="font-size: 0.75rem; border-radius: 6px;">
+                                    <i class="fa-solid fa-circle-check me-1"></i> <span data-i18n="history.done">Hoàn thành</span>
+                                </span>
+                                {% elif item.trang_thai == 'dang_chay' %}
+                                <div style="max-width: 150px;">
+                                    <span class="badge bg-warning text-warning bg-opacity-10 border border-warning border-opacity-25 px-2 py-1 mb-1" style="font-size: 0.75rem; border-radius: 6px;">
+                                        <i class="fa-solid fa-clock-rotate-left me-1"></i> <span data-i18n="history.processing">Đang chạy</span> ({{ item.tien_do }}%)
+                                    </span>
+                                    <div class="progress" style="height: 4px; border-radius: 2px;">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" role="progressbar" style="width: {{ item.tien_do }}%"></div>
+                                    </div>
+                                </div>
+                                {% elif item.trang_thai == 'that_bai' %}
+                                <span class="badge bg-danger text-danger bg-opacity-10 border border-danger border-opacity-25 px-2 py-1" style="font-size: 0.75rem; border-radius: 6px;">
+                                    <i class="fa-solid fa-circle-xmark me-1"></i> <span data-i18n="history.failed">Thất bại</span>
+                                </span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Hành động -->
+                            <td style="padding: 1.2rem 1.5rem; text-align: right;">
+                                <div class="d-flex justify-content-end gap-1 flex-wrap">
+                                    {% if item.trang_thai == 'hoan_thanh' %}
+                                    <a href="{{ url_for('hien_thi_lich_su', id=item.id) }}" class="btn btn-outline-primary btn-sm px-2">
+                                        <i class="fa-solid fa-eye"></i> <span data-i18n="history.view">Xem</span>
+                                    </a>
+                                    {% if item.ma_cv %}
+                                    <a href="{{ url_for('tai_file', loai='pdf', ma=item.ma_cv) }}" class="btn btn-danger btn-sm px-2">
+                                        <i class="fa-solid fa-file-pdf"></i> PDF
+                                    </a>
+                                    <a href="{{ url_for('tai_file', loai='docx', ma=item.ma_cv) }}" class="btn btn-primary btn-sm px-2">
+                                        <i class="fa-solid fa-file-word"></i> Word
+                                    </a>
+                                    {% endif %}
+                                    {% elif item.trang_thai == 'dang_chay' %}
+                                    <a href="{{ url_for('trang_tao_giao_trinh') }}" class="btn btn-outline-warning btn-sm px-2" data-i18n="history.btn_progress">
+                                        Tiến trình
+                                    </a>
+                                    <button onclick="huyJob('{{ item.ma_cv }}')" class="btn btn-outline-danger btn-sm px-2">
+                                        <i class="fa-solid fa-ban"></i> <span data-i18n="history.btn_cancel">Hủy</span>
+                                    </button>
+                                    {% elif item.trang_thai == 'that_bai' %}
+                                    <a href="{{ url_for('trang_tao_giao_trinh') }}" class="btn btn-outline-secondary btn-sm px-2" data-i18n="history.btn_retry">
+                                        Thử lại
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center py-5">
+                                <div style="font-size:3rem; margin-bottom:1rem; color: var(--text-dim);">
+                                    <i class="fa-solid fa-inbox"></i>
+                                </div>
+                                <h4 style="color: var(--text-secondary); font-family: 'Space Grotesk', sans-serif;" data-i18n="history.empty_title">Chưa có giáo trình nào!</h4>
+                                <p class="text-muted mb-4" data-i18n="history.empty_desc">Bạn chưa tạo giáo trình nào. Hãy bắt đầu ngay.</p>
+                                <a href="{{ url_for('trang_tao_giao_trinh') }}" class="btn btn-primary">
+                                    <i class="fa-solid fa-bolt me-2"></i><span data-i18n="history.empty_btn">Tạo giáo trình mới</span>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
             </div>
-            {% endfor %}
-            {% else %}
-            <div class="col-12">
-                <div class="glass-card text-center py-5 px-4 animate-fade-in-up">
-                    <div style="font-size:3rem; margin-bottom:1rem; color: var(--text-dim);">
-                        <i class="fa-solid fa-inbox"></i>
-                    </div>
-                    <h4 style="color: var(--text-secondary); font-family: 'Space Grotesk', sans-serif;">Chưa có giáo
-                        trình nào!</h4>
-                    <p class="text-muted mb-4">Bạn chưa tạo giáo trình nào. Hãy bắt đầu ngay.</p>
-                    <a href="{{ url_for('trang_tao_giao_trinh') }}" class="btn btn-primary">
-                        <i class="fa-solid fa-bolt me-2"></i>Tạo giáo trình mới
-                    </a>
-                </div>
-            </div>
-            {% endif %}
         </div>
     </div>
 
@@ -141,16 +233,16 @@
                 <div class="d-flex align-items-center">
                     <span class="pulse-dot"></span>
                     <div>
-                        <div class="fw-bold" style="font-size: 0.88rem; color: var(--text-primary);">
+                        <div class="fw-bold" style="font-size: 0.88rem; color: var(--text-primary);" data-i18n="history.active_creating">
                             Đang tạo giáo trình...
                         </div>
-                        <div id="banner-status" style="font-size: 0.78rem; color: var(--text-muted);">
+                        <div id="banner-status" style="font-size: 0.78rem; color: var(--text-muted);" data-i18n="history.active_processing">
                             Đang xử lý
                         </div>
                     </div>
                 </div>
                 <a href="{{ url_for('trang_tao_giao_trinh') }}" class="btn btn-primary btn-sm">
-                    <i class="fa-solid fa-arrow-left me-1"></i>Xem tiến trình
+                    <i class="fa-solid fa-arrow-left me-1"></i><span data-i18n="history.active_view_progress">Xem tiến trình</span>
                 </a>
             </div>
             <div class="progress">
@@ -161,12 +253,13 @@
 
     <footer class="footer" style="margin-bottom: 60px;">
         <div class="d-flex justify-content-center gap-4 mb-3">
-            <a href="#">Chính sách</a>
-            <a href="#">Điều khoản</a>
-            <a href="#">Hỗ trợ</a>
+            <a href="#" data-i18n="verify.policy">Chính sách</a>
+            <a href="#" data-i18n="verify.terms">Điều khoản</a>
+            <a href="#" data-i18n="verify.support">Hỗ trợ</a>
         </div>
-        <p>&copy; 2026 GIÁO TRÌNH AI — Hệ thống biên soạn giáo trình tự động</p>
+        <p data-i18n="footer.copy">&copy; 2026 GIÁO TRÌNH AI — Hệ thống biên soạn giáo trình tự động</p>
     </footer>
+    <script src="{{ url_for('static', filename='i18n.js') }}"></script>
 
     <script>
         // ── Active Job Detection ──
@@ -192,7 +285,9 @@
 
                     // Cập nhật nút "Tạo mới" → "Đang tạo..."
                     const title = localStorage.getItem(STORAGE_TITLE_KEY) || '';
-                    btnTaoMoi.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Đang tạo...';
+                    const lang = typeof getCurrentLang === 'function' ? getCurrentLang() : 'vi';
+                    const activeCreatingText = TRANSLATIONS['history.active_creating'] ? (TRANSLATIONS['history.active_creating'][lang] || 'Đang tạo...') : 'Đang tạo...';
+                    btnTaoMoi.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i>${activeCreatingText}`;
                     btnTaoMoi.classList.remove('btn-primary');
                     btnTaoMoi.classList.add('btn-warning');
 
@@ -210,7 +305,8 @@
                                 clearInterval(poll);
                                 localStorage.removeItem(STORAGE_KEY);
                                 localStorage.removeItem(STORAGE_TITLE_KEY);
-                                bannerStatus.innerText = 'Hoàn tất! Đang chuyển hướng...';
+                                const doneRedirectText = TRANSLATIONS['history.done_redirect'] ? (TRANSLATIONS['history.done_redirect'][lang] || 'Hoàn tất! Đang chuyển hướng...') : 'Hoàn tất! Đang chuyển hướng...';
+                                bannerStatus.innerText = doneRedirectText;
                                 bannerProgress.style.width = '100%';
                                 bannerProgress.classList.remove('progress-bar-striped', 'progress-bar-animated');
                                 bannerProgress.classList.add('bg-success');
@@ -220,7 +316,8 @@
                                 localStorage.removeItem(STORAGE_KEY);
                                 localStorage.removeItem(STORAGE_TITLE_KEY);
                                 banner.classList.remove('show');
-                                btnTaoMoi.innerHTML = '<i class="fa-solid fa-plus me-1"></i>Tạo mới';
+                                const emptyBtnText = TRANSLATIONS['history.empty_btn'] ? (TRANSLATIONS['history.empty_btn'][lang] || 'Tạo mới') : 'Tạo mới';
+                                btnTaoMoi.innerHTML = `<i class="fa-solid fa-plus me-1"></i>${emptyBtnText}`;
                                 btnTaoMoi.classList.remove('btn-warning');
                                 btnTaoMoi.classList.add('btn-primary');
                             } else {
@@ -244,6 +341,28 @@
                 // Lỗi mạng - bỏ qua
             }
         })();
+
+        async function huyJob(maCv) {
+            const lang = typeof getCurrentLang === 'function' ? getCurrentLang() : 'vi';
+            const confirmMsg = TRANSLATIONS['history.confirm_cancel'] ? (TRANSLATIONS['history.confirm_cancel'][lang] || 'Bạn có chắc chắn muốn hủy?') : 'Bạn có chắc chắn muốn hủy?';
+            if (confirm(confirmMsg)) {
+                try {
+                    const r = await fetch(`/huy/${maCv}`, { method: 'POST' });
+                    const data = await r.json();
+                    if (data.status === 'success') {
+                        const successMsg = TRANSLATIONS['history.cancel_success'] ? (TRANSLATIONS['history.cancel_success'][lang] || 'Đã gửi yêu cầu hủy thành công.') : 'Đã gửi yêu cầu hủy thành công.';
+                        alert(successMsg);
+                        window.location.reload();
+                    } else {
+                        const errorPrefix = TRANSLATIONS['history.error_prefix'] ? (TRANSLATIONS['history.error_prefix'][lang] || 'Lỗi: ') : 'Lỗi: ';
+                        alert(errorPrefix + data.message);
+                    }
+                } catch(e) {
+                    const errorMsg = lang === 'vi' ? 'Có lỗi kết nối xảy ra.' : 'A connection error occurred.';
+                    alert(errorMsg);
+                }
+            }
+        }
     </script>
 </body>
 

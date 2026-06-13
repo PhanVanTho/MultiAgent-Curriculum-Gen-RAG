@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gói cước & Token - Giáo Trình AI</title>
+    <title data-i18n="pricing.page_title">Gói cước & Token - Giáo Trình AI</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
@@ -60,7 +60,25 @@
         .top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; }
         .token-badge-top { background: #f1f5f9; padding: 6px 16px; border-radius: 100px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.9rem; color: #475569; }
         .user-profile-top { display: flex; align-items: center; gap: 12px; }
-        .avatar-circle { width: 40px; height: 40px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+        .avatar-circle { width: 40px; height: 40px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; overflow: hidden; }
+        .lang-btn {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            color: #475569;
+            cursor: pointer;
+            font-size: 0.82rem;
+            font-weight: 700;
+            padding: 5px 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.2s;
+            margin-right: 15px;
+            margin-left: auto;
+        }
+        .lang-btn:hover { background: #e2e8f0; }
+        .top-header { display: flex; align-items: center; justify-content: flex-end; }
 
         /* Pricing Page Specific */
         .pricing-header {
@@ -255,6 +273,92 @@
             right: 2rem;
             z-index: 2000;
         }
+        /* Mobile nav toggle button */
+        .mobile-nav-toggle {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            cursor: pointer;
+            color: var(--text-dark);
+            font-size: 1.25rem;
+            transition: all 0.2s;
+        }
+        .mobile-nav-toggle:hover {
+            background: #f1f5f9;
+        }
+
+        /* Sidebar backdrop for mobile */
+        .sidebar-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .sidebar-backdrop.show {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Mobile responsive layout adjustment */
+        @media (max-width: 991.98px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease-in-out;
+                box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0 !important;
+                padding: 1.5rem 1rem !important;
+            }
+            .mobile-nav-toggle {
+                display: flex !important;
+            }
+            /* Reposition top-header for mobile */
+            .top-header {
+                justify-content: space-between !important;
+                margin-bottom: 2rem !important;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+            .top-header .mobile-nav-toggle {
+                order: 1;
+            }
+            .top-header .token-badge-top {
+                order: 1;
+                margin-right: auto !important;
+                margin-left: 10px !important;
+            }
+            .top-header .lang-btn {
+                margin-left: auto !important;
+                margin-right: 0 !important;
+                order: 1;
+            }
+            .top-header .user-profile-top {
+                order: 1;
+            }
+            
+            /* Responsive Grid scaling */
+            .pricing-grid {
+                grid-template-columns: 1fr !important;
+                gap: 1.5rem !important;
+            }
+            .pricing-card {
+                padding: 2rem 1.5rem !important;
+                border-radius: var(--radius-lg) !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -265,27 +369,27 @@
             <span>Giáo Trình AI</span>
         </a>
         <ul class="nav-menu">
-            <li class="nav-item"><a href="/" class="nav-link"><i class="fa-solid fa-house"></i> Trang Chủ</a></li>
-            <li class="nav-item"><a href="{{ url_for('profile') }}" class="nav-link"><i class="fa-solid fa-grid-2"></i> Tổng Quan</a></li>
-            <li class="nav-item"><a href="{{ url_for('trang_tao_giao_trinh') }}" class="nav-link"><i class="fa-solid fa-wand-magic-sparkles"></i> Tạo Giáo Trình</a></li>
-            <li class="nav-item"><a href="{{ url_for('buy_tokens') }}" class="nav-link active"><i class="fa-solid fa-credit-card"></i> Gói Cước</a></li>
-            <li class="nav-item"><a href="{{ url_for('lich_su') }}" class="nav-link"><i class="fa-solid fa-clock-rotate-left"></i> Lịch Sử</a></li>
+            <li class="nav-item"><a href="/" class="nav-link"><i class="fa-solid fa-house"></i> <span data-i18n="nav.home">Trang Chủ</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('profile') }}" class="nav-link"><i class="fa-solid fa-grid-2"></i> <span data-i18n="nav.overview">Tổng Quan</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('trang_tao_giao_trinh') }}" class="nav-link"><i class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n="nav.create">Tạo Giáo Trình</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('buy_tokens') }}" class="nav-link active"><i class="fa-solid fa-credit-card"></i> <span data-i18n="nav.pricing">Gói Cước</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('lich_su') }}" class="nav-link"><i class="fa-solid fa-clock-rotate-left"></i> <span data-i18n="nav.history">Lịch Sử</span></a></li>
             
             {% if current_user.la_admin %}
             <div style="margin: 1.5rem 0 0.5rem 1rem; font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Admin</div>
             <li class="nav-item">
                 <a href="{{ url_for('admin_dashboard') }}" class="nav-link">
-                    <i class="fa-solid fa-chart-pie"></i> Dashboard Quản trị
+                    <i class="fa-solid fa-chart-pie"></i> <span data-i18n="nav.admin_dashboard">Dashboard Quản trị</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a href="{{ url_for('admin_dashboard') }}#history-section" class="nav-link">
-                    <i class="fa-solid fa-book-medical"></i> Quản lý giáo trình
+                    <i class="fa-solid fa-book-medical"></i> <span data-i18n="nav.admin_curriculums">Quản lý giáo trình</span>
                 </a>
             </li>
             {% endif %}
         </ul>
-        <a href="{{ url_for('logout') }}" class="logout-link"><i class="fa-solid fa-right-from-bracket"></i> Đăng Xuất</a>
+        <a href="{{ url_for('logout') }}" class="logout-link"><i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="nav.logout">Đăng Xuất</span></a>
     </aside>
 
     <div class="flashes">
@@ -304,121 +408,139 @@
     <!-- Main Content -->
     <main class="main-content">
         <header class="top-header">
-            <div class="token-badge-top">
+            <button class="mobile-nav-toggle" id="sidebar-toggle" title="Menu">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <div class="token-badge-top" style="margin-right: auto; margin-left: 0;">
                 <i class="fa-solid fa-coins text-warning"></i>
-                <span>{{ current_user.token }} Credits</span>
+                <span>{{ current_user.token }} <span data-i18n="profile.credits">Credits</span></span>
             </div>
-            <div class="user-profile-top">
+            <button class="lang-btn" onclick="toggleLanguage()" title="Switch Language">
+                <span id="langFlag">🇻🇳</span><span id="langLabel">VI</span>
+            </button>
+            <a href="{{ url_for('profile') }}" class="user-profile-top" style="text-decoration: none; color: inherit;" title="Hồ sơ cá nhân">
                 <div class="avatar-circle">
-                    {{ current_user.ten_dang_nhap[0] | upper }}
+                    {% if current_user.anh_dai_dien %}
+                        {% if current_user.anh_dai_dien.startswith('http') %}
+                            <img src="{{ current_user.anh_dai_dien }}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">
+                        {% else %}
+                            <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.anh_dai_dien) }}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">
+                        {% endif %}
+                    {% else %}
+                        {{ (current_user.ho_ten or current_user.ten_dang_nhap)[0] | upper }}
+                    {% endif %}
                 </div>
-            </div>
+            </a>
         </header>
 
         <section class="pricing-header">
-            <p>Chọn gói cước phù hợp với nhu cầu của bạn. Tỷ lệ quy đổi: 1.000 VND = 1 Token.<br>Nạp càng nhiều, ưu đãi càng lớn.</p>
+            <p data-i18n="pricing.desc">Chọn gói cước phù hợp với nhu cầu của bạn. Tỷ lệ quy đổi: 1.000 VND = 1 Token.<br>Nạp càng nhiều, ưu đãi càng lớn.</p>
         </section>
 
         <div class="pricing-grid">
-            <!-- Gói Khởi Đầu -->
+            {% for package in packages %}
             <div class="pricing-card">
-                <h3 class="package-name">Khởi đầu</h3>
+                <h3 class="package-name" data-i18n="{{ package.ten_goi }}">{{ package.ten_goi }}</h3>
                 <div class="price-box">
-                    <span class="price-value">20.000</span>
+                    <span class="price-value">{{ "{:,}".format(package.gia_tien) }}</span>
                     <span class="price-currency">VND</span>
                 </div>
-                <span class="token-receive">nhận 30 Token</span>
+                <span class="token-receive"><span data-i18n="pricing.receive_prefix">nhận</span> {{ package.so_token }} Token</span>
                 
                 <ul class="feature-list">
-                    <li class="feature-item"><i class="fa-solid fa-check"></i> Tạo giáo trình chuyên sâu</li>
-                    <li class="feature-item"><i class="fa-solid fa-check"></i> Tốc độ ưu tiên cao</li>
-                    <li class="feature-item"><i class="fa-solid fa-check"></i> Hỗ trợ 24/7</li>
+                    {% if package.mo_ta %}
+                        {% for desc in package.mo_ta.split(',') %}
+                            <li class="feature-item"><i class="fa-solid fa-check"></i> <span data-i18n="{{ desc.strip() }}">{{ desc.strip() }}</span></li>
+                        {% endfor %}
+                    {% else %}
+                        <li class="feature-item"><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feat_in_depth">Tạo giáo trình chuyên sâu</span></li>
+                        <li class="feature-item"><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feat_priority">Tốc độ ưu tiên cao</span></li>
+                        <li class="feature-item"><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feat_support">Hỗ trợ 24/7</span></li>
+                    {% endif %}
                 </ul>
 
-                <button type="button" class="btn-buy w-100" onclick="openPaymentModal('Khởi đầu', 20000, 30)">
-                    <i class="fa-solid fa-bolt-lightning"></i> Mua Ngay
+                <button type="button" class="btn-buy w-100" onclick="openPaymentModal('{{ package.ten_goi }}', {{ package.gia_tien }}, {{ package.so_token }}, {{ package.id }})">
+                    <i class="fa-solid fa-bolt-lightning"></i> <span data-i18n="pricing.buy_now">Mua Ngay</span>
                 </button>
             </div>
-
-            <!-- Gói Cơ Bản -->
-            <div class="pricing-card">
-                <h3 class="package-name">Cơ bản</h3>
-                <div class="price-box">
-                    <span class="price-value">60.000</span>
-                    <span class="price-currency">VND</span>
-                </div>
-                <span class="token-receive">nhận 100 Token</span>
-                
-                <ul class="feature-list">
-                    <li class="feature-item"><i class="fa-solid fa-check"></i> Tạo giáo trình chuyên sâu</li>
-                    <li class="feature-item"><i class="fa-solid fa-check"></i> Tốc độ ưu tiên cao</li>
-                    <li class="feature-item"><i class="fa-solid fa-check"></i> Hỗ trợ 24/7</li>
-                </ul>
-
-                <button type="button" class="btn-buy w-100" onclick="openPaymentModal('Cơ bản', 60000, 100)">
-                    <i class="fa-solid fa-bolt-lightning"></i> Mua Ngay
-                </button>
-            </div>
-
-            <!-- Gói Basic -->
-            <div class="pricing-card">
-                <h3 class="package-name">Trải nghiệm</h3>
-                <div class="price-box">
-                    <span class="price-value">5.000</span>
-                    <span class="price-currency">VND</span>
-                </div>
-                <span class="token-receive">nhận 5 Token</span>
-                
-                <ul class="feature-list">
-                    <li class="feature-item"><i class="fa-solid fa-check"></i> Tạo giáo trình chuyên sâu</li>
-                    <li class="feature-item"><i class="fa-solid fa-check"></i> Tốc độ ưu tiên cao</li>
-                    <li class="feature-item"><i class="fa-solid fa-check"></i> Hỗ trợ 24/7</li>
-                </ul>
-
-                <button type="button" class="btn-buy w-100" onclick="openPaymentModal('Trải nghiệm', 5000, 5)">
-                    <i class="fa-solid fa-bolt-lightning"></i> Mua Ngay
-                </button>
-            </div>
+            {% endfor %}
         </div>
     </main>
 
-    <!-- Payment Modal -->
     <div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title fw-bold">Thanh toán nạp Token</h5>
+                    <h5 class="modal-title fw-bold" data-i18n="pricing.modal_title">Thanh toán nạp Token</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="qr-frame">
-                        <img id="qr-image" src="" alt="VietQR">
+                    <div class="text-center mb-4">
+                        <img src="{{ url_for('static', filename='images/logo-vnpay.png') }}" alt="VNPAY" style="height: 50px; width: auto; object-fit: contain;">
                     </div>
                     
                     <div class="payment-info">
                         <div class="row">
                             <div class="col-6 mb-2">
-                                <div class="info-label">Số tiền</div>
+                                <div class="info-label" data-i18n="pricing.modal_amount">Số tiền cần thanh toán</div>
                                 <div id="modal-price" class="info-value">0 VND</div>
                             </div>
                             <div class="col-6 mb-2">
-                                <div class="info-label">Gói cước</div>
+                                <div class="info-label" data-i18n="pricing.modal_package">Gói cước</div>
                                 <div id="modal-package" class="info-value">-</div>
-                            </div>
-                            <div class="col-12">
-                                <div class="info-label">Nội dung chuyển khoản</div>
-                                <div id="modal-desc" class="info-value" style="color: #ef4444;">NAP TOKEN {{ current_user.ten_dang_nhap }}</div>
                             </div>
                         </div>
                     </div>
 
-                    <p class="small text-muted mb-4">Vui lòng quét mã QR để thanh toán. <br>Hệ thống sẽ cộng Token sau khi nhận được tiền.</p>
+                    <p class="small text-muted mb-4" data-i18n="pricing.modal_desc">Bạn sẽ được chuyển hướng sang cổng thanh toán VNPAY thử nghiệm (Sandbox) để thực hiện thanh toán an toàn.</p>
                     
-                    <form id="payment-form" action="{{ url_for('buy_tokens') }}" method="GET">
-                        <input type="hidden" name="amount" id="final-amount">
-                        <button type="submit" class="btn-confirm">
-                            <i class="fa-solid fa-check-circle me-2"></i>Tôi đã thanh toán thành công
+                    <form id="payment-form" action="/payment/create" method="POST">
+                        <input type="hidden" name="tokens" id="final-amount">
+                        <input type="hidden" name="price" id="final-price">
+                        <input type="hidden" name="package_name" id="final-package-name">
+                        <input type="hidden" name="goi_cuoc_id" id="final-package-id">
+                        
+                        <div class="mb-4 text-start">
+                            {% if cau_hinh.PAYMENT_VNPAY_ACTIVE and cau_hinh.PAYMENT_SEPAY_ACTIVE %}
+                                <label class="form-label fw-bold small text-muted text-uppercase" data-i18n="pricing.modal_method">Chọn phương thức thanh toán</label>
+                                
+                                <div class="form-check payment-method-card mb-2" style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 15px;">
+                                    <input class="form-check-input mt-2" type="radio" name="method" id="method-vnpay" value="VNPAY" checked>
+                                    <label class="form-check-label ms-2 d-flex align-items-center" for="method-vnpay" style="cursor: pointer; width: 100%;">
+                                        <img src="{{ url_for('static', filename='images/logo-vnpay.png') }}" alt="VNPAY" style="height: 24px; margin-right: 10px; object-fit: contain;">
+                                        <div>
+                                            <div class="fw-bold text-dark" data-i18n="pricing.method_vnpay_title">Thanh toán qua VNPAY</div>
+                                            <div class="small text-muted" data-i18n="pricing.method_vnpay_desc">Hỗ trợ thẻ ATM nội địa, QR Code</div>
+                                        </div>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check payment-method-card" style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 15px;">
+                                    <input class="form-check-input mt-2" type="radio" name="method" id="method-sepay" value="SEPAY">
+                                    <label class="form-check-label ms-2 d-flex align-items-center" for="method-sepay" style="cursor: pointer; width: 100%;">
+                                        <i class="fa-solid fa-building-columns fs-4 text-primary" style="margin-right: 12px; width: 24px; text-align: center;"></i>
+                                        <div>
+                                            <div class="fw-bold text-dark" data-i18n="pricing.method_sepay_title">Chuyển khoản Ngân hàng (Tự động)</div>
+                                            <div class="small text-muted" data-i18n="pricing.method_sepay_desc">Quét mã QR VietQR, duyệt tự động 24/7 qua SePay</div>
+                                        </div>
+                                    </label>
+                                </div>
+                            {% elif cau_hinh.PAYMENT_VNPAY_ACTIVE %}
+                                <input type="hidden" name="method" value="VNPAY">
+                                <div class="alert alert-info py-2 small mb-0"><span data-i18n="pricing.method_vnpay_title">Thanh toán qua VNPAY</span>.</div>
+                            {% elif cau_hinh.PAYMENT_SEPAY_ACTIVE %}
+                                <input type="hidden" name="method" value="SEPAY">
+                                <div class="alert alert-info py-2 small mb-0"><span data-i18n="pricing.method_sepay_title">Chuyển khoản Ngân hàng (Tự động)</span>.</div>
+                            {% else %}
+                                <div class="alert alert-danger py-2 small mb-0" data-i18n="pricing.no_method">Hiện tại không có dịch vụ thanh toán nào khả dụng. Vui lòng liên hệ Admin.</div>
+                            {% endif %}
+                        </div>
+
+                        {% if cau_hinh.PAYMENT_VNPAY_ACTIVE or cau_hinh.PAYMENT_SEPAY_ACTIVE %}
+                        <button type="submit" class="btn-confirm" style="background: #005baa; transition: background 0.3s;" data-i18n="pricing.modal_btn">
+                            <i class="fa-solid fa-credit-card me-2"></i>Tiến hành thanh toán
                         </button>
+                        {% endif %}
                     </form>
                 </div>
             </div>
@@ -426,26 +548,45 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='i18n.js') }}"></script>
     <script>
-        function openPaymentModal(packageName, price, tokens) {
-            const username = "{{ current_user.ten_dang_nhap }}";
-            const desc = `NAP TOKEN ${username}`;
-            
-            // Generate VietQR URL
-            // Format: https://img.vietqr.io/image/<BANK_ID>-<ACCOUNT_NO>-<TEMPLATE>.png?amount=<AMOUNT>&addInfo=<DESCRIPTION>&accountName=<NAME>
-            const bankId = "MB";
-            const accountNo = "0327152710";
-            const accountName = "PHAN VAN THO";
-            const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact.png?amount=${price}&addInfo=${encodeURIComponent(desc)}&accountName=${encodeURIComponent(accountName)}`;
-            
-            document.getElementById('qr-image').src = qrUrl;
+        function openPaymentModal(packageName, price, tokens, packageId) {
             document.getElementById('modal-price').innerText = price.toLocaleString('vi-VN') + ' VND';
-            document.getElementById('modal-package').innerText = packageName;
+            
+            const lang = typeof getCurrentLang === 'function' ? getCurrentLang() : 'vi';
+            const transName = (TRANSLATIONS[packageName] && TRANSLATIONS[packageName][lang]) || packageName;
+            document.getElementById('modal-package').innerText = transName;
+            
             document.getElementById('final-amount').value = tokens;
+            document.getElementById('final-price').value = price;
+            document.getElementById('final-package-name').value = packageName;
+            document.getElementById('final-package-id').value = packageId;
             
             const myModal = new bootstrap.Modal(document.getElementById('paymentModal'));
             myModal.show();
         }
+    </script>
+    <script>
+        // Sidebar toggle logic for mobile
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleBtn = document.getElementById('sidebar-toggle');
+            const sidebar = document.querySelector('.sidebar');
+            if (toggleBtn && sidebar) {
+                const backdrop = document.createElement('div');
+                backdrop.className = 'sidebar-backdrop';
+                document.body.appendChild(backdrop);
+
+                toggleBtn.addEventListener('click', function() {
+                    sidebar.classList.toggle('show');
+                    backdrop.classList.toggle('show');
+                });
+
+                backdrop.addEventListener('click', function() {
+                    sidebar.classList.remove('show');
+                    backdrop.classList.remove('show');
+                });
+            }
+        });
     </script>
 </body>
 </html>

@@ -1,0 +1,51 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}Tổng quan{% endblock %}
+
+{% block header_title %}<span data-i18n="admin.overview.title">Tổng quan hệ thống</span>{% endblock %}
+{% block header_subtitle %}<span data-i18n="admin.overview.subtitle">Thống kê hoạt động và dữ liệu tổng hợp.</span>{% endblock %}
+
+{% block content %}
+<!-- Stats -->
+<div class="row g-3 mb-2">
+    <div class="col-md-4">
+        <div class="admin-stat">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="stat-icon-sm" style="background: rgba(var(--primary-rgb), 0.1); color: var(--primary);">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+                <span class="stat-badge" data-i18n="admin.overview.status_active">Hoạt động</span>
+            </div>
+            <div class="stat-label" data-i18n="admin.overview.total_users">Tổng người dùng</div>
+            <div class="stat-num">{{ users|length }}</div>
+            <div class="accent-bar" style="background: var(--primary);"></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="admin-stat">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="stat-icon-sm" style="background: rgba(124, 58, 237, 0.08); color: #7c3aed;">
+                    <i class="fa-solid fa-book"></i>
+                </div>
+                <span class="stat-badge" style="color: #7c3aed; background: rgba(124,58,237,0.08);" data-i18n="showcase.alert_title">Tổng</span>
+            </div>
+            <div class="stat-label" data-i18n="admin.overview.total_curriculums">Giáo trình đã tạo</div>
+            <div class="stat-num">{{ history|length }}</div>
+            <div class="accent-bar" style="background: #7c3aed;"></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="admin-stat">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="stat-icon-sm" style="background: rgba(2, 132, 199, 0.08); color: #0284c7;">
+                    <i class="fa-solid fa-file-export"></i>
+                </div>
+                <span class="stat-badge" style="color: #0284c7; background: rgba(2,132,199,0.08);" data-i18n="admin.overview.total_files">File</span>
+            </div>
+            <div class="stat-label" data-i18n="admin.overview.total_files">File đã lưu</div>
+            <div class="stat-num">{{ history | selectattr("da_xuat_file") | list | length }}</div>
+            <div class="accent-bar" style="background: #0284c7;"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

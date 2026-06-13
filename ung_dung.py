@@ -21,7 +21,9 @@ except ImportError:
     _np = None
 
 def _json_safe_default(obj):
-    """Convert numpy types to native Python types for JSON serialization."""
+    """Convert numpy and datetime types to native Python types for JSON serialization."""
+    if isinstance(obj, datetime):
+        return obj.isoformat()
     if _np is not None:
         if isinstance(obj, _np.bool_):
             return bool(obj)
@@ -34,13 +36,46 @@ def _json_safe_default(obj):
     raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
 
 def is_valid_query(query):
-    # Cho phép chữ, số, khoảng trắng, tiếng Việt, dấu trừ, hai chấm, dấu phẩy, dấu chấm
-    pattern = r"^[\w\sÀ-ỹ\-:,\.]+$"
+    # Cho phép chữ, số, khoảng trắng, tiếng Việt, dấu trừ (hyphen, en-dash, em-dash), hai chấm, dấu phẩy, dấu chấm, ngoặc đơn, gạch chéo
+    pattern = r"^[\w\sÀ-ỹ\-–—:,\.\(\)/]+$"
     return re.match(pattern, query) is not None
+
+def is_gibberish(text):
+    text = text.lower().strip()
+    words = text.split()
+    
+    vowels = set("aeiouyàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ")
+    consonants = set("bcdfghjklmnpqrstvwxzđ")
+    
+    for word in words:
+        # Check consecutive consonants
+        consec_consonants = 0
+        max_consec = 0
+        for char in word:
+            if char in consonants:
+                consec_consonants += 1
+                if consec_consonants > max_consec:
+                    max_consec = consec_consonants
+            else:
+                consec_consonants = 0
+        
+        if max_consec >= 6:
+            return True
+            
+        if len(word) > 5:
+            word_vowels = sum(1 for char in word if char in vowels)
+            if word_vowels == 0:
+                return True
+            if len(word) > 8 and (word_vowels / len(word)) < 0.15:
+                return True
+                
+    return False
 
 def is_meaningful(query):
     # Cho phép 1 từ nhưng phải cấu thành từ ít nhất 2 ký tự (ví dụ: AI, IT)
-    return len(query.strip()) >= 2
+    if len(query.strip()) < 2:
+        return False
+    return not is_gibberish(query)
 # --- BỘ HÃM XUNG TOÀN CỤC (GLOBAL THROTTLING V23.1) ---
 OPENAI_SEMAPHORE = threading.BoundedSemaphore(6)
 TERMS_LOCK = threading.Lock()
@@ -76,12 +111,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 
 # --- NẠP CẤU HÌNH & DB ---
-load_dotenv()
+load_dotenv(override=True)
 from cau_hinh import CauHinh
-from mo_hinh import db, NguoiDung, LichSuGiaoTrinh
+from mo_hinh import db, NguoiDung, LichSuGiaoTrinh, XacThucOTP, GoiCuoc
 
 # --- SERVICE IMPORTS (V23.2 GLOBAL STABILIZATION) ---
-from dich_vu.vector_search import tim_kiem_vector, tao_vector_db
+from dich_vu.vector_search import tim_kiem_vector, tao_vector_db, tim_kiem_vector_with_llm_rerank
 from dich_vu.openai_da_buoc import (
     tao_dan_y as openai_tao_dan_y, 
     viet_noi_dung_chuong as openai_writer, 
@@ -116,8 +151,18 @@ from dich_vu.xuat_tai_lieu.markdown_parser import parse_markdown
 app = Flask(__name__, template_folder="templates", static_folder="static")
 app.jinja_env.filters['markdown'] = parse_markdown
 app.config["SECRET_KEY"] = CauHinh.KHOA_BI_MAT
-app.config["SQLALCHEMY_DATABASE_URI"] = f"mysql+pymysql://{os.getenv('DB_USER', 'root')}:{os.getenv('DB_PASS', '')}@{os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', '3306')}/{os.getenv('DB_NAME', 'giao_trinh_ai')}"
+db_uri = f"mysql+pymysql://{os.getenv('DB_USER', 'root')}:{os.getenv('DB_PASS', '')}@{os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', '3306')}/{os.getenv('DB_NAME', 'giao_trinh_ai')}"
+if os.getenv("DB_USE_SQLITE") == "True":
+    db_uri = "sqlite:///giao_trinh_ai.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = db_uri
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_recycle": 280,
+    "pool_pre_ping": True,
+    "connect_args": {
+        "connect_timeout": 5
+    },
+}
 
 db.init_app(app)
 login_manager = LoginManager()
@@ -127,7 +172,10 @@ login_manager.init_app(app)
 @login_manager.user_loader
 def load_user(user_id):
     # --- SQLAlchemy 2.0 Syntax (V24.6 Fix) ---
-    return db.session.get(NguoiDung, int(user_id))
+    user = db.session.get(NguoiDung, int(user_id))
+    if user and user.bi_khoa:
+        return None
+    return user
 
 def admin_required(f):
     @wraps(f)
@@ -142,7 +190,71 @@ def admin_required(f):
 CONG_VIEC = {}
 
 def seed_admin():
+    from sqlalchemy import inspect
     with app.app_context():
+        # Auto-migration for existing tables
+        try:
+            inspector = inspect(db.engine)
+            
+            # 1. Migrate 'lich_su_giao_trinh' columns
+            if 'lich_su_giao_trinh' in inspector.get_table_names():
+                cols = [c['name'] for c in inspector.get_columns('lich_su_giao_trinh')]
+                if 'noi_bat' not in cols:
+                    logger.info("Column 'noi_bat' is missing from 'lich_su_giao_trinh'. Adding...")
+                    db.session.execute(db.text("ALTER TABLE lich_su_giao_trinh ADD COLUMN noi_bat TINYINT(1) NOT NULL DEFAULT 0"))
+                    db.session.commit()
+                if 'do_dai_ky_tu' not in cols:
+                    logger.info("Column 'do_dai_ky_tu' is missing from 'lich_su_giao_trinh'. Adding...")
+                    db.session.execute(db.text("ALTER TABLE lich_su_giao_trinh ADD COLUMN do_dai_ky_tu INT DEFAULT 0"))
+                    db.session.commit()
+                if 'da_xuat_file' not in cols:
+                    logger.info("Column 'da_xuat_file' is missing from 'lich_su_giao_trinh'. Adding...")
+                    db.session.execute(db.text("ALTER TABLE lich_su_giao_trinh ADD COLUMN da_xuat_file TINYINT(1) DEFAULT 0"))
+                    db.session.commit()
+                if 'duong_dan_file' not in cols:
+                    logger.info("Column 'duong_dan_file' is missing from 'lich_su_giao_trinh'. Adding...")
+                    db.session.execute(db.text("ALTER TABLE lich_su_giao_trinh ADD COLUMN duong_dan_file VARCHAR(255)"))
+                    db.session.commit()
+                if 'mysql' in str(db.engine.url):
+                    logger.info("Ensuring 'noi_dung_html' column is LONGTEXT...")
+                    db.session.execute(db.text("ALTER TABLE lich_su_giao_trinh MODIFY COLUMN noi_dung_html LONGTEXT"))
+                    db.session.commit()
+
+            # 2. Migrate 'nguoi_dung' columns
+            if 'nguoi_dung' in inspector.get_table_names():
+                user_cols = [c['name'] for c in inspector.get_columns('nguoi_dung')]
+                if 'bi_khoa' not in user_cols:
+                    logger.info("Column 'bi_khoa' is missing from 'nguoi_dung'. Adding...")
+                    db.session.execute(db.text("ALTER TABLE nguoi_dung ADD COLUMN bi_khoa TINYINT(1) NOT NULL DEFAULT 0"))
+                    db.session.commit()
+                if 'email' not in user_cols:
+                    logger.info("Column 'email' is missing from 'nguoi_dung'. Adding...")
+                    db.session.execute(db.text("ALTER TABLE nguoi_dung ADD COLUMN email VARCHAR(150) NULL"))
+                    db.session.commit()
+                if 'google_id' not in user_cols:
+                    logger.info("Column 'google_id' is missing from 'nguoi_dung'. Adding...")
+                    db.session.execute(db.text("ALTER TABLE nguoi_dung ADD COLUMN google_id VARCHAR(255) NULL"))
+                    db.session.commit()
+                if 'ho_ten' not in user_cols:
+                    logger.info("Column 'ho_ten' is missing from 'nguoi_dung'. Adding...")
+                    db.session.execute(db.text("ALTER TABLE nguoi_dung ADD COLUMN ho_ten VARCHAR(255) NULL"))
+                    db.session.commit()
+                if 'anh_dai_dien' not in user_cols:
+                    logger.info("Column 'anh_dai_dien' is missing from 'nguoi_dung'. Adding...")
+                    db.session.execute(db.text("ALTER TABLE nguoi_dung ADD COLUMN anh_dai_dien VARCHAR(500) NULL"))
+                    db.session.commit()
+                if 'token' not in user_cols:
+                    logger.info("Column 'token' is missing from 'nguoi_dung'. Adding...")
+                    db.session.execute(db.text("ALTER TABLE nguoi_dung ADD COLUMN token INT DEFAULT 10"))
+                    db.session.commit()
+                if 'mysql' in str(db.engine.url):
+                    logger.info("Ensuring mat_khau_hash is nullable in MySQL...")
+                    db.session.execute(db.text("ALTER TABLE nguoi_dung MODIFY COLUMN mat_khau_hash VARCHAR(255) NULL DEFAULT NULL"))
+                    db.session.commit()
+        except Exception as e:
+            logger.error(f"Error during auto-migration: {e}")
+            db.session.rollback()
+
         db.create_all()
         admin = NguoiDung.query.filter_by(ten_dang_nhap="admin").first()
         if not admin:
@@ -151,6 +263,41 @@ def seed_admin():
             db.session.add(new_admin)
             db.session.commit()
             logger.info("Default admin seed complete.")
+        
+        # Seed default GoiCuoc packages if empty
+        try:
+            if GoiCuoc.query.count() == 0:
+                logger.info("Seeding default GoiCuoc packages...")
+                default_packages = [
+                    GoiCuoc(ten_goi="Trải nghiệm", gia_tien=10000, so_token=10, mo_ta="Tạo giáo trình chuyên sâu, Tốc độ ưu tiên cao, Hỗ trợ 24/7"),
+                    GoiCuoc(ten_goi="Khởi đầu", gia_tien=20000, so_token=30, mo_ta="Tạo giáo trình chuyên sâu, Tốc độ ưu tiên cao, Hỗ trợ 24/7"),
+                    GoiCuoc(ten_goi="Cơ bản", gia_tien=60000, so_token=100, mo_ta="Tạo giáo trình chuyên sâu, Tốc độ ưu tiên cao, Hỗ trợ 24/7")
+                ]
+                db.session.bulk_save_objects(default_packages)
+                db.session.commit()
+                logger.info("Default GoiCuoc seed complete.")
+        except Exception as e:
+            logger.error(f"Error seeding default GoiCuoc: {e}")
+            
+        # Seed dummy curriculum history if empty
+        try:
+            if LichSuGiaoTrinh.query.count() == 0:
+                logger.info("Seeding dummy curriculum history...")
+                admin = NguoiDung.query.filter_by(ten_dang_nhap="admin").first()
+                admin_id = admin.id if admin else None
+                dummy_curriculum = LichSuGiaoTrinh(
+                    nguoi_dung_id=admin_id,
+                    chu_de="Giáo trình Cơ học lượng tử cơ bản",
+                    noi_dung_html="<h1>Cơ học lượng tử</h1><p>Đây là nội dung thử nghiệm.</p>",
+                    duong_dan_file="du_lieu/pdf/dummy_uuid.pdf",
+                    do_dai_ky_tu=100,
+                    da_xuat_file=True
+                )
+                db.session.add(dummy_curriculum)
+                db.session.commit()
+                logger.info("Dummy curriculum seed complete.")
+        except Exception as e:
+            logger.error(f"Error seeding dummy curriculum: {e}")
 
 seed_admin()
 os.makedirs(CauHinh.THU_MUC_JSON, exist_ok=True)
@@ -204,6 +351,9 @@ def login():
         u = request.form.get("ten_dang_nhap"); p = request.form.get("mat_khau")
         user = NguoiDung.query.filter_by(ten_dang_nhap=u).first()
         if user and user.mat_khau and check_password_hash(user.mat_khau, p):
+            if user.bi_khoa:
+                flash("Tài khoản của bạn đã bị khóa bởi quản trị viên.", "danger")
+                return redirect(url_for("login"))
             login_user(user); flash("Đăng nhập thành công!", "success")
             cv_linked = _link_guest_curriculum(user)
             if cv_linked: return redirect(url_for("ket_qua", ma_cv=cv_linked))
@@ -226,20 +376,252 @@ def register():
         if NguoiDung.query.filter_by(email=email).first():
             flash("Email đã được sử dụng.", "danger"); return redirect(url_for("register"))
         
-        # Tạo user mới, liên kết Google nếu có pending data
-        new_user = NguoiDung(
-            ten_dang_nhap=u, 
-            mat_khau=generate_password_hash(p), 
+        # Sinh mã OTP ngẫu nhiên 6 chữ số
+        otp_code = "".join([str(random.randint(0, 9)) for _ in range(6)])
+        from datetime import timedelta
+        het_han = datetime.utcnow() + timedelta(minutes=5)
+        
+        # Hủy kích hoạt các OTP cũ chưa sử dụng của email này
+        XacThucOTP.query.filter_by(email=email, da_dung=False).update({"da_dung": True})
+        
+        # Lưu thông tin đăng ký tạm thời và mã OTP vào bảng xac_thuc_otp
+        otp_record = XacThucOTP(
             email=email,
+            ten_dang_nhap=u,
+            mat_khau_hash=generate_password_hash(p),
+            otp=otp_code,
+            het_han=het_han,
+            da_dung=False,
             google_id=google_info.get("google_id"),
             ho_ten=google_info.get("ho_ten", ""),
             anh_dai_dien=google_info.get("anh_dai_dien", "")
         )
-        db.session.add(new_user); db.session.commit()
-        session.pop("google_pending", None)  # Xóa pending data
-        flash("Đăng ký thành công!", "success"); return redirect(url_for("login"))
-    
+        db.session.add(otp_record)
+        db.session.commit()
+        
+        # Gửi OTP qua Email
+        from dich_vu.email_service import gui_email_otp
+        success, mail_msg = gui_email_otp(email, otp_code)
+        
+        if success:
+            flash("Mã xác thực OTP đã được gửi tới email của bạn.", "success")
+        else:
+            flash(mail_msg, "warning")
+            
+        session["pending_register_email"] = email
+        return redirect(url_for("verify_otp"))
+        
     return render_template("register.html", google_client_id=CauHinh.GOOGLE_CLIENT_ID, google_info=google_info)
+
+@app.route("/verify-otp", methods=["GET", "POST"])
+def verify_otp():
+    email = session.get("pending_register_email")
+    if not email:
+        flash("Vui lòng thực hiện đăng ký trước.", "danger")
+        return redirect(url_for("register"))
+        
+    if request.method == "POST":
+        entered_otp = request.form.get("otp", "").strip()
+        if not entered_otp:
+            flash("Vui lòng nhập mã OTP.", "danger")
+            return render_template("verify_otp.html", email=email)
+            
+        # Tìm bản ghi OTP mới nhất chưa sử dụng của email này
+        otp_record = XacThucOTP.query.filter_by(email=email, da_dung=False).order_by(XacThucOTP.id.desc()).first()
+        
+        if not otp_record:
+            flash("Không tìm thấy thông tin xác thực OTP. Vui lòng đăng ký lại.", "danger")
+            return redirect(url_for("register"))
+            
+        # Kiểm tra thời hạn hết hạn
+        if datetime.utcnow() > otp_record.het_han:
+            flash("Mã OTP đã hết hạn (hạn dùng 5 phút). Vui lòng đăng ký lại để nhận mã mới.", "danger")
+            return redirect(url_for("register"))
+            
+        # So khớp OTP
+        if otp_record.otp != entered_otp:
+            flash("Mã OTP không chính xác. Vui lòng thử lại.", "danger")
+            return render_template("verify_otp.html", email=email)
+            
+        # OTP chính xác -> Tạo tài khoản NguoiDung chính thức
+        # Kiểm tra lại xem username/email có bị ai đăng ký trước trong lúc chờ không
+        if NguoiDung.query.filter_by(ten_dang_nhap=otp_record.ten_dang_nhap).first():
+            flash("Tên đăng nhập đã bị sử dụng bởi người khác trong lúc chờ xác thực.", "danger")
+            return redirect(url_for("register"))
+        if NguoiDung.query.filter_by(email=otp_record.email).first():
+            flash("Email đã được đăng ký bởi người khác trong lúc chờ xác thực.", "danger")
+            return redirect(url_for("register"))
+            
+        new_user = NguoiDung(
+            ten_dang_nhap=otp_record.ten_dang_nhap,
+            mat_khau=otp_record.mat_khau_hash,
+            email=otp_record.email,
+            google_id=otp_record.google_id,
+            ho_ten=otp_record.ho_ten,
+            anh_dai_dien=otp_record.anh_dai_dien
+        )
+        
+        # Đánh dấu OTP đã dùng
+        otp_record.da_dung = True
+        db.session.add(new_user)
+        db.session.commit()
+        
+        # Xóa các thông tin tạm trong session
+        session.pop("google_pending", None)
+        session.pop("pending_register_email", None)
+        
+        flash("Đăng ký tài khoản thành công! Vui lòng đăng nhập.", "success")
+        return redirect(url_for("login"))
+        
+    return render_template("verify_otp.html", email=email)
+
+@app.route("/resend-otp")
+def resend_otp():
+    email = session.get("pending_register_email")
+    if not email:
+        flash("Vui lòng thực hiện đăng ký trước.", "danger")
+        return redirect(url_for("register"))
+        
+    # Lấy thông tin OTP chưa dùng gần nhất của email này để lấy username/mật khẩu
+    otp_record = XacThucOTP.query.filter_by(email=email, da_dung=False).order_by(XacThucOTP.id.desc()).first()
+    if not otp_record:
+        flash("Không tìm thấy yêu cầu đăng ký trước đó. Vui lòng đăng ký lại.", "danger")
+        return redirect(url_for("register"))
+        
+    # Tạo mã OTP mới
+    otp_code = "".join([str(random.randint(0, 9)) for _ in range(6)])
+    from datetime import timedelta
+    het_han = datetime.utcnow() + timedelta(minutes=5)
+    
+    # Cập nhật bản ghi cũ hoặc tạo bản ghi mới
+    otp_record.da_dung = True  # Vô hiệu hóa mã cũ
+    
+    new_otp_record = XacThucOTP(
+        email=email,
+        ten_dang_nhap=otp_record.ten_dang_nhap,
+        mat_khau_hash=otp_record.mat_khau_hash,
+        otp=otp_code,
+        het_han=het_han,
+        da_dung=False,
+        google_id=otp_record.google_id,
+        ho_ten=otp_record.ho_ten,
+        anh_dai_dien=otp_record.anh_dai_dien
+    )
+    db.session.add(new_otp_record)
+    db.session.commit()
+    
+    # Gửi lại email
+    from dich_vu.email_service import gui_email_otp
+    success, mail_msg = gui_email_otp(email, otp_code)
+    if success:
+        flash("Mã OTP mới đã được gửi lại tới email của bạn.", "success")
+    else:
+        flash(mail_msg, "warning")
+        
+    return redirect(url_for("verify_otp"))
+
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    if current_user.is_authenticated:
+        return redirect(url_for("trang_chu"))
+        
+    if request.method == "POST":
+        email = (request.form.get("email") or "").strip().lower()
+        if not email:
+            flash("Vui lòng nhập địa chỉ email.", "danger")
+            return redirect(url_for("forgot_password"))
+            
+        user = NguoiDung.query.filter_by(email=email).first()
+        if not user:
+            flash("Email không tồn tại trong hệ thống.", "danger")
+            return redirect(url_for("forgot_password"))
+            
+        # Sinh mã OTP 6 chữ số
+        otp_code = "".join([str(random.randint(0, 9)) for _ in range(6)])
+        from datetime import timedelta
+        het_han = datetime.utcnow() + timedelta(minutes=5)
+        
+        # Hủy OTP cũ của email này
+        XacThucOTP.query.filter_by(email=email, da_dung=False).update({"da_dung": True})
+        
+        otp_record = XacThucOTP(
+            email=email,
+            ten_dang_nhap=user.ten_dang_nhap,
+            mat_khau_hash="",
+            otp=otp_code,
+            het_han=het_han,
+            da_dung=False,
+            nguoi_dung_id=user.id
+        )
+        db.session.add(otp_record)
+        db.session.commit()
+        
+        from dich_vu.email_service import gui_email_otp
+        success, mail_msg = gui_email_otp(email, otp_code)
+        
+        if success:
+            session["pending_reset_email"] = email
+            flash("Mã xác thực OTP đã được gửi tới email của bạn. Vui lòng kiểm tra hộp thư.", "success")
+            return redirect(url_for("reset_password"))
+        else:
+            flash(f"Không thể gửi email OTP: {mail_msg}", "warning")
+            return redirect(url_for("forgot_password"))
+            
+    return render_template("forgot_password.html")
+
+@app.route("/reset-password", methods=["GET", "POST"])
+def reset_password():
+    if current_user.is_authenticated:
+        return redirect(url_for("trang_chu"))
+        
+    email = session.get("pending_reset_email")
+    if not email:
+        flash("Vui lòng gửi yêu cầu khôi phục mật khẩu trước.", "warning")
+        return redirect(url_for("forgot_password"))
+        
+    if request.method == "POST":
+        entered_otp = request.form.get("otp", "").strip()
+        mat_khau_moi = request.form.get("mat_khau_moi")
+        xac_nhan_mat_khau = request.form.get("xac_nhan_mat_khau_moi")
+        
+        if not entered_otp or not mat_khau_moi or not xac_nhan_mat_khau:
+            flash("Vui lòng điền đầy đủ các thông tin.", "danger")
+            return render_template("reset_password.html", email=email)
+            
+        if mat_khau_moi != xac_nhan_mat_khau:
+            flash("Mật khẩu mới không trùng khớp.", "danger")
+            return render_template("reset_password.html", email=email)
+            
+        otp_record = XacThucOTP.query.filter_by(email=email, da_dung=False).order_by(XacThucOTP.id.desc()).first()
+        
+        if not otp_record:
+            flash("Không tìm thấy thông tin xác thực OTP. Vui lòng yêu cầu lại.", "danger")
+            return redirect(url_for("forgot_password"))
+            
+        if datetime.utcnow() > otp_record.het_han:
+            flash("Mã OTP đã hết hạn (hạn dùng 5 phút). Vui lòng thử lại.", "danger")
+            return redirect(url_for("forgot_password"))
+            
+        if otp_record.otp != entered_otp:
+            flash("Mã OTP không chính xác. Vui lòng thử lại.", "danger")
+            return render_template("reset_password.html", email=email)
+            
+        # Cập nhật mật khẩu người dùng
+        user = NguoiDung.query.filter_by(email=email).first()
+        if not user:
+            flash("Người dùng không còn tồn tại.", "danger")
+            return redirect(url_for("forgot_password"))
+            
+        from werkzeug.security import generate_password_hash
+        user.mat_khau = generate_password_hash(mat_khau_moi)
+        otp_record.da_dung = True
+        db.session.commit()
+        
+        session.pop("pending_reset_email", None)
+        flash("Khôi phục mật khẩu thành công! Hãy đăng nhập bằng mật khẩu mới.", "success")
+        return redirect(url_for("login"))
+        
+    return render_template("reset_password.html", email=email)
 
 @app.route("/logout")
 @login_required
@@ -317,14 +699,20 @@ def auth_google():
             "redirect": url_for("register")
         }), 200
     else:
-        # Cập nhật thông tin avatar/tên nếu có thay đổi
-        if ho_ten and user.ho_ten != ho_ten:
+        # Chỉ tự động điền thông tin nếu chưa được thiết lập trước đó
+        if ho_ten and not user.ho_ten:
             user.ho_ten = ho_ten
-        if anh_dai_dien and user.anh_dai_dien != anh_dai_dien:
+        if anh_dai_dien and not user.anh_dai_dien:
             user.anh_dai_dien = anh_dai_dien
         db.session.commit()
     
     # Đăng nhập
+    if user.bi_khoa:
+        return jsonify({
+            "success": False,
+            "error": "Tài khoản của bạn đã bị khóa bởi quản trị viên."
+        }), 403
+        
     login_user(user)
     cv_linked = _link_guest_curriculum(user)
     
@@ -343,25 +731,60 @@ def auth_google():
 @app.route("/lich-su")
 @login_required
 def lich_su():
-    history = LichSuGiaoTrinh.query.filter_by(nguoi_dung_id=current_user.id).order_by(LichSuGiaoTrinh.ngay_tao.desc()).all()
-    return render_template("history.html", history=history)
+    # 1. Lấy lịch sử hoàn thành từ DB
+    completed = LichSuGiaoTrinh.query.filter_by(nguoi_dung_id=current_user.id).order_by(LichSuGiaoTrinh.ngay_tao.desc()).all()
+    
+    items = []
+    for item in completed:
+        items.append({
+            "loai": "completed",
+            "id": item.id,
+            "ma_cv": item.ma_cv,
+            "chu_de": item.chu_de,
+            "ngay_tao": item.ngay_tao or datetime.utcnow(),
+            "do_dai_ky_tu": item.do_dai_ky_tu or 0,
+            "trang_thai": "hoan_thanh"
+        })
+        
+    # 2. Lấy lịch sử đang chạy / lỗi từ bộ nhớ CONG_VIEC
+    for ma_cv, job in CONG_VIEC.items():
+        if job.get("user_id") == current_user.id:
+            # Bỏ qua nếu đã lưu trong DB
+            if any(x["ma_cv"] == ma_cv for x in items):
+                continue
+                
+            ngay_tao = job.get("ngay_tao", datetime.now())
+            items.append({
+                "loai": "active",
+                "id": None,
+                "ma_cv": ma_cv,
+                "chu_de": job.get("tieu_de", "Không rõ chủ đề"),
+                "ngay_tao": ngay_tao,
+                "do_dai_ky_tu": 0,
+                "trang_thai": job.get("trang_thai", "dang_chay"),
+                "tien_do": job.get("tien_do", 0),
+                "buoc": job.get("buoc", "Đang xử lý"),
+                "loi": job.get("loi", "")
+            })
+            
+    # Sắp xếp theo thời gian mới nhất lên đầu
+    items.sort(key=lambda x: x["ngay_tao"], reverse=True)
+    return render_template("history.html", history=items)
 
 @app.route("/san-pham")
 def san_pham():
     from mo_hinh import LichSuGiaoTrinh, db
     import os, json
     from cau_hinh import CauHinh
-    from sqlalchemy import func
+    from flask_login import current_user
     
-    subquery = db.session.query(
-        func.max(LichSuGiaoTrinh.id).label('max_id')
-    ).filter(LichSuGiaoTrinh.do_dai_ky_tu > 100).group_by(func.lower(LichSuGiaoTrinh.chu_de)).subquery()
+    # Chỉ cho phép Admin xem các giáo trình tùy chỉnh đã chọn trong hệ thống.
+    # Tài khoản không phải admin (hoặc khách) chỉ có quyền xem các giáo trình mẫu tĩnh.
+    is_admin = current_user.is_authenticated and current_user.la_admin
     
-    recent_items = LichSuGiaoTrinh.query.join(
-        subquery, LichSuGiaoTrinh.id == subquery.c.max_id
-    ).order_by(LichSuGiaoTrinh.ngay_tao.desc()).limit(15).all()
+    recent_items = LichSuGiaoTrinh.query.filter_by(noi_bat=True).order_by(LichSuGiaoTrinh.ngay_tao.desc()).all()
+    products = []
     
-    candidates = []
     for item in recent_items:
         chuong = 0
         trich_dan = 0
@@ -384,7 +807,7 @@ def san_pham():
         if trich_dan == 0: trich_dan = max(10, int(item.do_dai_ky_tu / 2000))
         if chinh_xac == 0: chinh_xac = 95.0 + (item.do_dai_ky_tu % 50) / 10.0
         
-        candidates.append({
+        products.append({
             "id": item.id,
             "chu_de": item.chu_de,
             "chuong": chuong,
@@ -394,17 +817,27 @@ def san_pham():
             "ngay_tao": item.ngay_tao.timestamp() if item.ngay_tao else 0
         })
         
-    candidates.sort(key=lambda x: (x['chinh_xac'], x['ngay_tao']), reverse=True)
-    products = candidates[:3]
+    products.sort(key=lambda x: (x['chinh_xac'], x['ngay_tao']), reverse=True)
+    
+    all_curriculums = []
+    if is_admin:
+        all_curriculums = LichSuGiaoTrinh.query.order_by(LichSuGiaoTrinh.ngay_tao.desc()).all()
         
-    return render_template("showcase.html", products=products)
+    return render_template("showcase.html", products=products, all_curriculums=all_curriculums)
 
 @app.route("/xem-san-pham/<int:id>")
 def xem_san_pham(id):
     from mo_hinh import LichSuGiaoTrinh
     import os, json
     from cau_hinh import CauHinh
+    from flask_login import current_user
+    
     item = db.get_or_404(LichSuGiaoTrinh, id)
+    
+    is_admin = current_user.is_authenticated and current_user.la_admin
+    if not is_admin and not item.noi_bat:
+        flash("Bạn không có quyền xem giáo trình này.", "danger")
+        return redirect(url_for("san_pham"))
     
     ma_cv = item.ma_cv
     if ma_cv:
@@ -463,7 +896,130 @@ def trang_tao_giao_trinh():
 def admin_dashboard():
     users = NguoiDung.query.all()
     history = LichSuGiaoTrinh.query.order_by(LichSuGiaoTrinh.ngay_tao.desc()).all()
-    return render_template("admin_dashboard.html", users=users, history=history)
+    return render_template(
+        "admin_overview.html",
+        users=users,
+        history=history,
+        current_section="overview"
+    )
+
+@app.route("/admin/users")
+@login_required
+@admin_required
+def admin_users():
+    users = NguoiDung.query.all()
+    return render_template(
+        "admin_users.html",
+        users=users,
+        current_section="users"
+    )
+
+@app.route("/admin/curriculums")
+@login_required
+@admin_required
+def admin_curriculums():
+    history = LichSuGiaoTrinh.query.order_by(LichSuGiaoTrinh.ngay_tao.desc()).all()
+    return render_template(
+        "admin_curriculums.html",
+        history=history,
+        current_section="curriculums"
+    )
+
+@app.route("/admin/curriculums/delete/<int:id>", methods=["POST"])
+@login_required
+@admin_required
+def admin_delete_curriculum(id):
+    try:
+        from mo_hinh import db, LichSuGiaoTrinh
+        import os
+        item = db.session.get(LichSuGiaoTrinh, id)
+        if item:
+            # Delete associated files if they exist
+            ma_cv = item.ma_cv
+            if ma_cv:
+                # File paths to delete
+                file_paths = [
+                    os.path.join(CauHinh.THU_MUC_JSON, f"{ma_cv}.json"),
+                    os.path.join(CauHinh.THU_MUC_JSON, f"{ma_cv}_plain.json"),
+                    os.path.join(CauHinh.THU_MUC_PDF, f"{ma_cv}.pdf"),
+                    os.path.join(CauHinh.THU_MUC_PDF, f"{ma_cv}_plain.pdf"),
+                    os.path.join(CauHinh.THU_MUC_DOCX, f"{ma_cv}.docx"),
+                    os.path.join(CauHinh.THU_MUC_DOCX, f"{ma_cv}_plain.docx")
+                ]
+                for p in file_paths:
+                    if os.path.exists(p):
+                        try:
+                            os.remove(p)
+                        except Exception as fe:
+                            logger.error(f"Error removing file {p}: {fe}")
+                            
+                # Delete from Azure Blob Storage if configured
+                try:
+                    from dich_vu.azure_blob import delete_from_blob
+                    delete_from_blob(f"json/{ma_cv}.json")
+                    delete_from_blob(f"json/{ma_cv}_plain.json")
+                    delete_from_blob(f"pdf/{ma_cv}.pdf")
+                    delete_from_blob(f"pdf/{ma_cv}_plain.pdf")
+                    delete_from_blob(f"docx/{ma_cv}.docx")
+                    delete_from_blob(f"docx/{ma_cv}_plain.docx")
+                except Exception as blob_err:
+                    logger.error(f"Error removing files from Azure Blob Storage: {blob_err}")
+            
+            db.session.delete(item)
+            db.session.commit()
+            return jsonify({"success": True, "message": "Xóa giáo trình thành công."})
+        return jsonify({"success": False, "error": "Không tìm thấy giáo trình."}), 404
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error deleting curriculum {id}: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/admin/curriculums/toggle-showcase/<int:id>", methods=["POST"])
+@login_required
+@admin_required
+def admin_toggle_showcase(id):
+    try:
+        from mo_hinh import db, LichSuGiaoTrinh
+        item = db.session.get(LichSuGiaoTrinh, id)
+        if not item:
+            return jsonify({"success": False, "error": "Không tìm thấy giáo trình."}), 404
+            
+        data = request.get_json() or {}
+        item.noi_bat = bool(data.get("noi_bat", False))
+        db.session.commit()
+        return jsonify({"success": True, "message": "Đã cập nhật trạng thái trưng bày thành công."})
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error toggling showcase for curriculum {id}: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/admin/settings")
+@login_required
+@admin_required
+def admin_settings():
+    def mask_key(key):
+        if not key:
+            return ""
+        key = key.strip()
+        if len(key) <= 10:
+            return "********"
+        return f"{key[:6]}...{key[-4:]}"
+        
+    masked_openai = mask_key(CauHinh.OPENAI_API_KEY)
+    masked_gemini_list = [mask_key(k) for k in CauHinh.GEMINI_API_KEYS if k]
+    masked_gemini = ", ".join(masked_gemini_list)
+    masked_vnpay_secret = mask_key(CauHinh.VNPAY_HASH_SECRET)
+    masked_sepay_key = mask_key(CauHinh.SEPAY_API_KEY)
+    
+    return render_template(
+        "admin_settings.html",
+        cau_hinh=CauHinh,
+        masked_openai=masked_openai,
+        masked_gemini=masked_gemini,
+        masked_vnpay_secret=masked_vnpay_secret,
+        masked_sepay_key=masked_sepay_key,
+        current_section="settings"
+    )
 
 @app.route("/admin/add_user", methods=["POST"])
 @login_required
@@ -480,7 +1036,182 @@ def admin_add_user():
             db.session.add(new_user)
             db.session.commit()
             flash("Thêm người dùng thành công.", "success")
-    return redirect(url_for("admin_dashboard"))
+    return redirect(url_for("admin_users"))
+
+@app.route("/admin/update_settings", methods=["POST"])
+@login_required
+@admin_required
+def admin_update_settings():
+    from dotenv import set_key
+    import os
+    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    
+    data = request.json
+    if not data:
+        return jsonify({"success": False, "error": "No data provided"})
+        
+    keys_to_update = [
+        "OPENAI_API_KEY", "OPENAI_MODEL", 
+        "GEMINI_API_KEYS", "GEMINI_MODEL", "GEMINI_MODEL_LITE",
+        "WRITER_MODEL", "SEARCH_MODEL", "SUPERVISOR_MODEL_LITE", "SUPERVISOR_MODEL_PRO",
+        "PAYMENT_VNPAY_ACTIVE", "PAYMENT_SEPAY_ACTIVE",
+        "VNPAY_TMN_CODE", "VNPAY_HASH_SECRET", "VNPAY_PAYMENT_URL", "VNPAY_RETURN_URL",
+        "SEPAY_API_KEY", "SEPAY_ACCOUNT_NUMBER", "SEPAY_BANK_BRAND", "SEPAY_WEB_NAME", "SEPAY_XOR_KEY"
+    ]
+    
+    def mask_key(key):
+        if not key:
+            return ""
+        key = key.strip()
+        if len(key) <= 10:
+            return "********"
+        return f"{key[:6]}...{key[-4:]}"
+        
+    try:
+        for key in keys_to_update:
+            if key in data:
+                new_val = str(data[key])
+                
+                # Check for masked keys
+                if key in ["OPENAI_API_KEY", "VNPAY_HASH_SECRET", "SEPAY_API_KEY"]:
+                    if "..." in new_val:
+                        # Keep original key
+                        continue
+                elif key == "GEMINI_API_KEYS":
+                    tokens = [t.strip() for t in new_val.split(",") if t.strip()]
+                    resolved_keys = []
+                    for t in tokens:
+                        if "..." in t:
+                            matched = None
+                            for orig in CauHinh.GEMINI_API_KEYS:
+                                if mask_key(orig) == t:
+                                    matched = orig
+                                    break
+                            if matched:
+                                resolved_keys.append(matched)
+                        else:
+                            resolved_keys.append(t)
+                    new_val = ", ".join(resolved_keys)
+                
+                # Write to .env
+                set_key(env_path, key, new_val)
+                
+                # Update in memory
+                if key == "GEMINI_API_KEYS":
+                    CauHinh.GEMINI_API_KEYS = [k.strip() for k in new_val.split(",") if k.strip()]
+                elif key in ["PAYMENT_VNPAY_ACTIVE", "PAYMENT_SEPAY_ACTIVE"]:
+                    setattr(CauHinh, key, new_val == "True")
+                elif key == "SEPAY_XOR_KEY":
+                    val = int(new_val, 16) if "0x" in new_val.lower() else int(new_val)
+                    setattr(CauHinh, key, val)
+                else:
+                    setattr(CauHinh, key, new_val)
+                    
+        return jsonify({"success": True})
+    except Exception as e:
+        logger.error(f"Lỗi cập nhật settings: {e}")
+        return jsonify({"success": False, "error": str(e)})
+
+# --- ADMIN BLOCK USER & DYNAMIC PACKAGES ---
+@app.route("/admin/toggle_block_user", methods=["POST"])
+@login_required
+@admin_required
+def admin_toggle_block_user():
+    data = request.json or {}
+    user_id = data.get("user_id")
+    if not user_id:
+        return jsonify({"success": False, "error": "Thiếu user_id"}), 400
+    
+    user = db.session.get(NguoiDung, int(user_id))
+    if not user:
+        return jsonify({"success": False, "error": "Không tìm thấy người dùng"}), 404
+        
+    if user.la_admin and user.id == current_user.id:
+        return jsonify({"success": False, "error": "Bạn không thể tự khóa tài khoản của chính mình!"}), 400
+        
+    user.bi_khoa = not user.bi_khoa
+    db.session.commit()
+    
+    action = "khóa" if user.bi_khoa else "mở khóa"
+    return jsonify({"success": True, "bi_khoa": user.bi_khoa, "message": f"Đã {action} tài khoản thành viên {user.ten_dang_nhap}!"})
+
+@app.route("/admin/packages", methods=["GET"])
+@login_required
+@admin_required
+def admin_packages():
+    packages = GoiCuoc.query.all()
+    return render_template("admin_packages.html", packages=packages, current_section="packages")
+
+@app.route("/admin/packages/save", methods=["POST"])
+@login_required
+@admin_required
+def admin_save_package():
+    try:
+        pkg_id = request.form.get("id")
+        ten_goi = request.form.get("ten_goi")
+        gia_tien = int(request.form.get("gia_tien", 0))
+        so_token = int(request.form.get("so_token", 0))
+        mo_ta = request.form.get("mo_ta", "")
+        kich_hoat = request.form.get("kich_hoat") == "on" or request.form.get("kich_hoat") == "true"
+        
+        if not ten_goi:
+            flash("Tên gói không được để trống.", "danger")
+            return redirect(url_for("admin_packages"))
+            
+        if pkg_id:
+            # Update existing
+            pkg = db.session.get(GoiCuoc, int(pkg_id))
+            if pkg:
+                pkg.ten_goi = ten_goi
+                pkg.gia_tien = gia_tien
+                pkg.so_token = so_token
+                pkg.mo_ta = mo_ta
+                pkg.kich_hoat = kich_hoat
+                flash(f"Cập nhật gói cước '{ten_goi}' thành công.", "success")
+        else:
+            # Create new
+            pkg = GoiCuoc(ten_goi=ten_goi, gia_tien=gia_tien, so_token=so_token, mo_ta=mo_ta, kich_hoat=kich_hoat)
+            db.session.add(pkg)
+            flash(f"Thêm gói cước mới '{ten_goi}' thành công.", "success")
+            
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Lỗi lưu gói cước: {e}")
+        flash(f"Lỗi: {str(e)}", "danger")
+        
+    return redirect(url_for("admin_packages"))
+
+@app.route("/admin/packages/delete/<int:id>", methods=["POST"])
+@login_required
+@admin_required
+def admin_delete_package(id):
+    try:
+        pkg = db.session.get(GoiCuoc, id)
+        if pkg:
+            db.session.delete(pkg)
+            db.session.commit()
+            return jsonify({"success": True, "message": "Xóa gói cước thành công."})
+        return jsonify({"success": False, "error": "Không tìm thấy gói cước."}), 404
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/admin/packages/toggle/<int:id>", methods=["POST"])
+@login_required
+@admin_required
+def admin_toggle_package(id):
+    try:
+        pkg = db.session.get(GoiCuoc, id)
+        if pkg:
+            pkg.kich_hoat = not pkg.kich_hoat
+            db.session.commit()
+            action = "kích hoạt" if pkg.kich_hoat else "hủy kích hoạt"
+            return jsonify({"success": True, "kich_hoat": pkg.kich_hoat, "message": f"Đã {action} gói cước {pkg.ten_goi}!"})
+        return jsonify({"success": False, "error": "Không tìm thấy gói cước."}), 404
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/lich-su/<int:id>")
 @login_required
@@ -493,6 +1224,14 @@ def hien_thi_lich_su(id):
     ma_cv = item.ma_cv
     if ma_cv:
         p_json = os.path.join(CauHinh.THU_MUC_JSON, f"{ma_cv}.json")
+        # Try downloading json file from Azure Blob Storage if it doesn't exist locally (V34+)
+        if not os.path.exists(p_json):
+            try:
+                from dich_vu.azure_blob import download_from_blob
+                download_from_blob(f"json/{ma_cv}.json", p_json)
+            except Exception as blob_err:
+                logger.error(f"Failed to download JSON file from Azure Blob Storage: {blob_err}")
+
         if os.path.exists(p_json):
             with open(p_json, 'r', encoding='utf-8') as f:
                 data = json.load(f)
@@ -536,26 +1275,345 @@ def hien_thi_lich_su(id):
 @login_required
 def profile():
     if request.method == "POST":
-        current_user.ho_ten = request.form.get("ho_ten")
-        current_user.email = request.form.get("email")
-        db.session.commit()
-        flash("Cập nhật thông tin thành công!", "success")
+        import os
+        import time
+        from werkzeug.utils import secure_filename
+        from werkzeug.security import generate_password_hash, check_password_hash
+
+        new_ho_ten = request.form.get("ho_ten")
+        new_email = (request.form.get("email") or "").strip().lower()
+        mat_khau_cu = request.form.get("mat_khau_cu")
+        mat_khau_moi = request.form.get("mat_khau_moi")
+        xac_nhan_mat_khau = request.form.get("xac_nhan_mat_khau_moi")
+        avatar_file = request.files.get("anh_dai_dien")
+        
+        profile_updated = False
+
+        # 1. Cập nhật họ tên
+        if new_ho_ten and new_ho_ten != current_user.ho_ten:
+            current_user.ho_ten = new_ho_ten
+            db.session.commit()
+            profile_updated = True
+            
+        # 2. Cập nhật ảnh đại diện
+        if avatar_file and avatar_file.filename != "":
+            filename = avatar_file.filename
+            ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+            if ext not in ["png", "jpg", "jpeg", "gif"]:
+                flash("Định dạng ảnh không hợp lệ (chỉ chấp nhận png, jpg, jpeg, gif).", "danger")
+                return redirect(url_for("profile"))
+                
+            new_filename = f"avatar_{current_user.id}_{int(time.time())}.{ext}"
+            upload_dir = os.path.join(app.root_path, "static", "uploads", "avatars")
+            os.makedirs(upload_dir, exist_ok=True)
+            upload_path = os.path.join(upload_dir, new_filename)
+            avatar_file.save(upload_path)
+            
+            # Xóa ảnh cũ
+            if current_user.anh_dai_dien and not current_user.anh_dai_dien.startswith("http"):
+                old_path = os.path.join(upload_dir, current_user.anh_dai_dien)
+                if os.path.exists(old_path):
+                    try:
+                        os.remove(old_path)
+                    except Exception as e:
+                        logger.error(f"Error removing old avatar: {e}")
+                        
+            current_user.anh_dai_dien = new_filename
+            db.session.commit()
+            profile_updated = True
+
+        # 3. Thay đổi mật khẩu
+        if mat_khau_moi:
+            if mat_khau_moi != xac_nhan_mat_khau:
+                flash("Mật khẩu mới không trùng khớp.", "danger")
+                return redirect(url_for("profile"))
+                
+            if current_user.mat_khau:
+                if not mat_khau_cu or not check_password_hash(current_user.mat_khau, mat_khau_cu):
+                    flash("Mật khẩu cũ không chính xác.", "danger")
+                    return redirect(url_for("profile"))
+                    
+            current_user.mat_khau = generate_password_hash(mat_khau_moi)
+            db.session.commit()
+            profile_updated = True
+
+        # 4. Thay đổi Email (luồng OTP)
+        if new_email and new_email != (current_user.email or "").strip().lower():
+            if NguoiDung.query.filter_by(email=new_email).first():
+                flash("Email này đã được sử dụng bởi tài khoản khác.", "danger")
+                return redirect(url_for("profile"))
+                
+            otp_code = "".join([str(random.randint(0, 9)) for _ in range(6)])
+            from datetime import timedelta
+            het_han = datetime.utcnow() + timedelta(minutes=5)
+            
+            XacThucOTP.query.filter_by(email=new_email, da_dung=False).update({"da_dung": True})
+            otp_record = XacThucOTP(
+                email=new_email,
+                ten_dang_nhap=current_user.ten_dang_nhap,
+                mat_khau_hash="",
+                otp=otp_code,
+                het_han=het_han,
+                da_dung=False,
+                nguoi_dung_id=current_user.id
+            )
+            db.session.add(otp_record)
+            db.session.commit()
+            
+            from dich_vu.email_service import gui_email_otp
+            success, mail_msg = gui_email_otp(new_email, otp_code)
+            
+            if success:
+                session["pending_new_email"] = new_email
+                flash("Mã xác thực OTP đã được gửi tới email mới của bạn. Vui lòng nhập mã để xác nhận thay đổi.", "success")
+                return redirect(url_for("verify_email_change"))
+            else:
+                flash(f"Không thể gửi email OTP: {mail_msg}", "warning")
+                return redirect(url_for("profile"))
+                
+        if profile_updated:
+            flash("Cập nhật thông tin thành công!", "success")
         return redirect(url_for("profile"))
     return render_template("profile.html")
+
+@app.route("/verify-email-change", methods=["GET", "POST"])
+@login_required
+def verify_email_change():
+    new_email = session.get("pending_new_email")
+    if not new_email:
+        flash("Không có yêu cầu thay đổi email nào đang chờ xử lý.", "warning")
+        return redirect(url_for("profile"))
+        
+    if request.method == "POST":
+        entered_otp = request.form.get("otp", "").strip()
+        if not entered_otp:
+            flash("Vui lòng nhập mã OTP.", "danger")
+            return render_template("verify_email_change.html", email=new_email)
+            
+        # Tìm mã OTP mới nhất của email mới này
+        otp_record = XacThucOTP.query.filter_by(email=new_email, da_dung=False).order_by(XacThucOTP.id.desc()).first()
+        
+        if not otp_record:
+            flash("Không tìm thấy thông tin xác thực OTP. Vui lòng thử lại.", "danger")
+            return redirect(url_for("profile"))
+            
+        # Kiểm tra thời hạn hết hạn
+        if datetime.utcnow() > otp_record.het_han:
+            flash("Mã OTP đã hết hạn (hạn dùng 5 phút). Vui lòng cập nhật lại email để nhận mã mới.", "danger")
+            return redirect(url_for("profile"))
+            
+        # So khớp OTP
+        if otp_record.otp != entered_otp:
+            flash("Mã OTP không chính xác. Vui lòng thử lại.", "danger")
+            return render_template("verify_email_change.html", email=new_email)
+            
+        # OTP chính xác -> Cập nhật email chính thức cho user
+        # Kiểm tra lại xem email có bị ai đăng ký trước trong lúc chờ không
+        if NguoiDung.query.filter_by(email=new_email).first():
+            flash("Email này đã bị người khác đăng ký trong lúc chờ xác thực.", "danger")
+            return redirect(url_for("profile"))
+            
+        current_user.email = new_email
+        otp_record.da_dung = True
+        db.session.commit()
+        
+        session.pop("pending_new_email", None)
+        flash("Thay đổi địa chỉ email thành công!", "success")
+        return redirect(url_for("profile"))
+        
+    return render_template("verify_email_change.html", email=new_email)
 
 @app.route("/buy-tokens")
 @login_required
 def buy_tokens():
-    amount = request.args.get("amount", type=int)
-    if amount:
-        # Thực hiện cộng token tương ứng với gói đã chọn
-        current_user.token += amount
-        db.session.commit()
-        flash(f"Đã nạp thành công {amount} tokens vào tài khoản!", "success")
-        return redirect(url_for("profile"))
+    # Hiển thị trang chọn gói cước
+    packages = GoiCuoc.query.filter_by(kich_hoat=True).all()
+    return render_template("pricing.html", cau_hinh=CauHinh, packages=packages)
+
+@app.post("/payment/create")
+@login_required
+def create_payment():
+    # Lấy dữ liệu từ form
+    tokens = request.form.get("tokens", type=int)
+    price = request.form.get("price", type=int)
+    package_name = request.form.get("package_name", "Gói cước")
+    method = request.form.get("method", "VNPAY")
+    goi_cuoc_id = request.form.get("goi_cuoc_id", type=int)
     
-    # Nếu không có tham số amount, hiển thị trang chọn gói cước
-    return render_template("pricing.html")
+    if not tokens or not price:
+        flash("Thông tin gói cước không hợp lệ.", "danger")
+        return redirect(url_for("buy_tokens"))
+        
+    # Tạo mã đơn hàng duy nhất (chỉ gồm chữ và số để tránh lỗi cổng thanh toán)
+    ma_giao_dich = str(uuid.uuid4())[:8] + datetime.now().strftime("%Y%m%d%H%M%S")
+    
+    # Lưu giao dịch vào DB với trạng thái 'cho_thanh_toan'
+    from mo_hinh import GiaoDichNapToken
+    giao_dich = GiaoDichNapToken(
+        ma_giao_dich=ma_giao_dich,
+        nguoi_dung_id=current_user.id,
+        so_tien=price,
+        so_token=tokens,
+        phuong_thuc=method,
+        trang_thai="cho_thanh_toan",
+        goi_cuoc_id=goi_cuoc_id
+    )
+    db.session.add(giao_dich)
+    db.session.commit()
+    
+    if method == "SEPAY":
+        return redirect(url_for("sepay_checkout", giao_dich_id=giao_dich.id))
+        
+    # Khởi tạo lớp VNPay
+    from dich_vu.vnpay import VNPay
+    vnp = VNPay(
+        tmn_code=CauHinh.VNPAY_TMN_CODE,
+        hash_secret=CauHinh.VNPAY_HASH_SECRET,
+        payment_url=CauHinh.VNPAY_PAYMENT_URL
+    )
+    
+    # Lấy IP người dùng (hoặc mặc định 127.0.0.1)
+    ip_addr = request.remote_addr or "127.0.0.1"
+    
+    # Tạo URL thanh toán
+    order_info = f"Nap {tokens} token cho tai khoan {current_user.ten_dang_nhap}"
+    payment_url = vnp.create_payment_url(
+        txn_ref=ma_giao_dich,
+        amount=price,
+        order_info=order_info,
+        return_url=CauHinh.VNPAY_RETURN_URL,
+        ip_addr=ip_addr
+    )
+    
+    # Chuyển hướng người dùng sang VNPAY
+    return redirect(payment_url)
+
+@app.route("/payment/sepay/<int:giao_dich_id>")
+@login_required
+def sepay_checkout(giao_dich_id):
+    from mo_hinh import GiaoDichNapToken
+    from dich_vu.sepay import encode_payment_id
+    
+    giao_dich = GiaoDichNapToken.query.get_or_404(giao_dich_id)
+    
+    if giao_dich.nguoi_dung_id != current_user.id or giao_dich.phuong_thuc != "SEPAY":
+        abort(403)
+        
+    if giao_dich.trang_thai != "cho_thanh_toan":
+        return redirect(url_for("buy_tokens"))
+        
+    hex_id = encode_payment_id(giao_dich.id)
+    transfer_content = f"{CauHinh.SEPAY_WEB_NAME}NAPTOKEN{hex_id}"
+    
+    return render_template("sepay_checkout.html", 
+                         giao_dich=giao_dich, 
+                         transfer_content=transfer_content,
+                         bank_brand=CauHinh.SEPAY_BANK_BRAND,
+                         account_number=CauHinh.SEPAY_ACCOUNT_NUMBER)
+
+@app.route("/api/payment/sepay/status/<int:giao_dich_id>")
+@login_required
+def sepay_status(giao_dich_id):
+    from mo_hinh import GiaoDichNapToken
+    from dich_vu.sepay import check_sepay_transactions
+    
+    giao_dich = GiaoDichNapToken.query.get_or_404(giao_dich_id)
+    
+    if giao_dich.nguoi_dung_id != current_user.id:
+        return jsonify({"status": "error", "message": "Unauthorized"}), 403
+        
+    if giao_dich.trang_thai == "thanh_cong":
+        return jsonify({"status": "completed"})
+        
+    if giao_dich.trang_thai == "cho_thanh_toan":
+        # Check SePay API
+        is_paid = check_sepay_transactions(giao_dich.id, giao_dich.so_tien)
+        if is_paid:
+            giao_dich.trang_thai = "thanh_cong"
+            giao_dich.ngay_hoan_thanh = datetime.now()
+            
+            # Add tokens to user
+            current_user.token += giao_dich.so_token
+            db.session.commit()
+            return jsonify({"status": "completed"})
+            
+    return jsonify({"status": "pending"})
+
+@app.route("/payment/callback")
+@login_required
+def payment_callback():
+    from dich_vu.vnpay import VNPay
+    from mo_hinh import GiaoDichNapToken
+    
+    # Lấy các tham số VNPAY trả về
+    vnp_params = request.args.to_dict()
+    
+    vnp = VNPay(
+        tmn_code=CauHinh.VNPAY_TMN_CODE,
+        hash_secret=CauHinh.VNPAY_HASH_SECRET,
+        payment_url=CauHinh.VNPAY_PAYMENT_URL
+    )
+    
+    # Xác thực chữ ký số
+    is_valid = vnp.verify_payment(vnp_params)
+    if not is_valid:
+        flash("Chữ ký giao dịch không hợp lệ hoặc dữ liệu bị can thiệp.", "danger")
+        return redirect(url_for("payment_failed", message="Chữ ký không hợp lệ"))
+        
+    # Lấy mã đơn hàng và mã phản hồi từ VNPAY
+    ma_giao_dich = vnp_params.get("vnp_TxnRef")
+    response_code = vnp_params.get("vnp_ResponseCode")
+    
+    # Tìm giao dịch trong DB
+    giao_dich = GiaoDichNapToken.query.filter_by(ma_giao_dich=ma_giao_dich).first()
+    if not giao_dich:
+        flash("Không tìm thấy thông tin giao dịch.", "danger")
+        return redirect(url_for("payment_failed", message="Không tìm thấy đơn hàng"))
+        
+    # Tránh xử lý trùng lặp giao dịch (Replay attack / double callback)
+    if giao_dich.trang_thai != "cho_thanh_toan":
+        if giao_dich.trang_thai == "thanh_cong":
+            return redirect(url_for("payment_success", ma_gd=ma_giao_dich))
+        else:
+            return redirect(url_for("payment_failed", message="Giao dịch đã được xử lý trước đó"))
+            
+    # Kiểm tra phản hồi thành công từ VNPAY (mã 00)
+    if response_code == "00":
+        # Cập nhật trạng thái đơn hàng
+        giao_dich.trang_thai = "thanh_cong"
+        giao_dich.ngay_hoan_thanh = datetime.now()
+        
+        # Cộng token cho người dùng
+        current_user.token += giao_dich.so_token
+        
+        db.session.commit()
+        flash(f"Nạp thành công {giao_dich.so_token} token!", "success")
+        return redirect(url_for("payment_success", ma_gd=ma_giao_dich))
+    else:
+        # Cập nhật trạng thái thất bại / hủy bỏ
+        giao_dich.trang_thai = "da_huy" if response_code == "24" else "that_bai"
+        giao_dich.ngay_hoan_thanh = datetime.now()
+        db.session.commit()
+        
+        err_msg = "Giao dịch không thành công hoặc đã bị hủy."
+        if response_code == "24":
+            err_msg = "Khách hàng hủy giao dịch."
+        flash(err_msg, "danger")
+        return redirect(url_for("payment_failed", message=err_msg))
+
+@app.route("/payment/success")
+@login_required
+def payment_success():
+    ma_gd = request.args.get("ma_gd")
+    from mo_hinh import GiaoDichNapToken
+    gd = GiaoDichNapToken.query.filter_by(ma_giao_dich=ma_gd, nguoi_dung_id=current_user.id).first()
+    return render_template("payment_success.html", giao_dich=gd)
+
+@app.route("/payment/failed")
+@login_required
+def payment_failed():
+    message = request.args.get("message", "Giao dịch thất bại")
+    return render_template("payment_failed.html", message=message)
 
 # -----------------------------------------------------------------------------
 from dich_vu.kiem_tra_cau_truc_json import (
@@ -579,22 +1637,22 @@ def mo_rong_du_lieu_chuong(ma_cv, title, chap_info):
 # --- CẤU HÌNH QUY MÔ DỰ ÁN (V17.0+ - Production Grade) ---
 CONFIG_QUY_MO = {
     "can_ban": {
-        "chapters": (3, 5),
+        "chapters": (3, 6),       # Căn bản: 3-6 chương
         "parallelism": 5,
         "soft_timeout": 40,
         "hard_timeout": 60,
         "retry": 2
     },
     "tieu_chuan": {
-        "chapters": (6, 10),
-        "parallelism": 6, 
+        "chapters": (7, 10),      # Tiêu chuẩn: 7-10 chương
+        "parallelism": 6,
         "soft_timeout": 50,
         "hard_timeout": 90,
         "retry": 2
     },
     "chuyen_sau": {
-        "chapters": (12, 16),
-        "parallelism": 8, 
+        "chapters": (11, 14),     # Chuyên sâu: 11-14 chương
+        "parallelism": 8,
         "soft_timeout": 60,
         "hard_timeout": 120,
         "retry": 3
@@ -602,17 +1660,19 @@ CONFIG_QUY_MO = {
 }
 
 def tinh_so_chuong(quy_mo, documents_count):
-    """Tính toán số chương thông minh dựa trên độ phủ tri thức (V17.0+)"""
+    """Tính số chương tối đa có thể theo dữ liệu cào được (Max-First Strategy)."""
     cfg = CONFIG_QUY_MO.get(quy_mo, CONFIG_QUY_MO["tieu_chuan"])
     min_c, max_c = cfg["chapters"]
-    
-    # Heuristic: Nếu quá ít tài liệu (<6) -> Không thể viết quá nhiều chương mà không ảo giác
-    if documents_count < 6: return min_c
-    # Nếu dồi dào (>15 tài liệu) -> Có thể viết kịch khung
-    if documents_count > 15: return max_c
-    
-    # Trung bình
-    return (min_c + max_c) // 2
+
+    # Ít dữ liệu (<6 tài liệu) → chỉ viết min để tránh ảo giác
+    if documents_count < 6:
+        return min_c
+    # Dữ liệu vừa (6-12) → 2/3 khoảng, nghiêng về max
+    if documents_count < 12:
+        return min_c + (max_c - min_c) * 2 // 3
+    # Dữ liệu dồi dào (>=12) → max để tận dụng tối đa
+    return max_c
+
 
 # Quota Guard cho Gemini Free Tier (V21.6: Already initialized at top)
 
@@ -636,6 +1696,7 @@ class PipelineContext:
         self.safety_class = safety_class
         self.ngon_ngu = ngon_ngu
         self.start_time = time.time()
+        self.prefetched_passages = {} # Cache cho Asynchronous Reranking (V35)
     
     @property
     def passages_db(self):
@@ -670,6 +1731,115 @@ class SectionTaxonomy:
             labels = ["FACTUAL"] # Default an toàn
         return labels
 
+# ─────────────────────────────────────────────────────────────────────────────
+# CITATION SAFETY NET (V35.1)
+# Quét từng đoạn trong nội dung sau khi AI viết xong.
+# Bất kỳ đoạn nào thiếu [ID] sẽ được tự động tra cứu vector và gắn citation phù hợp.
+# ─────────────────────────────────────────────────────────────────────────────
+def citation_safety_net(section_data: dict, passages: list, api_key: str) -> dict:
+    """
+    Hậu xử lý (Post-Processing): Quét và tự động gắn citation [ID]
+    cho các đoạn văn còn thiếu sau khi AI Writer hoàn thành.
+    - Chỉ xử lý đoạn >= 30 ký tự (đủ dài để là đoạn nội dung)
+    - Bỏ qua header (###), dòng trống, câu chuyển tiếp ngắn
+    - Tìm passage có cosine similarity cao nhất với đoạn văn cần patch
+    - Chỉ gắn nếu similarity >= 0.35 (tránh gắn citation sai ngữ nghĩa)
+    """
+    import re
+    import numpy as np
+    
+    if not passages or not section_data:
+        return section_data
+    
+    content = section_data.get("content", "")
+    if not content:
+        return section_data
+    
+    # Chuẩn bị vector pool từ passages đã có sẵn (không gọi API thêm)
+    valid_passages = [p for p in passages if "vector" in p and p.get("vector") is not None and p.get("id")]
+    if not valid_passages:
+        return section_data
+    
+    passage_vectors = np.array([p["vector"] for p in valid_passages])
+    
+    def _needs_citation(para: str) -> bool:
+        """Kiểm tra đoạn văn có cần gắn thêm citation không."""
+        stripped = para.strip()
+        if len(stripped) < 30:  # Quá ngắn -> bỏ qua
+            return False
+        if stripped.startswith("#"):  # Header markdown
+            return False
+        if re.search(r'\[\d+\]', stripped):  # Đã có citation
+            return False
+        if re.search(r'<sup class="citation">', stripped):  # APA format
+            return False
+        if re.search(r'<span class="citation-apa">', stripped):  # APA format v2
+            return False
+        return True
+    
+    try:
+        from dich_vu.embedding_pool import embedding_pool
+        from dich_vu.vector_search import _normalize
+        
+        lines = content.split("\n")
+        patched_lines = []
+        patched_count = 0
+        
+        in_review = False
+        for line in lines:
+            l_strip = line.strip()
+            # Detect review headers
+            if re.search(r'(###\s*)?\*{0,2}(Câu hỏi Ôn tập|Bài tập\s*[&＆]\s*Ôn tập|Review Questions)\*{0,2}', l_strip, re.IGNORECASE):
+                in_review = True
+                
+            if in_review:
+                # Strip any existing citation tags from the review questions line
+                cleaned_line = re.sub(r'\[fact\d+\]|\[\d+\]', '', line)
+                patched_lines.append(cleaned_line)
+                continue
+                
+            if not _needs_citation(line):
+                patched_lines.append(line)
+                continue
+            
+            # Tạo embedding cho đoạn cần kiểm tra
+            try:
+                model_name = getattr(CauHinh, "GEMINI_EMBEDDING_MODEL", "gemini-embedding-2")
+                embed_res = embedding_pool.embed_content(model_name=model_name, texts=[line[:500]], primary_provider="openai")
+                if not embed_res or len(embed_res) == 0:
+                    patched_lines.append(line)
+                    continue
+                
+                query_vec = _normalize(np.array(embed_res[0]))
+                scores = np.dot(passage_vectors, query_vec)
+                best_idx = int(np.argmax(scores))
+                best_score = float(scores[best_idx])
+                
+                # Ngưỡng tin cậy: chỉ gắn nếu đủ độ liên quan
+                if best_score >= 0.30:
+                    best_id = str(valid_passages[best_idx].get("id", ""))
+                    # Gắn citation vào cuối đoạn (trước dấu chấm cuối nếu có)
+                    stripped = line.rstrip()
+                    if stripped.endswith("."):
+                        patched_line = stripped[:-1] + f" [{best_id}]."
+                    else:
+                        patched_line = stripped + f" [{best_id}]"
+                    patched_lines.append(patched_line)
+                    patched_count += 1
+                else:
+                    patched_lines.append(line)
+            except Exception:
+                patched_lines.append(line)
+        
+        if patched_count > 0:
+            logger.info(f"[CitationNet] Đã tự động gắn {patched_count} citation còn thiếu cho mục '{section_data.get('title', '')}'.")
+            section_data["content"] = "\n".join(patched_lines)
+    
+    except Exception as e:
+        logger.warning(f"[CitationNet] Lỗi khi chạy Safety Net: {e}")
+    
+    return section_data
+
 def process_batch_sections_task(ctx, chap_title, batch_sections_info, mode):
     """Batch-task (V23.2): Biên soạn 3-5 mục cùng lúc để tối ưu API cost và latency."""
     from dich_vu.kiem_tra_cau_truc_json import safe_section_fix, safe_parse_json
@@ -682,12 +1852,22 @@ def process_batch_sections_task(ctx, chap_title, batch_sections_info, mode):
     
     for s_info in batch_sections_info:
         s_title = s_info.get("title", "Mục mới")
-        passages = tim_kiem_vector(
-            query=f"{chap_title} {s_title}", 
-            passages_db=ctx.passages_db, 
-            api_key=CauHinh.OPENAI_API_KEY, 
-            top_k=dynamic_top_k
-        )
+        
+        # Thử lấy từ Cache (Asynchronous Pre-fetching V35)
+        cache_key = (chap_title, s_title)
+        if hasattr(ctx, 'prefetched_passages') and cache_key in ctx.prefetched_passages:
+            passages = ctx.prefetched_passages[cache_key]
+        else:
+            # Fallback nếu RAM rỗng do lỗi
+            passages = tim_kiem_vector_with_llm_rerank(
+                query=f"{chap_title} {s_title}",
+                passages_db=ctx.passages_db,
+                api_key=CauHinh.OPENAI_API_KEY,
+                top_k=dynamic_top_k,
+                candidate_n=min(30, len(ctx.passages_db)),
+                chapter_title=chap_title,
+                section_title=s_title
+            )
         relevant_passages_list.append(passages)
     
     # 2. Gọi API Batch Writer
@@ -733,7 +1913,11 @@ def process_batch_sections_task(ctx, chap_title, batch_sections_info, mode):
                 
                 if found:
                     found["generation_mode"] = mode
-                    parsed_batch.append(safe_section_fix(found, s_title))
+                    fixed_sec = safe_section_fix(found, s_title)
+                    # V35.1: Citation Safety Net - Tự động gắn citation cho đoạn còn thiếu
+                    sec_passages = relevant_passages_list[i] if i < len(relevant_passages_list) else []
+                    fixed_sec = citation_safety_net(fixed_sec, sec_passages, CauHinh.OPENAI_API_KEY)
+                    parsed_batch.append(fixed_sec)
                     
                     # --- V39: DYNAMIC TERM EXTRACTION ---
                     new_terms = found.get("new_terms", [])
@@ -753,7 +1937,11 @@ def process_batch_sections_task(ctx, chap_title, batch_sections_info, mode):
                 else:
                     logger.warning(f"Section '{s_title}' missing in batch. Rescue triggered.")
                     sec_res = viet_rut_gon_rescue(ctx.tieu_de, s_title, relevant_passages_list[i], CauHinh.OPENAI_API_KEY)
-                    parsed_batch.append(safe_section_fix(safe_parse_json(sec_res["raw_text"]), s_title))
+                    rescue_fixed = safe_section_fix(safe_parse_json(sec_res["raw_text"]), s_title)
+                    # V35.1: Citation Safety Net cho rescue path
+                    sec_passages = relevant_passages_list[i] if i < len(relevant_passages_list) else []
+                    rescue_fixed = citation_safety_net(rescue_fixed, sec_passages, CauHinh.OPENAI_API_KEY)
+                    parsed_batch.append(rescue_fixed)
                         
     if not parsed_batch:
         for i, s_info in enumerate(batch_sections_info):
@@ -775,7 +1963,16 @@ def process_section_task(ctx, chap_title, sec_info, prev_summary, mode):
     from dich_vu.openai_da_buoc import viet_noi_dung_muc, viet_rut_gon_rescue
     
     sec_title = sec_info.get("title", "Mục mới")
-    relevant_passages = tim_kiem_vector(f"{chap_title} {sec_title}", ctx.passages_db, CauHinh.OPENAI_API_KEY, top_k=10)
+    # LLM Generative Reranking: Two-Stage Retrieval thay thế Bi-Encoder đơn thuần
+    relevant_passages = tim_kiem_vector_with_llm_rerank(
+        query=f"{chap_title} {sec_title}",
+        passages_db=ctx.passages_db,
+        api_key=CauHinh.OPENAI_API_KEY,
+        top_k=10,
+        candidate_n=min(30, len(ctx.passages_db)),
+        chapter_title=chap_title,
+        section_title=sec_title
+    )
     
     # 1. Agent 1 (The Writer)
     res = viet_noi_dung_muc(ctx.tieu_de, chap_title, sec_title, relevant_passages, CauHinh.OPENAI_API_KEY, mode=mode, quy_mo=ctx.quy_mo, semaphore=ctx.openai_semaphore, ngon_ngu=ctx.ngon_ngu)
@@ -936,7 +2133,16 @@ def rescue_with_gemini(ctx, chap_info, chap_title, chap_num, prefix, id_to_url=N
     
     for s_info in chap_info.get("sections", []):
         s_title = s_info.get("title", "Mục mới")
-        passages = tim_kiem_vector(f"{chap_title} {s_title}", ctx.passages_db, api_key=CauHinh.OPENAI_API_KEY, top_k=10)
+        # LLM Generative Reranking cho Gemini rescue path
+        passages = tim_kiem_vector_with_llm_rerank(
+            query=f"{chap_title} {s_title}",
+            passages_db=ctx.passages_db,
+            api_key=CauHinh.OPENAI_API_KEY,
+            top_k=10,
+            candidate_n=min(30, len(ctx.passages_db)),
+            chapter_title=chap_title,
+            section_title=s_title
+        )
         all_passages.extend(passages)
         
         # V22 Turbo Throttling
@@ -1037,14 +2243,41 @@ def tao_giao_trinh():
     tieu_de = (du_lieu.get("tieu_de") or du_lieu.get("title") or "").strip()
     if not tieu_de: return jsonify({"loi": "Thiếu tiêu đề."}), 400
     
-    if not is_valid_query(tieu_de) or not is_meaningful(tieu_de):
+    if len(tieu_de) > 100:
         return jsonify({
             "status": "INVALID_INPUT",
-            "loi": "Nội dung nhập không hợp lệ. Vui lòng nhập từ khóa rõ ràng, có ý nghĩa (chữ, số, không chứa ký tự lạ)."
+            "loi": "Chủ đề quá dài (tối đa 100 ký tự). Vui lòng rút ngắn chủ đề."
+        }), 400
+    
+    if not is_valid_query(tieu_de):
+        return jsonify({
+            "status": "INVALID_INPUT",
+            "loi": "Chủ đề chứa ký tự không hợp lệ. Vui lòng chỉ dùng chữ, số và dấu câu thông thường."
+        }), 400
+        
+    if not is_meaningful(tieu_de):
+        if is_gibberish(tieu_de):
+            return jsonify({
+                "status": "INVALID_INPUT",
+                "loi": "Chủ đề dường như được nhập ngẫu nhiên hoặc không có nghĩa. Vui lòng nhập chủ đề rõ ràng."
+            }), 400
+        return jsonify({
+            "status": "INVALID_INPUT",
+            "loi": "Chủ đề quá ngắn. Vui lòng nhập từ khóa có ý nghĩa từ 2 ký tự trở lên."
         }), 400
 
+    from flask_login import current_user
+    u_id = current_user.id if current_user.is_authenticated else None
+
     ma_cv = str(uuid.uuid4())
-    CONG_VIEC[ma_cv] = {"trang_thai": "dang_chay", "tien_do": 0, "tieu_de": tieu_de, "nhat_ky": []}
+    CONG_VIEC[ma_cv] = {
+        "trang_thai": "dang_chay", 
+        "tien_do": 0, 
+        "tieu_de": tieu_de, 
+        "nhat_ky": [],
+        "user_id": u_id,
+        "ngay_tao": datetime.now()
+    }
     
     # Lấy các tham số nâng cao (V31+)
     so_chuong_custom = du_lieu.get("so_chuong_custom")
@@ -1131,17 +2364,43 @@ def tao_giao_trinh():
                     ghi_nhat_ky(f"Chủ đề nhạy cảm. Đã chuyển sang phân tích học thuật: {ekre_query}")
                     logger.info(f"[SAFETY] Reframed: '{tieu_de}' → '{ekre_query}'")
 
-                # --- V37.2: OUTLINE RELEVANCE VALIDATOR (LLM Judge — Pre-Discovery) ---
-                # Chặn Topic-Outline Semantic Drift TRƯỚC KHI tốn tài nguyên Discovery
+                # --- V37.2: OUTLINE VALIDATION (Safety & Relevance) ---
                 if danh_sach_chuong and isinstance(danh_sach_chuong, list) and len(danh_sach_chuong) > 0:
                     try:
+                        _clean_chapters = [ch.strip() for ch in danh_sach_chuong if ch.strip()]
+                        
+                        # 1. Kiểm tra An toàn (SafetyRouter) chạy song song
+                        ghi_nhat_ky("🔍 Đang kiểm tra tính an toàn của danh sách chương tự chọn...")
+                        from concurrent.futures import ThreadPoolExecutor
+                        
+                        unsafe_chapters = []
+                        with ThreadPoolExecutor(max_workers=5) as executor:
+                            futures = {executor.submit(classify_topic, ch, CauHinh.OPENAI_API_KEY): ch for ch in _clean_chapters}
+                            for future in futures:
+                                ch_name = futures[future]
+                                try:
+                                    res = future.result()
+                                    if res.get("classification") == "BLOCK":
+                                        unsafe_chapters.append((ch_name, res.get("reason", "Nội dung vi phạm.")))
+                                except Exception as e:
+                                    logger.warning(f"[ChapterSafety] Error checking '{ch_name}': {e}")
+                        
+                        if unsafe_chapters:
+                            off_names = "\n".join([f"  • '{c[0]}' ({c[1]})" for c in unsafe_chapters])
+                            error_msg = f"⛔ Phát hiện tên chương chứa nội dung không an toàn:\n{off_names}\n\nVui lòng chỉnh sửa lại để tiếp tục."
+                            ghi_nhat_ky(f"❌ Phát hiện {len(unsafe_chapters)} chương vi phạm chính sách an toàn.")
+                            CONG_VIEC[ma_cv]["loi"] = error_msg
+                            CONG_VIEC[ma_cv]["trang_thai"] = "that_bai"
+                            CONG_VIEC[ma_cv]["loai_loi"] = "safety_block"
+                            return
+                        
+                        # 2. Kiểm tra Relevance (Topic-Outline Semantic Drift)
                         ghi_nhat_ky("🔍 Đang kiểm tra tên chương có phù hợp với chủ đề...")
                         from openai import OpenAI as _OAI_Validator
                         import json as _json_val
                         
                         _val_client = _OAI_Validator(api_key=CauHinh.OPENAI_API_KEY, max_retries=1)
                         
-                        _clean_chapters = [ch.strip() for ch in danh_sach_chuong if ch.strip()]
                         _val_prompt = f"""Bạn là trợ lý kiểm tra nội dung giáo trình.
 
 Chủ đề giáo trình: "{tieu_de}"
@@ -1205,8 +2464,9 @@ CHỈ trả về JSON array, KHÔNG giải thích."""
                     api_keys_list=CauHinh.GEMINI_API_KEYS,
                     quy_mo=quy_mo,
                     api_key_openai=CauHinh.OPENAI_API_KEY,
-                    original_topic=tieu_de,  # V8.1: Luôn truyền tên gốc để EKRE search Wikipedia chính xác
-                    chapter_hints=danh_sach_chuong  # V37: Inject custom chapter names as search queries
+                    original_topic=tieu_de,
+                    chapter_hints=danh_sach_chuong,
+                    ngon_ngu=ngon_ngu  # V44: Language-aware discovery
                 )
                 passages = ekre_res.get("passages", [])
                 candidates = ekre_res.get("candidates", {})
@@ -1684,49 +2944,89 @@ Trả về ONLY JSON: {{"topics": ["topic1", "topic2", "topic3", "topic4"]}}"""}
                 ghi_nhat_ky(f"Dàn ý hoàn tất: {len(raw_outline)} chương, {total_sections} mục con.")
                 logger.info(f"{prefix}: Outline created with {len(raw_outline)} chapters and {total_sections} sections.")
 
-                # --- 🚀 LEVEL 3 EXPANSION: Chapter-driven (V17.2 Hardened) ---
-                missing_chapter_topics = []
-                # Đọc an toàn list hiện tại
-                with PASSAGES_LOCK:
-                    current_db_snapshot = list(passages_db)
+                # --- 🚀 LEVEL 3 EXPANSION: Outline-Driven Iterative Retrieval (Gap-Filling V42) ---
+                from dich_vu.gap_filler import identify_knowledge_gaps, fill_knowledge_gaps
                 
-                if len(current_db_snapshot) < MAX_TOTAL_PASSAGES:
-                    for chap in raw_outline:
-                        title = chap.get("title", "")
-                        # tim_kiem_vector đã có snapshot nội bộ, không lo race
-                        hits = tim_kiem_vector(title, current_db_snapshot, api_key=CauHinh.OPENAI_API_KEY, top_k=2)
-                        if not hits or len(hits) < 1:
-                            logger.info(f"{prefix}: KB Gap detected for '{title}'. Adding to expansion queue.")
-                            missing_chapter_topics.append(title)
-                else:
-                    logger.info(f"{prefix}: KB Limit reached ({len(current_db_snapshot)}). Skipping expansion.")
-
-                if missing_chapter_topics:
-                    CONG_VIEC[ma_cv]["buoc"] = "Đang mở rộng kiến thức theo chương (Expansion)..."
-                    from dich_vu.lay_wikipedia import smart_search_crawl
-                    # Giới hạn crawl trong 5 docs để an toàn
-                    new_docs_raw = smart_search_crawl(missing_chapter_topics[:5])
+                check_cancel()
+                CONG_VIEC[ma_cv].update({"tien_do": 45, "buoc": "Đang kiểm toán lỗ hổng tri thức (Knowledge Gap-Filling)..."})
+                ghi_nhat_ky("Bắt đầu quét dàn ý để phát hiện lỗ hổng tri thức so với cơ sở dữ liệu.")
+                
+                # Quét lỗ hổng dựa trên từng section thay vì chỉ chapter
+                gaps = identify_knowledge_gaps(raw_outline, ctx.passages_db, CauHinh.OPENAI_API_KEY, ctx.tieu_de)
+                if gaps:
+                    ghi_nhat_ky(f"Phát hiện {len(gaps)} lỗ hổng tri thức. Đang kích hoạt tìm kiếm bù đắp...")
+                    # Gọi Gap Filler để cào thêm dữ liệu
+                    new_passages = fill_knowledge_gaps(gaps, ctx.api_keys_list, CauHinh.OPENAI_API_KEY, ctx.tieu_de)
                     
-                    if new_docs_raw:
+                    if new_passages:
+                        ghi_nhat_ky(f"Đang lập chỉ mục (Vectorizing) {len(new_passages)} đoạn văn bổ sung...")
                         try:
-                            # V21.6: Embedded docs with automatic ID assignment
-                            logger.info(f"{prefix}: Embedding {len(new_docs_raw)} new docs...")
-                            next_id = len(current_db_snapshot) + 1
-                            embedded_new = tao_vector_db(new_docs_raw, api_key=CauHinh.OPENAI_API_KEY, start_id=next_id)
+                            next_id = len(ctx.passages_db) + 1
+                            new_passages_db = tao_vector_db(new_passages, api_key=CauHinh.OPENAI_API_KEY, start_id=next_id)
                             
-                            if embedded_new:
-                                # 2. Thread-safe Append
+                            if new_passages_db:
+                                # Update thread-safe
                                 with PASSAGES_LOCK:
-                                    passages_db.extend(embedded_new)
-                                    global_map.update({p['id']: p for p in embedded_new})
-                                    ctx.passages_db = passages_db 
-                                
-                                logger.info(f"{prefix}: Added {len(embedded_new)} embedded docs to KB.")
+                                    current_db = list(ctx.passages_db)
+                                    current_db.extend(new_passages_db)
+                                    ctx.passages_db = current_db
+                                    
+                                    ctx.passages.extend(new_passages)
+                                    for p in new_passages_db:
+                                        ctx.global_map[str(p['id'])] = p
+                                        
+                                ghi_nhat_ky(f"Đã cập nhật Vector DB. Tổng cộng: {len(ctx.passages_db)} passages.")
                         except Exception as ex_embed:
-                            logger.error(f"{prefix}: Expansion embedding failed: {ex_embed}")
+                            logger.error(f"{prefix}: Gap Filler embedding failed: {ex_embed}")
+                            ghi_nhat_ky("Lỗi khi lập chỉ mục dữ liệu bù đắp.")
+                    else:
+                        ghi_nhat_ky("Không tìm thấy dữ liệu bù đắp hữu ích do Timeout hoặc lỗi nguồn.")
+                else:
+                    ghi_nhat_ky("Cơ sở dữ liệu đã phủ đủ chi tiết, không có lỗ hổng.")
 
                 # Bước 3: Biên soạn nội dung (V17.0+ Turbo Resilience)
                 check_cancel()
+                
+                # --- ASYNCHRONOUS PRE-FETCHING (V35) ---
+                ghi_nhat_ky("Đang phân tích tải Reranking (Asynchronous Pre-fetching)...")
+                from concurrent.futures import ThreadPoolExecutor, as_completed
+                from dich_vu.vector_search import tim_kiem_vector_with_llm_rerank
+                
+                all_sections = []
+                for chap in raw_outline:
+                    chap_t = chap.get("title", "")
+                    for sec in chap.get("sections", []):
+                        sec_t = sec.get("title", "") if isinstance(sec, dict) else sec
+                        all_sections.append((chap_t, sec_t))
+                
+                ghi_nhat_ky(f"[Batch Rerank] Đang tải tài liệu song song cho {len(all_sections)} mục (Max Workers: 5)...")
+                
+                def _prefetch_worker(chap_title, sec_title):
+                    try:
+                        dynamic_top_k = {"can_ban": 7, "tieu_chuan": 12, "chuyen_sau": 18}.get(ctx.quy_mo, 12)
+                        p = tim_kiem_vector_with_llm_rerank(
+                            query=f"{chap_title} {sec_title}",
+                            passages_db=ctx.passages_db,
+                            api_key=CauHinh.OPENAI_API_KEY,
+                            top_k=dynamic_top_k,
+                            candidate_n=min(30, len(ctx.passages_db)),
+                            chapter_title=chap_title,
+                            section_title=sec_title
+                        )
+                        return (chap_title, sec_title, p)
+                    except Exception as e:
+                        logger.error(f"[Prefetch Error] {chap_title} - {sec_title}: {e}")
+                        return (chap_title, sec_title, [])
+
+                ctx.prefetched_passages = {}
+                with ThreadPoolExecutor(max_workers=5) as pf_executor:
+                    pf_futures = [pf_executor.submit(_prefetch_worker, ct, st) for ct, st in all_sections]
+                    for f in as_completed(pf_futures):
+                        ct, st, p = f.result()
+                        ctx.prefetched_passages[(ct, st)] = p
+                
+                ghi_nhat_ky("Khâu lọc tài liệu hoàn tất. Bắt đầu đẩy vào AI Writer.")
+
                 CONG_VIEC[ma_cv].update({"tien_do": 50, "buoc": "Đang biên soạn nội dung (Parallel Writing)..."})
                 ghi_nhat_ky("Bắt đầu giai đoạn biên soạn nội dung song song (Multi-threaded Micro-Writer).")
                 final_chapters = parallel_generate(ctx, raw_outline, outline_data)
@@ -1761,7 +3061,7 @@ Trả về ONLY JSON: {{"topics": ["topic1", "topic2", "topic3", "topic4"]}}"""}
                 from concurrent.futures import ThreadPoolExecutor as _TPE
                 def _gen_summary(chap):
                     sections_text = "\n".join(sec.get("content", "") for sec in chap.get("sections", []))
-                    return sinh_tom_tat_chuong(tieu_de, chap.get("title", ""), sections_text, CauHinh.OPENAI_API_KEY, OPENAI_SEMAPHORE)
+                    return sinh_tom_tat_chuong(tieu_de, chap.get("title", ""), sections_text, CauHinh.OPENAI_API_KEY, OPENAI_SEMAPHORE, ngon_ngu=ctx.ngon_ngu)
                 
                 with _TPE(max_workers=4) as _ex:
                     summaries = list(_ex.map(_gen_summary, final_chapters))
@@ -1769,8 +3069,18 @@ Trả về ONLY JSON: {{"topics": ["topic1", "topic2", "topic3", "topic4"]}}"""}
                     chap["summary"] = summaries[i] if i < len(summaries) else ""
                 ghi_nhat_ky(f"Đã sinh tóm tắt cho {sum(1 for s in summaries if s)} chương.")
                 
+                # Lấy toàn bộ tiêu đề Chương và Mục để làm Thuật ngữ
+                title_terms = []
+                for chap in final_chapters:
+                    title_terms.append(chap.get("title", ""))
+                    for sec in chap.get("sections", []):
+                        title_terms.append(sec.get("title", ""))
+                        
+                # Kết hợp: Tiêu đề dàn ý + Các thuật ngữ khoa học cốt lõi ban đầu
+                combined_terms = title_terms + [t.get("term", "") for t in ctx.terms]
+
                 # Sinh bảng thuật ngữ (glossary)
-                glossary = sinh_bang_thuat_ngu(ctx.terms, tieu_de, CauHinh.OPENAI_API_KEY, OPENAI_SEMAPHORE)
+                glossary = sinh_bang_thuat_ngu(combined_terms, tieu_de, CauHinh.OPENAI_API_KEY, OPENAI_SEMAPHORE, ngon_ngu=ctx.ngon_ngu)
                 ghi_nhat_ky(f"Bảng thuật ngữ: {len(glossary)} định nghĩa.")
                 CONG_VIEC[ma_cv]["glossary"] = glossary
 
@@ -1858,13 +3168,24 @@ Trả về ONLY JSON: {{"topics": ["topic1", "topic2", "topic3", "topic4"]}}"""}
                     chap_grounded = 0
                     for sec in chap.get("sections", []):
                         content_gs = sec.get("content", "")
-                        # Loại bỏ phần Bài tập/Ôn tập khi tính Grounding Score vì phần này không yêu cầu trích dẫn
-                        for ex_header in ["**Câu hỏi Ôn tập**", "Câu hỏi Ôn tập", "Bài tập & Ôn tập"]:
-                            if ex_header in content_gs:
-                                content_gs = content_gs.split(ex_header)[0]
+                        # Loại bỏ phần Bài tập/Ôn tập khỏi Grounding (không yêu cầu trích dẫn)
+                        # Dùng regex bắt mọi biến thể: ### Câu hỏi..., **Câu hỏi...**, dòng thuần
+                        review_pattern = re.compile(
+                            r'(###\s*)?\*{0,2}(Câu hỏi Ôn tập|Bài tập\s*[&＆]\s*Ôn tập|Review Questions)\*{0,2}',
+                            re.IGNORECASE
+                        )
+                        for line in content_gs.split("\n"):
+                            if review_pattern.search(line.strip()):
+                                content_gs = content_gs.split(line)[0]
                                 break
-                            
-                        paragraphs = [p.strip() for p in content_gs.split("\n") if p.strip() and not p.strip().startswith("### ")]
+
+                        paragraphs = [
+                            p.strip() for p in content_gs.split("\n")
+                            if p.strip()
+                            and not p.strip().startswith("### ")   # Bỏ heading tiểu mục
+                            and not re.match(r'^\d+\.\s', p.strip())  # Bỏ danh sách câu hỏi số
+                            and len(p.strip()) >= 40               # Chỉ đoạn đủ dài
+                        ]
                         for para in paragraphs:
                             chap_total += 1
                             # V37: Nhận diện cả APA format và IEEE legacy
@@ -1957,6 +3278,17 @@ Trả về ONLY JSON: {{"topics": ["topic1", "topic2", "topic3", "topic4"]}}"""}
                 xuat_docx(ket_qua, p_docx); xuat_pdf(ket_qua, p_pdf)
                 xuat_docx(ket_qua_plain, p_docx_plain); xuat_pdf(ket_qua_plain, p_pdf_plain)
 
+                # Upload to Azure Blob Storage (V34+)
+                try:
+                    from dich_vu.azure_blob import upload_to_blob
+                    upload_to_blob(p_json, f"json/{ma_cv}.json")
+                    upload_to_blob(p_docx, f"docx/{ma_cv}.docx")
+                    upload_to_blob(p_pdf, f"pdf/{ma_cv}.pdf")
+                    upload_to_blob(p_docx_plain, f"docx/{ma_cv}_plain.docx")
+                    upload_to_blob(p_pdf_plain, f"pdf/{ma_cv}_plain.pdf")
+                except Exception as blob_err:
+                    logger.error(f"Failed to upload generated files to Azure Blob Storage: {blob_err}")
+
                 CONG_VIEC[ma_cv].update({
                     "trang_thai": "hoan_thanh", "tien_do": 100, "nguon": all_refs,
                     "tai_docx": f"/tai/docx/{ma_cv}", 
@@ -2028,10 +3360,41 @@ def sanitize_filename(filename):
     """Làm sạch tên file, giữ lại tiếng Việt có dấu (modern browsers support it)."""
     return re.sub(r'[\\/*?:"<>|]', '', filename).strip()
 
+def kiem_tra_quyen_tai(ma_goc):
+    from mo_hinh import LichSuGiaoTrinh
+    from flask_login import current_user
+    
+    # 1. Nếu là Admin, luôn được phép tải
+    if current_user.is_authenticated and current_user.la_admin:
+        return True
+        
+    # 2. Tìm giáo trình trong lịch sử
+    ls = LichSuGiaoTrinh.query.filter(LichSuGiaoTrinh.duong_dan_file.contains(ma_goc)).first()
+    if not ls:
+        # Nếu không có trong lịch sử (chưa lưu, khách lẻ hoặc chạy local không qua DB), cho phép tải tự do để tránh lỗi
+        return True
+        
+    # 3. Nếu không có người sở hữu (khách lẻ), cho phép tải tự do
+    if not ls.nguoi_dung_id:
+        return True
+        
+    # 4. Nếu là giáo trình do chính họ tạo ra, cho phép tải
+    if current_user.is_authenticated and ls.nguoi_dung_id == current_user.id:
+        return True
+        
+    # 5. Nếu giáo trình này được bật trưng bày (noi_bat = True), cho phép BẤT KỲ AI tải xuống!
+    if ls.noi_bat:
+        return True
+        
+    return False
+
 @app.get("/tai/<loai>/<ma>")
 def tai_file(loai, ma):
     # Hỗ trợ phiên bản 'plain' bằng cách bóc tách hậu tố để tra cứu info (V23.5.2)
     ma_goc = ma.replace("_plain", "")
+    if not kiem_tra_quyen_tai(ma_goc):
+        return "Bạn không có quyền tải xuống giáo trình này.", 403
+        
     info = CONG_VIEC.get(ma_goc)
     tieu_de = info.get("tieu_de", "giao_trinh") if info else "giao_trinh"
 
@@ -2055,6 +3418,15 @@ def tai_file(loai, ma):
     ext = "pdf" if loai == "pdf" else "docx"
     path = os.path.join(folder, f"{ma}.{ext}")
     
+    # Try downloading from Azure Blob Storage if it doesn't exist locally (V34+)
+    if not os.path.exists(path):
+        try:
+            from dich_vu.azure_blob import download_from_blob
+            blob_name = f"{ext}/{ma}.{ext}"
+            download_from_blob(blob_name, path)
+        except Exception as blob_err:
+            logger.error(f"Failed to download file from Azure Blob Storage: {blob_err}")
+
     if os.path.exists(path):
         # Đặt tên file theo chủ đề
         filename = f"{sanitize_filename(tieu_de)}.{ext}"
@@ -2067,6 +3439,9 @@ def tai_zip(ma):
     """Tải cả Word + PDF trong 1 file ZIP (V32 - Bundle Export)."""
     is_plain = "_plain" in ma
     ma_goc = ma.replace("_plain", "")
+    if not kiem_tra_quyen_tai(ma_goc):
+        return "Bạn không có quyền tải xuống giáo trình này.", 403
+        
     info = CONG_VIEC.get(ma_goc)
     tieu_de = info.get("tieu_de", "giao_trinh") if info else "giao_trinh"
 
@@ -2093,6 +3468,15 @@ def tai_zip(ma):
     p_docx = os.path.join(CauHinh.THU_MUC_DOCX, f"{ma_goc}{suffix}.docx")
     p_pdf = os.path.join(CauHinh.THU_MUC_PDF, f"{ma_goc}{suffix}.pdf")
     
+    # Try downloading from Azure Blob Storage if not present locally (V34+)
+    if not os.path.exists(p_docx) and not os.path.exists(p_pdf):
+        try:
+            from dich_vu.azure_blob import download_from_blob
+            download_from_blob(f"docx/{ma_goc}{suffix}.docx", p_docx)
+            download_from_blob(f"pdf/{ma_goc}{suffix}.pdf", p_pdf)
+        except Exception as blob_err:
+            logger.error(f"Failed to download files for ZIP from Azure Blob Storage: {blob_err}")
+            
     if not os.path.exists(p_docx) and not os.path.exists(p_pdf):
         return "Files not found on server", 404
     
@@ -2132,7 +3516,18 @@ def ket_qua(ma_cv):
 @app.get("/tai/glossary/<ma>")
 def tai_glossary(ma):
     """Xuất file DOCX chỉ chứa Bảng thuật ngữ."""
+    ma_goc = ma.replace("_plain", "")
+    if not kiem_tra_quyen_tai(ma_goc):
+        return "Bạn không có quyền tải xuống giáo trình này.", 403
+        
     p_json = os.path.join(CauHinh.THU_MUC_JSON, f"{ma}.json")
+    if not os.path.exists(p_json):
+        try:
+            from dich_vu.azure_blob import download_from_blob
+            download_from_blob(f"json/{ma}.json", p_json)
+        except Exception as blob_err:
+            logger.error(f"Failed to download JSON file for glossary from Azure Blob Storage: {blob_err}")
+
     if not os.path.exists(p_json): return "JSON not found", 404
 
     with open(p_json, 'r', encoding='utf-8') as f:
@@ -2191,7 +3586,18 @@ def tai_glossary(ma):
 @app.get("/tai/summary/<ma>")
 def tai_summary(ma):
     """Xuất file DOCX chỉ chứa Tóm tắt các chương."""
+    ma_goc = ma.replace("_plain", "")
+    if not kiem_tra_quyen_tai(ma_goc):
+        return "Bạn không có quyền tải xuống giáo trình này.", 403
+        
     p_json = os.path.join(CauHinh.THU_MUC_JSON, f"{ma}.json")
+    if not os.path.exists(p_json):
+        try:
+            from dich_vu.azure_blob import download_from_blob
+            download_from_blob(f"json/{ma}.json", p_json)
+        except Exception as blob_err:
+            logger.error(f"Failed to download JSON file for summary from Azure Blob Storage: {blob_err}")
+
     if not os.path.exists(p_json): return "JSON not found", 404
 
     with open(p_json, 'r', encoding='utf-8') as f:

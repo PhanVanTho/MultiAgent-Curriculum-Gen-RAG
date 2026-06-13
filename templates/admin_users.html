@@ -1,0 +1,264 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}Quản lý Người dùng{% endblock %}
+
+{% block header_title %}<span data-i18n="admin.users.title">Quản lý người dùng</span>{% endblock %}
+{% block header_subtitle %}<span data-i18n="admin.users.subtitle">Xem danh sách, thêm và chỉnh sửa thông tin thành viên.</span>{% endblock %}
+
+{% block content %}
+<!-- Add User (collapsed form) -->
+<div class="table-card" style="margin-top: 1.5rem;">
+    <div class="table-card-header">
+        <h5><i class="fa-solid fa-user-plus me-2" style="color: var(--primary);"></i><span data-i18n="admin.users.add_title">Thêm người dùng</span></h5>
+    </div>
+    <div style="padding: 1.25rem 1.5rem;">
+        <form action="{{ url_for('admin_add_user') }}" method="POST" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label" data-i18n="admin.users.new_username">Tên đăng nhập</label>
+                <input type="text" class="form-control" name="new_username" required placeholder="username">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" data-i18n="admin.users.new_password">Mật khẩu</label>
+                <input type="password" class="form-control" name="new_password" required placeholder="••••••">
+            </div>
+            <div class="col-md-2 d-flex align-items-center" style="padding-bottom: 6px;">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="is_admin" id="is_admin">
+                    <label class="form-check-label" for="is_admin">Admin</label>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fa-solid fa-plus me-1"></i><span data-i18n="admin.users.add_btn">Thêm</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Users Table -->
+<div class="table-card" id="users-section">
+    <div class="table-card-header">
+        <h5 data-i18n="admin.users.list_title">Danh sách người dùng</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th data-i18n="admin.users.col_id">ID</th>
+                    <th data-i18n="admin.users.col_username">Tên đăng nhập</th>
+                    <th data-i18n="admin.users.col_role">Vai trò</th>
+                    <th data-i18n="admin.users.col_status">Trạng thái</th>
+                    <th data-i18n="admin.users.col_token">Token</th>
+                    <th data-i18n="admin.users.col_date">Ngày tạo</th>
+                    <th data-i18n="admin.users.col_action">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td style="color: var(--text-dim); font-size:0.82rem;">#GAI-{{ u.id }}</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            {% set avatar_hue = (u.id * 47) % 360 %}
+                            {% set style_attr = 'style="background: hsl(' ~ avatar_hue ~ ', 40%, 25%);"' %}
+                            <div class="user-avatar" {{ style_attr|safe }}>
+                                {{ u.ten_dang_nhap[:2]|upper }}
+                            </div>
+                            <strong>{{ u.ten_dang_nhap }}</strong>
+                        </div>
+                    </td>
+                    <td>
+                        {% if u.la_admin %}
+                        <span class="badge bg-danger">Admin</span>
+                        {% else %}
+                        <span class="badge bg-primary">User</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if u.bi_khoa %}
+                        <span class="badge bg-secondary"><i class="fa-solid fa-ban me-1"></i><span data-i18n="admin.users.status_blocked">Bị khóa</span></span>
+                        {% else %}
+                        <span class="badge bg-success"><i class="fa-solid fa-circle-check me-1"></i><span data-i18n="admin.users.status_active">Hoạt động</span></span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="fw-bold text-success">{{ u.token }}</span>
+                    </td>
+                    <td style="color: var(--text-muted); font-size:0.82rem;">{{ u.ngay_tao.strftime('%d/%m/%Y') if u.ngay_tao else '—' }}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="openEditModal('{{ u.id }}', '{{ u.ho_ten or '' }}', '{{ u.email or '' }}', '{{ u.token }}', {{ 'true' if u.la_admin else 'false' }})">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        {% if u.id != current_user.id %}
+                        <button class="btn btn-sm {% if u.bi_khoa %}btn-outline-success{% else %}btn-outline-danger{% endif %} ms-1" onclick="toggleBlockUser({{ u.id }}, {{ 'true' if u.bi_khoa else 'false' }}, '{{ u.ten_dang_nhap }}')" title="{% if u.bi_khoa %}Mở khóa{% else %}Khóa tài khoản{% endif %}">
+                            {% if u.bi_khoa %}
+                            <i class="fa-solid fa-lock-open"></i>
+                            {% else %}
+                            <i class="fa-solid fa-lock"></i>
+                            {% endif %}
+                        </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div style="padding: 0.75rem 1.5rem; border-top: 1px solid var(--glass-border);">
+        <span style="font-size: 0.78rem; color: var(--text-dim);" data-i18n="admin.users.show_count" data-i18n-count="{{ users|length }}">Hiển thị {{ users|length }} tài khoản</span>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div id="editUserModal" class="modal-backdrop-custom" style="display: none;">
+    <div class="modal-content-custom">
+        <div class="modal-header-custom">
+            <h5 data-i18n="admin.users.edit_title">Chỉnh sửa thành viên</h5>
+            <button type="button" class="btn-close-custom" onclick="closeEditModal()">&times;</button>
+        </div>
+        <form id="edit-user-form">
+            <input type="hidden" id="edit-user-id">
+            <div class="mb-3">
+                <label class="form-label fw-bold" data-i18n="admin.users.edit_fullname">Họ và tên</label>
+                <input type="text" class="form-control" id="edit-ho-ten" required style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--text-main);">
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold" data-i18n="admin.users.edit_email">Email</label>
+                <input type="email" class="form-control" id="edit-email" required style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--text-main);">
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold" data-i18n="admin.users.edit_token">Số dư Token (Credits)</label>
+                <input type="number" class="form-control" id="edit-token" required style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--text-main);">
+            </div>
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="edit-is-admin">
+                <label class="form-check-label fw-bold" for="edit-is-admin" data-i18n="admin.users.edit_admin_role">Quyền quản trị viên (Admin)</label>
+            </div>
+            <div class="text-end">
+                <button type="button" class="btn btn-outline-secondary me-2" onclick="closeEditModal()" data-i18n="admin.users.btn_cancel">Hủy</button>
+                <button type="submit" class="btn btn-success" data-i18n="admin.users.btn_save">Lưu thay đổi</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function openEditModal(id, hoTen, email, token, laAdmin) {
+        document.getElementById('edit-user-id').value = id;
+        document.getElementById('edit-ho-ten').value = hoTen;
+        document.getElementById('edit-email').value = email;
+        document.getElementById('edit-token').value = token;
+        document.getElementById('edit-is-admin').checked = laAdmin;
+        document.getElementById('editUserModal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+        document.getElementById('editUserModal').style.display = 'none';
+    }
+
+    document.getElementById('edit-user-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const lang = getCurrentLang();
+        const payload = {
+            id: document.getElementById('edit-user-id').value,
+            ho_ten: document.getElementById('edit-ho-ten').value,
+            email: document.getElementById('edit-email').value,
+            token: document.getElementById('edit-token').value,
+            la_admin: document.getElementById('edit-is-admin').checked
+        };
+
+        try {
+            const res = await fetch('/admin/update_user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                location.reload();
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: lang === 'vi' ? 'Lỗi' : 'Error',
+                    text: data.error || (lang === 'vi' ? "Có lỗi xảy ra" : "An error occurred"),
+                    confirmButtonColor: '#047857'
+                 });
+            }
+        } catch (err) {
+            console.error(err);
+            Swal.fire({
+                icon: 'error',
+                title: lang === 'vi' ? 'Lỗi kết nối' : 'Connection Error',
+                text: lang === 'vi' ? 'Không thể kết nối tới máy chủ' : 'Could not connect to server',
+                confirmButtonColor: '#047857'
+            });
+        }
+    });
+
+    async function toggleBlockUser(userId, currentBlocked, username) {
+        const lang = getCurrentLang();
+        const actionText = currentBlocked 
+            ? (lang === 'vi' ? 'mở khóa' : 'unblock') 
+            : (lang === 'vi' ? 'khóa' : 'block');
+            
+        const confirmResult = await Swal.fire({
+            title: lang === 'vi' ? `Xác nhận ${actionText}?` : `Confirm ${actionText}?`,
+            text: lang === 'vi' 
+                ? `Bạn có chắc chắn muốn ${actionText} tài khoản của ${username}?` 
+                : `Are you sure you want to ${actionText} the account of ${username}?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: currentBlocked ? '#10b981' : '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: lang === 'vi' ? 'Đồng ý' : 'Yes',
+            cancelButtonText: lang === 'vi' ? 'Hủy' : 'Cancel'
+        });
+
+        if (confirmResult.isConfirmed) {
+            try {
+                const res = await fetch('/admin/toggle_block_user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: lang === 'vi' ? 'Thành công' : 'Success',
+                        text: data.message,
+                        confirmButtonColor: '#047857'
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: lang === 'vi' ? 'Lỗi' : 'Error',
+                        text: data.error || (lang === 'vi' ? 'Có lỗi xảy ra' : 'An error occurred'),
+                        confirmButtonColor: '#047857'
+                    });
+                }
+            } catch (err) {
+                console.error(err);
+                Swal.fire({
+                    icon: 'error',
+                    title: lang === 'vi' ? 'Lỗi kết nối' : 'Connection Error',
+                    text: lang === 'vi' ? 'Không thể kết nối tới máy chủ' : 'Could not connect to server',
+                    confirmButtonColor: '#047857'
+                });
+            }
+        }
+    }
+
+    window.onclick = function(event) {
+        const modal = document.getElementById('editUserModal');
+        if (event.target == modal) {
+            closeEditModal();
+        }
+    }
+</script>
+{% endblock %}

@@ -353,6 +353,22 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
+        .lang-btn {
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.82rem;
+            font-weight: 700;
+            padding: 5px 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.2s;
+            margin-right: 10px;
+        }
+        .lang-btn:hover { background: rgba(255,255,255,0.22); }
     </style>
 </head>
 <body>
@@ -366,16 +382,26 @@
             </button>
             <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
                 <ul class="navbar-nav gap-3">
-                    <li class="nav-item"><a class="nav-link {% if request.endpoint == 'trang_chu' %}active{% endif %}" href="{{ url_for('trang_chu') }}">Giới Thiệu</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('trang_chu') }}#guide-section">Hướng Dẫn</a></li>
-                    <li class="nav-item"><a class="nav-link {% if request.endpoint == 'san_pham' %}active{% endif %}" href="{{ url_for('san_pham') }}">Sản Phẩm</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.endpoint == 'trang_chu' %}active{% endif %}" href="{{ url_for('trang_chu') }}" data-i18n="nav.intro">Giới Thiệu</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('trang_chu') }}#guide-section" data-i18n="nav.guide">Hướng Dẫn</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.endpoint == 'san_pham' %}active{% endif %}" href="{{ url_for('san_pham') }}" data-i18n="nav.products">Sản Phẩm</a></li>
                 </ul>
             </div>
             <div class="d-none d-lg-block">
                 {% if current_user.is_authenticated %}
                     <div class="d-flex align-items-center">
                         <a href="{{ url_for('profile') }}" class="btn d-flex align-items-center me-3" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); padding: 6px 16px; text-decoration: none; transition: all 0.3s;">
-                            <i class="fa-solid fa-circle-user fs-4 text-success me-2"></i>
+                            {% if current_user.anh_dai_dien %}
+                                {% if current_user.anh_dai_dien.startswith('http') %}
+                                    <img src="{{ current_user.anh_dai_dien }}" alt="Avatar" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;" class="me-2">
+                                {% else %}
+                                    <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.anh_dai_dien) }}" alt="Avatar" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;" class="me-2">
+                                {% endif %}
+                            {% else %}
+                                <div class="avatar-fallback me-2 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; border-radius: 50%; background: #10b981; color: white; font-weight: bold; font-size: 0.8rem;">
+                                    {{ (current_user.ho_ten or current_user.ten_dang_nhap)[0] | upper }}
+                                </div>
+                            {% endif %}
                             <div class="text-start">
                                 <div style="font-size: 0.65rem; color: rgba(255,255,255,0.6); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
                                     {{ current_user.ho_ten or current_user.ten_dang_nhap }}
@@ -390,10 +416,12 @@
                                 </div>
                             </div>
                         </a>
-                        <a href="{{ url_for('logout') }}" class="btn-signin" style="background-color: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.1);">Đăng xuất</a>
+                        <button class="lang-btn" onclick="toggleLanguage()" title="Switch Language"><span id="langFlag">🇻🇳</span><span id="langLabel">VI</span></button>
+                        <a href="{{ url_for('logout') }}" class="btn-signin" style="background-color: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.1);" data-i18n="nav.logout">Đăng xuất</a>
                     </div>
                 {% else %}
-                    <a href="{{ url_for('login') }}" class="btn-signin">Đăng nhập</a>
+                    <button class="lang-btn" onclick="toggleLanguage()" title="Switch Language"><span id="langFlag">🇻🇳</span><span id="langLabel">VI</span></button>
+                    <a href="{{ url_for('login') }}" class="btn-signin" data-i18n="nav.login">Đăng nhập</a>
                 {% endif %}
             </div>
         </div>
@@ -411,15 +439,15 @@
                 <div class="col-lg-5 mb-5 mb-lg-0">
                     <div class="hero-text-box">
                         <div class="eyebrow">THE CLINICAL GALLERY</div>
-                        <h1 class="hero-title">Tại sao nên chọn Giáo Trình AI?</h1>
-                        <p class="hero-desc">
+                        <h1 class="hero-title" data-i18n="index.hero.title">Tại sao nên chọn Giáo Trình AI?</h1>
+                        <p class="hero-desc" data-i18n="index.hero.desc">
                             Chúng tôi kết hợp trí tuệ nhân tạo tiên tiến với phương pháp sư phạm hiện đại để tạo ra một môi trường học tập cá nhân hóa, tối ưu hóa mọi tiềm năng của học viên.
                         </p>
                         <div class="mt-4">
                             {% if current_user.is_authenticated %}
-                                <a href="{{ url_for('trang_tao_giao_trinh') }}" class="btn-signin" style="padding: 12px 32px; font-size: 1.1rem; border-radius: 8px;">Tạo giáo trình ngay</a>
+                                <a href="{{ url_for('trang_tao_giao_trinh') }}" class="btn-signin" style="padding: 12px 32px; font-size: 1.1rem; border-radius: 8px;" data-i18n="index.hero.cta">Tạo giáo trình ngay</a>
                             {% else %}
-                                <a href="{{ url_for('trang_tao_giao_trinh') }}" class="btn-signin" style="padding: 12px 32px; font-size: 1.1rem; border-radius: 8px;">Tạo giáo trình ngay</a>
+                                <a href="{{ url_for('trang_tao_giao_trinh') }}" class="btn-signin" style="padding: 12px 32px; font-size: 1.1rem; border-radius: 8px;" data-i18n="index.hero.cta">Tạo giáo trình ngay</a>
                             {% endif %}
                         </div>
                     </div>
@@ -429,29 +457,29 @@
                         <div class="col-md-6">
                             <div class="feature-card border-left-green">
                                 <div class="feature-icon"><i class="fa-solid fa-bolt-lightning"></i></div>
-                                <h3 class="feature-title">Biên soạn thần tốc</h3>
-                                <p class="feature-text">Thay vì tốn hàng tuần nghiên cứu, AI giúp bạn hoàn thiện một bộ giáo trình đầy đủ chỉ trong vài phút với độ chi tiết cực cao.</p>
+                                <h3 class="feature-title" data-i18n="index.feat1.title">Biên soạn thần tốc</h3>
+                                <p class="feature-text" data-i18n="index.feat1.desc">Thay vì tốn hàng tuần nghiên cứu, AI giúp bạn hoàn thiện một bộ giáo trình đầy đủ chỉ trong vài phút với độ chi tiết cực cao.</p>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="feature-card border-left-green">
                                 <div class="feature-icon"><i class="fa-solid fa-microscope"></i></div>
-                                <h3 class="feature-title">Nghiên cứu đa tầng</h3>
-                                <p class="feature-text">Công nghệ EKRE giúp tìm kiếm kiến thức đa nguồn, đảm bảo nội dung giáo trình có cơ sở khoa học và tính cập nhật mới nhất.</p>
+                                <h3 class="feature-title" data-i18n="index.feat2.title">Nghiên cứu đa tầng</h3>
+                                <p class="feature-text" data-i18n="index.feat2.desc">Công nghệ EKRE giúp tìm kiếm kiến thức đa nguồn, đảm bảo nội dung giáo trình có cơ sở khoa học và tính cập nhật mới nhất.</p>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="feature-card border-left-green">
                                 <div class="feature-icon"><i class="fa-solid fa-sliders"></i></div>
-                                <h3 class="feature-title">Chế độ linh hoạt</h3>
-                                <p class="feature-text">Tự do lựa chọn giữa chế độ Auto, Expert hoặc Creative để phù hợp với mọi nhu cầu sư phạm và phong cách giảng dạy.</p>
+                                <h3 class="feature-title" data-i18n="index.feat3.title">Chế độ linh hoạt</h3>
+                                <p class="feature-text" data-i18n="index.feat3.desc">Tự do lựa chọn giữa chế độ Auto, Expert hoặc Creative để phù hợp với mọi nhu cầu sư phạm và phong cách giảng dạy.</p>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="feature-card border-left-green">
                                 <div class="feature-icon"><i class="fa-solid fa-file-export"></i></div>
-                                <h3 class="feature-title">Xuất bản chuyên nghiệp</h3>
-                                <p class="feature-text">Tự động chuyển đổi nội dung sang định dạng tài liệu chuẩn (Docx/PDF), sẵn sàng cho việc in ấn và giảng dạy ngay lập tức.</p>
+                                <h3 class="feature-title" data-i18n="index.feat4.title">Xuất bản chuyên nghiệp</h3>
+                                <p class="feature-text" data-i18n="index.feat4.desc">Tự động chuyển đổi nội dung sang định dạng tài liệu chuẩn (Docx/PDF), sẵn sàng cho việc in ấn và giảng dạy ngay lập tức.</p>
                             </div>
                         </div>
                     </div>
@@ -465,8 +493,8 @@
         <div class="container">
             <div class="row align-items-end mb-5">
                 <div class="col-lg-8">
-                    <h2 class="guide-title">Hướng dẫn sử dụng</h2>
-                    <p class="guide-desc mb-0">Bắt đầu hành trình nâng tầm giáo dục của bạn chỉ với 4 bước đơn giản, được thiết kế tối ưu cho mọi thiết bị.</p>
+                    <h2 class="guide-title" data-i18n="index.guide.title">Hướng dẫn sử dụng</h2>
+                    <p class="guide-desc mb-0" data-i18n="index.guide.desc">Bắt đầu hành trình nâng tầm giáo dục của bạn chỉ với 4 bước đơn giản, được thiết kế tối ưu cho mọi thiết bị.</p>
                 </div>
                 <div class="col-lg-4 text-lg-end d-none d-lg-block">
                     <div class="green-line"></div>
@@ -478,32 +506,32 @@
                     <div class="step-card">
                         <div class="step-number-bg">01</div>
                         <div class="step-icon-box"><i class="fa-solid fa-user-plus"></i></div>
-                        <h4 class="step-title">Đăng nhập & Nạp Token</h4>
-                        <p class="step-text">Truy cập hệ thống và kiểm tra số dư Token để sẵn sàng cho hành trình biên soạn giáo trình thông minh.</p>
+                        <h4 class="step-title" data-i18n="index.step1.title">Đăng nhập & Nạp Token</h4>
+                        <p class="step-text" data-i18n="index.step1.desc">Truy cập hệ thống và kiểm tra số dư Token để sẵn sàng cho hành trình biên soạn giáo trình thông minh.</p>
                     </div>
                 </div>
                 <div class="col-lg-3 col-md-6 mb-4">
                     <div class="step-card">
                         <div class="step-number-bg">02</div>
                         <div class="step-icon-box"><i class="fa-solid fa-magnifying-glass"></i></div>
-                        <h4 class="step-title">Nhập chủ đề & Chọn chế độ</h4>
-                        <p class="step-text">Nhập từ khóa môn học và lựa chọn chế độ biên soạn (Auto, Expert, Creative) phù hợp với mục tiêu của bạn.</p>
+                        <h4 class="step-title" data-i18n="index.step2.title">Nhập chủ đề & Chọn chế độ</h4>
+                        <p class="step-text" data-i18n="index.step2.desc">Nhập từ khóa môn học và lựa chọn chế độ biên soạn (Auto, Expert, Creative) phù hợp với mục tiêu của bạn.</p>
                     </div>
                 </div>
                 <div class="col-lg-3 col-md-6 mb-4">
                     <div class="step-card">
                         <div class="step-number-bg">03</div>
                         <div class="step-icon-box"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-                        <h4 class="step-title">Biên soạn & Giám sát</h4>
-                        <p class="step-text">AI thực hiện nghiên cứu đa nguồn và viết nội dung chi tiết từng chương dưới sự giám sát trực tiếp của bạn.</p>
+                        <h4 class="step-title" data-i18n="index.step3.title">Biên soạn & Giám sát</h4>
+                        <p class="step-text" data-i18n="index.step3.desc">AI thực hiện nghiên cứu đa nguồn và viết nội dung chi tiết từng chương dưới sự giám sát trực tiếp của bạn.</p>
                     </div>
                 </div>
                 <div class="col-lg-3 col-md-6 mb-4">
                     <div class="step-card">
                         <div class="step-number-bg">04</div>
                         <div class="step-icon-box"><i class="fa-solid fa-file-export"></i></div>
-                        <h4 class="step-title">Xuất bản & Lưu trữ</h4>
-                        <p class="step-text">Xuất kết quả ra định dạng Docx/PDF chuyên nghiệp và lưu trữ vĩnh viễn trong thư viện cá nhân để giảng dạy.</p>
+                        <h4 class="step-title" data-i18n="index.step4.title">Xuất bản & Lưu trữ</h4>
+                        <p class="step-text" data-i18n="index.step4.desc">Xuất kết quả ra định dạng Docx/PDF chuyên nghiệp và lưu trữ vĩnh viễn trong thư viện cá nhân để giảng dạy.</p>
                     </div>
                 </div>
             </div>
@@ -515,8 +543,8 @@
         <div class="container">
             <div class="cta-banner">
                 <div class="cta-content">
-                    <h2 class="cta-title">Sẵn sàng nâng tầm tri thức của bạn?</h2>
-                    <a href="{{ url_for('trang_tao_giao_trinh') }}" class="btn-cta">Bắt đầu ngay hôm nay</a>
+                    <h2 class="cta-title" data-i18n="index.cta.title">Sẵn sàng nâng tầm tri thức của bạn?</h2>
+                    <a href="{{ url_for('trang_tao_giao_trinh') }}" class="btn-cta" data-i18n="index.cta.btn">Bắt đầu ngay hôm nay</a>
                 </div>
             </div>
         </div>
@@ -539,5 +567,6 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='i18n.js') }}"></script>
 </body>
 </html>

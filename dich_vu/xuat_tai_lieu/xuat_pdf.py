@@ -4,11 +4,11 @@ import re
 import logging
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm, inch
-from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_LEFT
+from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.lib import colors
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, PageBreak, 
-    Table, TableStyle, PageTemplate, Frame
+    Table, TableStyle, PageTemplate, Frame, Flowable
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.pdfbase import pdfmetrics
@@ -159,43 +159,105 @@ style_GlossaryTerm = ParagraphStyle(
     spaceAfter=4
 )
 
+# TOC Styles
+style_TOC_Chap = ParagraphStyle(
+    'TOC_Chap',
+    parent=styles['Normal'],
+    fontName=FONT_BOLD,
+    fontSize=11,
+    leading=14,
+    spaceBefore=4,
+    spaceAfter=2
+)
+style_TOC_Sec = ParagraphStyle(
+    'TOC_Sec',
+    parent=styles['Normal'],
+    fontName=FONT_NAME,
+    fontSize=11,
+    leading=14,
+    leftIndent=0.3*inch,
+    spaceAfter=2
+)
+style_TOC_Sub = ParagraphStyle(
+    'TOC_Sub',
+    parent=styles['Normal'],
+    fontName=FONT_NAME,
+    fontSize=11,
+    leading=14,
+    leftIndent=0.6*inch,
+    spaceAfter=2
+)
+style_TOC_Page = ParagraphStyle(
+    'TOC_Page',
+    parent=styles['Normal'],
+    fontName=FONT_NAME,
+    fontSize=11,
+    leading=14,
+    alignment=TA_RIGHT
+)
+
 # (Hàm _clean_text cũ đã được thay thế bằng import từ bo_loc_html phía trên)
 
-# --- 3. PAGE TEMPLATE (Header/Footer) ---
-def add_page_number(canvas, doc):
-    page_num = canvas.getPageNumber()
-    text = "Trang %d" % page_num
+# --- 3. PAGE TEMPLATE (Header/Footer & Cover) ---
+def cover_page(canvas, doc):
     canvas.saveState()
-    canvas.setFont(FONT_NAME, 9)
-    # Footer Center
-    canvas.drawCentredString(A4[0] / 2.0, 1.5 * cm, text)
-    # Header Line
+    # Khung viền đôi chuẩn đồ án/giáo trình
+    canvas.setLineWidth(2)
+    canvas.rect(2.5*cm, 2.5*cm, A4[0]-5*cm, A4[1]-5*cm)
     canvas.setLineWidth(0.5)
-    canvas.line(2*cm, A4[1]-2*cm, A4[0]-2*cm, A4[1]-2*cm)
+    canvas.rect(2.65*cm, 2.65*cm, A4[0]-5.3*cm, A4[1]-5.3*cm)
     canvas.restoreState()
 
-def xuat_pdf(ket_qua: dict, duong_dan_pdf: str):
-    book = ket_qua.get("book_vi", {})
-    doc = SimpleDocTemplate(
-        duong_dan_pdf,
-        pagesize=A4,
-        rightMargin=2.0*cm,
-        leftMargin=3.0*cm, # Lề trái 3cm chuẩn đóng gáy BGDĐT
-        topMargin=2.0*cm,
-        bottomMargin=2.0*cm
-    )
-    
-    story = []
+def make_page_number_func(book_title):
+    def add_page_number(canvas, doc):
+        page_num = canvas.getPageNumber()
+        text = "Trang %d" % page_num
+        canvas.saveState()
+        canvas.setFont(FONT_NAME, 10)
+        # Footer Right
+        canvas.drawRightString(A4[0] - 2.0*cm, 1.5 * cm, text)
+        # Header Line
+        canvas.setLineWidth(0.5)
+        canvas.line(3.0*cm, A4[1]-1.5*cm, A4[0]-2.0*cm, A4[1]-1.5*cm)
+        # Header Text
+        canvas.setFont(FONT_ITALIC, 9)
+        canvas.drawRightString(A4[0] - 2.0*cm, A4[1] - 1.3*cm, f"Giáo trình {book_title}")
+        canvas.restoreState()
+    return add_page_number
 
-    # 1. TITLE PAGE
-    story.append(Spacer(1, 2*inch))
-    story.append(Paragraph(book.get("title", "GIÁO TRÌNH").upper(), style_Title))
-    story.append(Spacer(1, 0.5*inch))
-    story.append(Paragraph("Tài liệu biên soạn tự động bởi hệ thống AI", 
-                           ParagraphStyle('SubTitle', parent=style_Normal, alignment=TA_CENTER, fontName=FONT_ITALIC)))
+class PageRecorder(Flowable):
+    def __init__(self, key, registry):
+        super().__init__()
+        self.key = key
+        self.registry = registry
+
+    def draw(self):
+        if self.canv:
+            self.registry[self.key] = self.canv.getPageNumber()
+
+    def wrap(self, availWidth, availHeight):
+        return 0, 0
+
+def _xay_dung_story_pdf(ket_qua: dict, page_registry: dict | None = None) -> list:
+    book = ket_qua.get("book_vi", {})
+    story = []
+    title = book.get("title", "GIÁO TRÌNH")
+
+    # Helper to retrieve page number
+    def get_page_str(key):
+        if page_registry and key in page_registry:
+            return str(page_registry[key])
+        return ""
+
+    # 1. TRANG BÌA
+    story.append(Spacer(1, 3*inch))
+    story.append(Paragraph(f"GIÁO TRÌNH<br/>{title.upper()}", style_Title))
+    story.append(Spacer(1, 3*inch))
+    story.append(Paragraph("Tác giả: Hệ thống AI Biên soạn tự động<br/>Năm xuất bản: 2026", 
+                           ParagraphStyle('SubTitle', parent=style_Normal, alignment=TA_CENTER, fontName=FONT_NAME, fontSize=14)))
     story.append(PageBreak())
 
-    # 2. TABLE OF CONTENTS (Static)
+    # 2. TABLE OF CONTENTS (Dynamic via page_registry)
     story.append(Paragraph("MỤC LỤC", style_Title))
     story.append(Spacer(1, 0.5*cm))
     
@@ -205,10 +267,18 @@ def xuat_pdf(ket_qua: dict, duong_dan_pdf: str):
     toc_data = []
     for idx, ch in enumerate(chapters, 1):
         # Chapter row
-        toc_data.append([f"CHƯƠNG {idx}: {ch.get('title','').upper()}", ""])
+        ch_key = f"chap_{idx}"
+        toc_data.append([
+            Paragraph(f"CHƯƠNG {idx}: {ch.get('title','').upper()}", style_TOC_Chap),
+            Paragraph(get_page_str(ch_key), style_TOC_Page)
+        ])
         # Sections
         for jdx, sec in enumerate(ch.get("sections", []), 1):
-            toc_data.append([f"   {idx}.{jdx}. {sec.get('title','')}", ""]) # Indent visualization
+            sec_key = f"sec_{idx}_{jdx}"
+            toc_data.append([
+                Paragraph(f"{idx}.{jdx}. {sec.get('title','')}", style_TOC_Sec),
+                Paragraph(get_page_str(sec_key), style_TOC_Page)
+            ])
             
             # Sub-sections (Level 3) in TOC
             content = sec.get("content", "")
@@ -219,18 +289,24 @@ def xuat_pdf(ket_qua: dict, duong_dan_pdf: str):
                     if line.startswith("### "):
                         h3_title = line[4:].strip().replace('**', '').replace('`', '')
                         h3_title = re.sub(r'<[^>]+>', '', h3_title)
-                        toc_data.append([f"      {idx}.{jdx}.{sub_idx}. {h3_title}", ""])
+                        sub_key = f"sub_{idx}_{jdx}_{sub_idx}"
+                        toc_data.append([
+                            Paragraph(f"{idx}.{jdx}.{sub_idx}. {h3_title}", style_TOC_Sub),
+                            Paragraph(get_page_str(sub_key), style_TOC_Page)
+                        ])
                         sub_idx += 1
-                    elif "Câu hỏi Ôn tập" in line or "Bài tập & Ôn tập" in line:
+                    elif "Câu hỏi Ôn tập" in line or "Bài tập & Ôn tập" in line or "Review Questions" in line:
                         clean_line = line.replace('**', '').replace('###', '').strip()
-                        if clean_line in ["Câu hỏi Ôn tập", "Bài tập & Ôn tập"]:
-                            toc_data.append([f"      {clean_line}", ""])
+                        if clean_line in ["Câu hỏi Ôn tập", "Bài tập & Ôn tập", "Review Questions"]:
+                            rev_key = f"rev_{idx}_{jdx}"
+                            toc_data.append([
+                                Paragraph(clean_line, style_TOC_Sub),
+                                Paragraph(get_page_str(rev_key), style_TOC_Page)
+                            ])
     
     if toc_data:
         t = Table(toc_data, colWidths=[15*cm, 1*cm])
         t.setStyle(TableStyle([
-            ('FONTNAME', (0,0), (-1,-1), FONT_NAME),
-            ('FONTSIZE', (0,0), (-1,-1), 11),
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ]))
         story.append(t)
@@ -240,6 +316,8 @@ def xuat_pdf(ket_qua: dict, duong_dan_pdf: str):
     # 2.5 GLOSSARY (V33)
     glossary = ket_qua.get("glossary", [])
     if glossary:
+        if page_registry is not None:
+            story.append(PageRecorder("glossary", page_registry))
         story.append(Paragraph("BẢNG THUẬT NGỮ", style_H1))
         story.append(Spacer(1, 0.3*cm))
         for item in glossary:
@@ -251,18 +329,19 @@ def xuat_pdf(ket_qua: dict, duong_dan_pdf: str):
     # 3. CONTENT
     for idx, ch in enumerate(chapters, 1):
         # Chapter Title
+        if page_registry is not None:
+            story.append(PageRecorder(f"chap_{idx}", page_registry))
         story.append(Paragraph(f"CHƯƠNG {idx}: {ch.get('title','').upper()}", style_H1))
-        
-        # V33: Chapter Summary (Đã ẩn theo yêu cầu)
-        # summary = ch.get("summary", "")
-        # if summary:
-        #     clean_summary = _clean_text(summary)
-        #     story.append(Paragraph(f"<i>Tóm tắt chương: {clean_summary}</i>", style_Summary))
-
         
         for jdx, sec in enumerate(ch.get("sections", []), 1):
             # Section Title
+            if page_registry is not None:
+                story.append(PageRecorder(f"sec_{idx}_{jdx}", page_registry))
             story.append(Paragraph(f"{idx}.{jdx}. {sec.get('title','')}", style_H2))
+            
+            # --- Lấy danh sách refs và map ID ---
+            refs_list = ket_qua.get("references", [])
+            ref_dict = {str(r.get("id")): r for r in refs_list if isinstance(r, dict)}
             
             # Content separation
             raw_content = sec.get("content", "")
@@ -277,14 +356,26 @@ def xuat_pdf(ket_qua: dict, duong_dan_pdf: str):
                         title_part = l_strip[4:].strip()
                         line = f"### {idx}.{jdx}.{sub_idx}. {title_part}"
                         sub_idx += 1
-                    elif l_strip in ["**Câu hỏi Ôn tập**", "**Bài tập & Ôn tập**"]:
+                    elif l_strip in ["**Câu hỏi Ôn tập**", "**Bài tập & Ôn tập**", "**Review Questions**"]:
                         line = f"### {l_strip.replace('**', '')}" # Make it H3 to be bold
+                    
+                    # Convert [ID] to APA Inline: (Title, Year)
+                    def apa_replacer(match):
+                        id_str = match.group(1)
+                        ref = ref_dict.get(id_str)
+                        if ref:
+                            title_short = ref.get('title', 'Tài liệu')
+                            if len(title_short) > 30: title_short = title_short[:30] + "..."
+                            year = ref.get('year', 2026)
+                            return f"({title_short}, {year})"
+                        return match.group(0)
+                    line = re.sub(r'\[(\d+)\]', apa_replacer, line)
+                        
                     processed_lines.append(line)
                 raw_content = '\n'.join(processed_lines)
             
             # CHUYỂN ĐỔI MARKDOWN SANG HTML TRƯỚC
             html_content = parse_markdown(raw_content)
-            
             clean_content = _clean_text(html_content)
             
             # Replace existing newlines with <br/> so ReportLab maintains line breaks (especially in code blocks)
@@ -293,9 +384,20 @@ def xuat_pdf(ket_qua: dict, duong_dan_pdf: str):
             # Split by the explicit block delimiter instead of newline
             paras = clean_content.split('|||BLOCK|||')
             
+            sub_val = 1
             for p_text in paras:
                 clean_p = p_text.strip()
                 if not clean_p: continue
+                
+                # Dynamic page number tracking for sub-sections and review sections
+                if page_registry is not None:
+                    # Check for review headings
+                    if clean_p in ["Câu hỏi Ôn tập", "Bài tập & Ôn tập", "Review Questions"] or clean_p.startswith("Câu hỏi Ôn tập") or clean_p.startswith("Bài tập & Ôn tập") or clean_p.startswith("Review Questions"):
+                        story.append(PageRecorder(f"rev_{idx}_{jdx}", page_registry))
+                    # Check for level-3 headings (e.g. "1.1.1. ...")
+                    elif re.match(r'^\d+\.\d+\.\d+\.', clean_p):
+                        story.append(PageRecorder(f"sub_{idx}_{jdx}_{sub_val}", page_registry))
+                        sub_val += 1
                 
                 # ReportLab list items fallback (nếu parse_markdown tạo ra text bắt đầu bằng bullet)
                 if clean_p.startswith("- ") or clean_p.startswith("* ") or clean_p.startswith("• "):
@@ -314,26 +416,66 @@ def xuat_pdf(ket_qua: dict, duong_dan_pdf: str):
         story.append(PageBreak())
 
     # 4. REFERENCES
+    if page_registry is not None:
+        story.append(PageRecorder("references", page_registry))
     story.append(Paragraph("TÀI LIỆU THAM KHẢO", style_H1))
+    
+    # APA Style for References (Hanging indent, no numbers)
+    style_APA = ParagraphStyle(
+        'APA',
+        parent=style_Normal,
+        firstLineIndent=-0.5*inch,
+        leftIndent=0.5*inch,
+        spaceAfter=8
+    )
+    
     refs = ket_qua.get("references", [])
     try:
-        refs = sorted(refs, key=lambda x: int(x.get("id", 0)) if isinstance(x, dict) else 0)
+        refs = sorted(refs, key=lambda x: str(x.get("title", "")).lower() if isinstance(x, dict) else str(x).lower())
     except:
         pass
         
     for u in refs:
          if isinstance(u, dict):
-             # V37 APA Format
-             ref_id = u.get('id', '')
+             # V37 APA Format: Title. (Year, Date). In Wikipedia, The Free Encyclopedia. URL
              ref_title = _clean_text(u.get('title', 'Nguồn'))
              ref_url = u.get('url', '')
              ref_year = u.get('year', 2026)
              ref_date = u.get('access_date', '')
              date_str = f"{ref_year}, {ref_date}" if ref_date else str(ref_year)
-             ref_str = f"<b>{ref_id}.</b> {ref_title}. ({date_str}). In <i>Wikipedia, The Free Encyclopedia</i>. <u>{ref_url}</u>"
-             story.append(Paragraph(ref_str, style_Normal))
+             ref_str = f"{ref_title}. ({date_str}). In <i>Wikipedia, The Free Encyclopedia</i>. <u>{ref_url}</u>"
+             story.append(Paragraph(ref_str, style_APA))
          else:
-             story.append(Paragraph(f"• {u}", style_List))
+             story.append(Paragraph(f"• {_clean_text(str(u))}", style_APA))
+             
+    return story
 
-    # Build PDF
-    doc.build(story, onFirstPage=add_page_number, onLaterPages=add_page_number)
+def xuat_pdf(ket_qua: dict, duong_dan_pdf: str):
+    book = ket_qua.get("book_vi", {})
+    title = book.get("title", "GIÁO TRÌNH")
+    
+    # Pass 1: Build to compile exact page numbers of all elements
+    page_registry = {}
+    doc1 = SimpleDocTemplate(
+        duong_dan_pdf,
+        pagesize=A4,
+        rightMargin=2.0*cm,
+        leftMargin=3.0*cm,
+        topMargin=2.0*cm,
+        bottomMargin=2.0*cm
+    )
+    story1 = _xay_dung_story_pdf(ket_qua, page_registry)
+    add_page_number_func = make_page_number_func(title)
+    doc1.build(story1, onFirstPage=cover_page, onLaterPages=add_page_number_func)
+    
+    # Pass 2: Re-generate the entire story using compiled registry and build final layout
+    doc2 = SimpleDocTemplate(
+        duong_dan_pdf,
+        pagesize=A4,
+        rightMargin=2.0*cm,
+        leftMargin=3.0*cm,
+        topMargin=2.0*cm,
+        bottomMargin=2.0*cm
+    )
+    story2 = _xay_dung_story_pdf(ket_qua, page_registry)
+    doc2.build(story2, onFirstPage=cover_page, onLaterPages=add_page_number_func)
