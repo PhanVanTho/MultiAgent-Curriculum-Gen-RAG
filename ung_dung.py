@@ -754,13 +754,26 @@ def lich_su():
                 continue
                 
             ngay_tao = job.get("ngay_tao", datetime.now())
+            do_dai_ky_tu = 0
+            if job.get("trang_thai") == "hoan_thanh":
+                try:
+                    p_json = os.path.join(CauHinh.THU_MUC_JSON, f"{ma_cv}.json")
+                    if os.path.exists(p_json):
+                        with open(p_json, 'r', encoding='utf-8') as f:
+                            data = json.load(f)
+                        book_vi = data.get('book_vi', {})
+                        for chap in book_vi.get("chapters", []):
+                            for sec in chap.get("sections", []):
+                                do_dai_ky_tu += len(sec.get("content", ""))
+                except Exception as e:
+                    logger.error(f"Error reading character length from json in history: {e}")
             items.append({
                 "loai": "active",
                 "id": None,
                 "ma_cv": ma_cv,
                 "chu_de": job.get("tieu_de", "Không rõ chủ đề"),
                 "ngay_tao": ngay_tao,
-                "do_dai_ky_tu": 0,
+                "do_dai_ky_tu": do_dai_ky_tu,
                 "trang_thai": job.get("trang_thai", "dang_chay"),
                 "tien_do": job.get("tien_do", 0),
                 "buoc": job.get("buoc", "Đang xử lý"),
@@ -3682,6 +3695,19 @@ def cleanup_old_jobs():
 
 # Khởi chạy thread dọn dẹp ngầm
 threading.Thread(target=cleanup_old_jobs, daemon=True).start()
+
+@app.route("/check-db-schema")
+def check_db_schema():
+    try:
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        cols = inspector.get_columns('lich_su_giao_trinh')
+        res = []
+        for c in cols:
+            res.append(f"{c['name']}: {c['type']}")
+        return "<br>".join(res)
+    except Exception as e:
+        return f"Error: {e}"
 
 if __name__ == "__main__":
     with app.app_context(): db.create_all()

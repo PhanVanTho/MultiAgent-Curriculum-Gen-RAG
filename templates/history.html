@@ -178,18 +178,24 @@
                             <!-- Hành động -->
                             <td style="padding: 1.2rem 1.5rem; text-align: right;">
                                 <div class="d-flex justify-content-end gap-1 flex-wrap">
-                                    {% if item.trang_thai == 'hoan_thanh' and item.id %}
-                                    <a href="{{ url_for('hien_thi_lich_su', id=item.id) }}" class="btn btn-outline-primary btn-sm px-2">
-                                        <i class="fa-solid fa-eye"></i> <span data-i18n="history.view">Xem</span>
-                                    </a>
-                                    {% if item.ma_cv %}
-                                    <a href="{{ url_for('tai_file', loai='pdf', ma=item.ma_cv) }}" class="btn btn-danger btn-sm px-2">
-                                        <i class="fa-solid fa-file-pdf"></i> PDF
-                                    </a>
-                                    <a href="{{ url_for('tai_file', loai='docx', ma=item.ma_cv) }}" class="btn btn-primary btn-sm px-2">
-                                        <i class="fa-solid fa-file-word"></i> Word
-                                    </a>
-                                    {% endif %}
+                                    {% if item.trang_thai == 'hoan_thanh' %}
+                                        {% if item.id %}
+                                        <a href="{{ url_for('hien_thi_lich_su', id=item.id) }}" class="btn btn-outline-primary btn-sm px-2">
+                                            <i class="fa-solid fa-eye"></i> <span data-i18n="history.view">Xem</span>
+                                        </a>
+                                        {% elif item.ma_cv %}
+                                        <a href="{{ url_for('ket_qua', ma_cv=item.ma_cv) }}" class="btn btn-outline-primary btn-sm px-2">
+                                            <i class="fa-solid fa-eye"></i> <span data-i18n="history.view">Xem</span>
+                                        </a>
+                                        {% endif %}
+                                        {% if item.ma_cv %}
+                                        <a href="{{ url_for('tai_file', loai='pdf', ma=item.ma_cv) }}" class="btn btn-danger btn-sm px-2">
+                                            <i class="fa-solid fa-file-pdf"></i> PDF
+                                        </a>
+                                        <a href="{{ url_for('tai_file', loai='docx', ma=item.ma_cv) }}" class="btn btn-primary btn-sm px-2">
+                                            <i class="fa-solid fa-file-word"></i> Word
+                                        </a>
+                                        {% endif %}
                                     {% elif item.trang_thai == 'dang_chay' %}
                                     <a href="{{ url_for('trang_tao_giao_trinh') }}" class="btn btn-outline-warning btn-sm px-2" data-i18n="history.btn_progress">
                                         Tiến trình
