@@ -934,10 +934,68 @@ def admin_users():
 @login_required
 @admin_required
 def admin_curriculums():
-    history = LichSuGiaoTrinh.query.order_by(LichSuGiaoTrinh.ngay_tao.desc()).all()
+    completed = LichSuGiaoTrinh.query.order_by(LichSuGiaoTrinh.ngay_tao.desc()).all()
+    
+    items = []
+    for item in completed:
+        items.append({
+            "loai": "completed",
+            "id": item.id,
+            "ma_cv": item.ma_cv,
+            "chu_de": item.chu_de,
+            "ngay_tao": item.ngay_tao or datetime.utcnow(),
+            "do_dai_ky_tu": item.do_dai_ky_tu or 0,
+            "trang_thai": "hoan_thanh",
+            "noi_bat": item.noi_bat,
+            "nguoi_tao": item.nguoi_dung.ten_dang_nhap if item.nguoi_dung else (item.nguoi_dung_id or "Khách lẻ")
+        })
+        
+    for ma_cv, job in CONG_VIEC.items():
+        if any(x["ma_cv"] == ma_cv for x in items):
+            continue
+            
+        ngay_tao = job.get("ngay_tao", datetime.now())
+        do_dai_ky_tu = 0
+        if job.get("trang_thai") == "hoan_thanh":
+            try:
+                p_json = os.path.join(CauHinh.THU_MUC_JSON, f"{ma_cv}.json")
+                if os.path.exists(p_json):
+                    with open(p_json, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    book_vi = data.get('book_vi', {})
+                    for chap in book_vi.get("chapters", []):
+                        for sec in chap.get("sections", []):
+                            do_dai_ky_tu += len(sec.get("content", ""))
+            except Exception as e:
+                logger.error(f"Error reading character length: {e}")
+                
+        from mo_hinh import NguoiDung
+        user_name = "Khách lẻ"
+        u_id = job.get("user_id")
+        if u_id:
+            u = db.session.get(NguoiDung, u_id)
+            if u:
+                user_name = u.ten_dang_nhap
+
+        items.append({
+            "loai": "active",
+            "id": None,
+            "ma_cv": ma_cv,
+            "chu_de": job.get("tieu_de", "Không rõ chủ đề"),
+            "ngay_tao": ngay_tao,
+            "do_dai_ky_tu": do_dai_ky_tu,
+            "trang_thai": job.get("trang_thai", "dang_chay"),
+            "tien_do": job.get("tien_do", 0),
+            "buoc": job.get("buoc", "Đang xử lý"),
+            "loi": job.get("loi", ""),
+            "noi_bat": False,
+            "nguoi_tao": user_name
+        })
+        
+    items.sort(key=lambda x: x["ngay_tao"], reverse=True)
     return render_template(
         "admin_curriculums.html",
-        history=history,
+        history=items,
         current_section="curriculums"
     )
 
