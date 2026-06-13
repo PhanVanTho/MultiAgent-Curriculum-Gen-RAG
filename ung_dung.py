@@ -3683,6 +3683,15 @@ def cleanup_old_jobs():
 # Khởi chạy thread dọn dẹp ngầm
 threading.Thread(target=cleanup_old_jobs, daemon=True).start()
 
+@app.route("/show-me-app-logs-999")
+def show_me_app_logs_999():
+    import os
+    if os.path.exists("app.log"):
+        with open("app.log", "r", encoding="utf-8") as f:
+            lines = f.readlines()
+        return "<pre>" + "".join(lines[-150:]) + "</pre>"
+    return "Log file not found."
+
 if __name__ == "__main__":
     with app.app_context(): db.create_all()
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)), debug=True)
