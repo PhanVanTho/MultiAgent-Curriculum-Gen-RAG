@@ -732,7 +732,10 @@ def auth_google():
 @login_required
 def lich_su():
     # 1. Lấy lịch sử hoàn thành từ DB
-    completed = LichSuGiaoTrinh.query.filter_by(nguoi_dung_id=current_user.id).order_by(LichSuGiaoTrinh.ngay_tao.desc()).all()
+    if current_user.la_admin:
+        completed = LichSuGiaoTrinh.query.order_by(LichSuGiaoTrinh.ngay_tao.desc()).all()
+    else:
+        completed = LichSuGiaoTrinh.query.filter_by(nguoi_dung_id=current_user.id).order_by(LichSuGiaoTrinh.ngay_tao.desc()).all()
     
     items = []
     for item in completed:
@@ -748,7 +751,7 @@ def lich_su():
         
     # 2. Lấy lịch sử đang chạy / lỗi từ bộ nhớ CONG_VIEC
     for ma_cv, job in CONG_VIEC.items():
-        if job.get("user_id") == current_user.id:
+        if current_user.la_admin or job.get("user_id") == current_user.id:
             # Bỏ qua nếu đã lưu trong DB
             if any(x["ma_cv"] == ma_cv for x in items):
                 continue
