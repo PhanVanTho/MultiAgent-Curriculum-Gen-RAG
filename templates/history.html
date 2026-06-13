@@ -178,7 +178,7 @@
                             <!-- Hành động -->
                             <td style="padding: 1.2rem 1.5rem; text-align: right;">
                                 <div class="d-flex justify-content-end gap-1 flex-wrap">
-                                    {% if item.trang_thai == 'hoan_thanh' %}
+                                    {% if item.trang_thai == 'hoan_thanh' and item.id %}
                                     <a href="{{ url_for('hien_thi_lich_su', id=item.id) }}" class="btn btn-outline-primary btn-sm px-2">
                                         <i class="fa-solid fa-eye"></i> <span data-i18n="history.view">Xem</span>
                                     </a>
