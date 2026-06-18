@@ -198,7 +198,14 @@
 
         /* Guide Section */
         .guide-section {
-            padding: 5rem 0;
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            position: relative;
+            padding: 8rem 0 5rem;
+            margin-top: -60px;
+            border-top-left-radius: 60px;
+            border-top-right-radius: 60px;
+            z-index: 10;
+            box-shadow: 0 -12px 30px rgba(2, 44, 34, 0.05);
         }
         .guide-title {
             font-size: 2.5rem;
@@ -320,38 +327,99 @@
 
         /* Footer */
         .footer {
-            padding: 3rem 0 2rem;
-            text-align: center;
+            background-color: #022c22;
+            color: #e2e8f0;
+            padding: 5rem 0 3rem;
+            border-top: 1px solid rgba(52, 211, 153, 0.1);
+            font-size: 0.9rem;
         }
         .footer-logo {
-            color: var(--primary);
+            color: #34d399 !important;
             font-family: 'Space Grotesk', sans-serif;
             font-weight: 700;
-            font-size: 1.1rem;
+            font-size: 1.3rem;
+            margin-bottom: 1.25rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-block;
+        }
+        .footer-desc {
+            color: #a7f3d0;
+            opacity: 0.8;
+            line-height: 1.6;
             margin-bottom: 1.5rem;
+            font-size: 0.85rem;
+        }
+        .footer-heading {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 1.5rem;
+            position: relative;
+            padding-bottom: 0.5rem;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        .footer-links {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-bottom: 2rem;
+        .footer-heading::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 30px;
+            height: 2px;
+            background-color: #34d399;
         }
-        .footer-links a {
-            color: var(--text-muted);
+        .footer-list li {
+            margin-bottom: 0.75rem;
+        }
+        .footer-list a {
+            color: #cbd5e1;
             text-decoration: none;
-            font-size: 0.8rem;
-            font-weight: 500;
-            text-transform: uppercase;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
         }
-        .footer-links a:hover {
-            color: var(--primary);
+        .footer-list a:hover {
+            color: #34d399;
+            padding-left: 4px;
+        }
+        .footer-contact-info li {
+            color: #cbd5e1;
+            margin-bottom: 0.75rem;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+        }
+        .footer-contact-info i {
+            color: #34d399;
+            width: 20px;
+        }
+        .footer-socials a {
+            color: #cbd5e1;
+            background: rgba(255, 255, 255, 0.05);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+        }
+        .footer-socials a:hover {
+            color: #ffffff;
+            background-color: #047857;
+            border-color: #34d399;
+            transform: translateY(-3px);
+        }
+        .footer-divider {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
         .footer-copy {
-            color: var(--text-muted);
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+            color: #a7f3d0;
+            opacity: 0.6;
+            font-size: 0.8rem;
+            letter-spacing: 0.02em;
         }
         .lang-btn {
             background: rgba(255,255,255,0.12);
@@ -551,20 +619,67 @@
     </section>
 
     <!-- Footer -->
+    <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <div class="footer-logo">GIÁO TRÌNH AI</div>
-            <div class="footer-links">
-                <a href="#">Privacy Policy</a>
-                <a href="#">Terms of Service</a>
-                <a href="#">Faculty Portal</a>
-                <a href="#">Contact</a>
+            <div class="row text-start justify-content-between g-4">
+                <!-- Column 1: Logo & Tagline -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="footer-logo" data-i18n="nav.logo">GIÁO TRÌNH AI</div>
+                    <p class="footer-desc" data-i18n="footer.desc">
+                        Hệ thống biên soạn giáo trình thông minh bằng trí tuệ nhân tạo, kết hợp nghiên cứu khoa học đa tầng và phương pháp sư phạm hiện đại.
+                    </p>
+                    <div class="footer-socials mt-3">
+                        <a href="https://www.facebook.com" class="me-2" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-facebook-f"></i></a>
+                        <a href="https://www.linkedin.com/login" class="me-2" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-linkedin-in"></i></a>
+                        <a href="https://www.youtube.com" class="me-2" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-youtube"></i></a>
+                    </div>
+                </div>
+
+                <!-- Column 2: Explore -->
+                <div class="col-lg-2 col-md-6">
+                    <h5 class="footer-heading" data-i18n="footer.col_explore">Khám Phá</h5>
+                    <ul class="footer-list list-unstyled">
+                        <li><a href="{{ url_for('trang_chu') }}" data-i18n="footer.home">Trang chủ</a></li>
+                        <li><a href="{{ url_for('san_pham') }}" data-i18n="footer.showcase">Sản phẩm tiêu biểu</a></li>
+                        <li><a href="#guide-section" data-i18n="footer.guide">Hướng dẫn</a></li>
+                        <li><a href="{{ url_for('buy_tokens') }}" data-i18n="footer.pricing">Gói cước</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 3: Legal & Support -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" data-i18n="footer.col_support">Hỗ Trợ & Pháp Lý</h5>
+                    <ul class="footer-list list-unstyled">
+                        <li><a href="{{ url_for('privacy_policy') }}" data-i18n="footer.policy">Chính sách bảo mật</a></li>
+                        <li><a href="{{ url_for('terms_of_service') }}" data-i18n="footer.terms">Điều khoản dịch vụ</a></li>
+                        <li><a href="{{ url_for('data_deletion') }}" data-i18n="footer.data_deletion">Chính sách xóa dữ liệu</a></li>
+                        <li><a href="{{ url_for('support') }}" data-i18n="footer.support_faq">Hỗ trợ & FAQs</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 4: Contact -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" data-i18n="footer.col_contact">Liên Hệ</h5>
+                    <ul class="footer-contact-info list-unstyled">
+                        <li><i class="fa-solid fa-envelope me-2"></i><span data-i18n="footer.email_val">phanvantho082019@gmail.com</span></li>
+                        <li><i class="fa-solid fa-phone me-2"></i><span data-i18n="footer.phone_val">0327152710</span></li>
+                        <li><i class="fa-solid fa-location-dot me-2"></i><span data-i18n="footer.address_val">Cần Thơ, Việt Nam</span></li>
+                    </ul>
+                </div>
             </div>
-            <div class="footer-copy">
-                &copy; 2026 GIÁO TRÌNH AI. THE INTELLECTUAL LIGHT.
+
+            <hr class="footer-divider my-4">
+
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+                <div class="footer-copy" data-i18n="footer.copy">
+                    &copy; 2026 GIÁO TRÌNH AI. THE INTELLECTUAL LIGHT.
+                </div>
             </div>
         </div>
     </footer>
+
+    {% include 'chatbot.html' %}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='i18n.js') }}"></script>

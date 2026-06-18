@@ -178,24 +178,21 @@
                             <!-- Hành động -->
                             <td style="padding: 1.2rem 1.5rem; text-align: right;">
                                 <div class="d-flex justify-content-end gap-1 flex-wrap">
-                                    {% if item.trang_thai == 'hoan_thanh' %}
-                                        {% if item.id %}
-                                        <a href="{{ url_for('hien_thi_lich_su', id=item.id) }}" class="btn btn-outline-primary btn-sm px-2">
-                                            <i class="fa-solid fa-eye"></i> <span data-i18n="history.view">Xem</span>
-                                        </a>
-                                        {% elif item.ma_cv %}
-                                        <a href="{{ url_for('ket_qua', ma_cv=item.ma_cv) }}" class="btn btn-outline-primary btn-sm px-2">
-                                            <i class="fa-solid fa-eye"></i> <span data-i18n="history.view">Xem</span>
-                                        </a>
-                                        {% endif %}
-                                        {% if item.ma_cv %}
-                                        <a href="{{ url_for('tai_file', loai='pdf', ma=item.ma_cv) }}" class="btn btn-danger btn-sm px-2">
-                                            <i class="fa-solid fa-file-pdf"></i> PDF
-                                        </a>
-                                        <a href="{{ url_for('tai_file', loai='docx', ma=item.ma_cv) }}" class="btn btn-primary btn-sm px-2">
-                                            <i class="fa-solid fa-file-word"></i> Word
-                                        </a>
-                                        {% endif %}
+                                    {% if item.trang_thai == 'hoan_thanh' and item.id %}
+                                    <a href="{{ url_for('hien_thi_lich_su', id=item.id) }}" class="btn btn-outline-primary btn-sm px-2">
+                                        <i class="fa-solid fa-eye"></i> <span data-i18n="history.view">Xem</span>
+                                    </a>
+                                    {% if item.ma_cv %}
+                                    <a href="{{ url_for('tai_file', loai='pdf', ma=item.ma_cv) }}" class="btn btn-danger btn-sm px-2">
+                                        <i class="fa-solid fa-file-pdf"></i> PDF
+                                    </a>
+                                    <a href="{{ url_for('tai_file', loai='docx', ma=item.ma_cv) }}" class="btn btn-primary btn-sm px-2">
+                                        <i class="fa-solid fa-file-word"></i> Word
+                                    </a>
+                                    {% endif %}
+                                    <button onclick="xoaLichSu({{ item.id }})" class="btn btn-outline-danger btn-sm px-2">
+                                        <i class="fa-solid fa-trash"></i> <span data-i18n="history.delete">Xóa</span>
+                                    </button>
                                     {% elif item.trang_thai == 'dang_chay' %}
                                     <a href="{{ url_for('trang_tao_giao_trinh') }}" class="btn btn-outline-warning btn-sm px-2" data-i18n="history.btn_progress">
                                         Tiến trình
@@ -207,6 +204,15 @@
                                     <a href="{{ url_for('trang_tao_giao_trinh') }}" class="btn btn-outline-secondary btn-sm px-2" data-i18n="history.btn_retry">
                                         Thử lại
                                     </a>
+                                    {% if item.id %}
+                                    <button onclick="xoaLichSu({{ item.id }})" class="btn btn-outline-danger btn-sm px-2">
+                                        <i class="fa-solid fa-trash"></i> <span data-i18n="history.delete">Xóa</span>
+                                    </button>
+                                    {% elif item.ma_cv %}
+                                    <button onclick="xoaLuuTam('{{ item.ma_cv }}')" class="btn btn-outline-danger btn-sm px-2">
+                                        <i class="fa-solid fa-trash"></i> <span data-i18n="history.delete">Xóa</span>
+                                    </button>
+                                    {% endif %}
                                     {% endif %}
                                 </div>
                             </td>
@@ -258,12 +264,25 @@
     </div>
 
     <footer class="footer" style="margin-bottom: 60px;">
-        <div class="d-flex justify-content-center gap-4 mb-3">
-            <a href="#" data-i18n="verify.policy">Chính sách</a>
-            <a href="#" data-i18n="verify.terms">Điều khoản</a>
-            <a href="#" data-i18n="verify.support">Hỗ trợ</a>
+        <div class="container">
+            <div class="row align-items-center g-3">
+                <div class="col-md-4 text-center text-md-start">
+                    <span class="fw-bold text-primary" data-i18n="nav.logo">Giáo Trình AI</span>
+                    <span class="text-muted ms-2 d-none d-sm-inline">|</span>
+                    <small class="text-muted ms-2 d-block d-sm-inline-block" data-i18n="footer.tagline">Hệ thống biên soạn giáo trình tự động</small>
+                </div>
+                <div class="col-md-4 text-center">
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="{{ url_for('privacy_policy') }}" class="text-muted text-decoration-none small" data-i18n="footer.policy">Chính sách bảo mật</a>
+                        <a href="{{ url_for('terms_of_service') }}" class="text-muted text-decoration-none small" data-i18n="footer.terms">Điều khoản dịch vụ</a>
+                        <a href="{{ url_for('support') }}" class="text-muted text-decoration-none small" data-i18n="footer.contact_support">Hỗ trợ</a>
+                    </div>
+                </div>
+                <div class="col-md-4 text-center text-md-end">
+                    <small class="text-muted" data-i18n="footer.copy">&copy; 2026 GIÁO TRÌNH AI. THE INTELLECTUAL LIGHT.</small>
+                </div>
+            </div>
         </div>
-        <p data-i18n="footer.copy">&copy; 2026 GIÁO TRÌNH AI — Hệ thống biên soạn giáo trình tự động</p>
     </footer>
     <script src="{{ url_for('static', filename='i18n.js') }}"></script>
 
@@ -280,7 +299,7 @@
                 const r = await fetch(`/trang_thai/${savedMaCv}`);
                 const jobData = await r.json();
 
-                if (jobData.trang_thai === 'dang_chay') {
+                if (jobData.trang_thai === 'dang_chay' || jobData.trang_thai === 'cho_xac_nhan') {
                     // Hiện banner + cập nhật nút navbar
                     const banner = document.getElementById('active-job-banner');
                     const bannerStatus = document.getElementById('banner-status');
@@ -298,7 +317,12 @@
                     btnTaoMoi.classList.add('btn-warning');
 
                     // Cập nhật banner status
-                    if (jobData.buoc) bannerStatus.innerText = jobData.buoc;
+                    if (jobData.trang_thai === 'cho_xac_nhan') {
+                        bannerStatus.innerHTML = `⚠️ Cần xác nhận hạ quy mô giáo trình. <a href="/tao-giao-trinh" class="text-warning fw-bold text-decoration-underline">Click để xác nhận</a>`;
+                        bannerProgress.classList.add('bg-warning');
+                    } else {
+                        if (jobData.buoc) bannerStatus.innerText = jobData.buoc;
+                    }
                     if (jobData.tien_do) bannerProgress.style.width = `${jobData.tien_do}%`;
 
                     // Tiếp tục poll để cập nhật live
@@ -316,7 +340,11 @@
                                 bannerProgress.style.width = '100%';
                                 bannerProgress.classList.remove('progress-bar-striped', 'progress-bar-animated');
                                 bannerProgress.classList.add('bg-success');
-                                setTimeout(() => { window.location.href = `/ket_qua/${savedMaCv}`; }, 1200);
+                            } else if (d.trang_thai === 'cho_xac_nhan') {
+                                bannerStatus.innerHTML = `⚠️ Cần xác nhận hạ quy mô giáo trình. <a href="/tao-giao-trinh" class="text-warning fw-bold text-decoration-underline">Click để xác nhận</a>`;
+                                bannerProgress.style.width = `${d.tien_do || 20}%`;
+                                bannerProgress.classList.remove('bg-success', 'bg-danger');
+                                bannerProgress.classList.add('bg-warning');
                             } else if (d.trang_thai === 'that_bai' || d.trang_thai === 'khong_tim_thay') {
                                 clearInterval(poll);
                                 localStorage.removeItem(STORAGE_KEY);
@@ -362,6 +390,46 @@
                     } else {
                         const errorPrefix = TRANSLATIONS['history.error_prefix'] ? (TRANSLATIONS['history.error_prefix'][lang] || 'Lỗi: ') : 'Lỗi: ';
                         alert(errorPrefix + data.message);
+                    }
+                } catch(e) {
+                    const errorMsg = lang === 'vi' ? 'Có lỗi kết nối xảy ra.' : 'A connection error occurred.';
+                    alert(errorMsg);
+                }
+            }
+        }
+
+        async function xoaLichSu(id) {
+            const lang = typeof getCurrentLang === 'function' ? getCurrentLang() : 'vi';
+            const confirmMsg = lang === 'vi' ? 'Bạn có chắc chắn muốn xóa lịch sử giáo trình này? Hành động này sẽ xóa vĩnh viễn tệp PDF/Word đã tạo và không thể khôi phục.' : 'Are you sure you want to delete this curriculum history? This will permanently delete the generated PDF/Word files and cannot be undone.';
+            if (confirm(confirmMsg)) {
+                try {
+                    const r = await fetch(`/lich-su/xoa/${id}`, { method: 'POST' });
+                    const data = await r.json();
+                    if (data.success) {
+                        const successMsg = lang === 'vi' ? 'Xóa lịch sử giáo trình thành công.' : 'Curriculum history deleted successfully.';
+                        alert(successMsg);
+                        window.location.reload();
+                    } else {
+                        alert((lang === 'vi' ? 'Lỗi: ' : 'Error: ') + data.error);
+                    }
+                } catch(e) {
+                    const errorMsg = lang === 'vi' ? 'Có lỗi kết nối xảy ra.' : 'A connection error occurred.';
+                    alert(errorMsg);
+                }
+            }
+        }
+
+        async function xoaLuuTam(maCv) {
+            const lang = typeof getCurrentLang === 'function' ? getCurrentLang() : 'vi';
+            const confirmMsg = lang === 'vi' ? 'Bạn có chắc chắn muốn xóa thông báo lỗi này?' : 'Are you sure you want to delete this error notification?';
+            if (confirm(confirmMsg)) {
+                try {
+                    const r = await fetch(`/lich-su/xoa-luu-tam/${maCv}`, { method: 'POST' });
+                    const data = await r.json();
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        alert((lang === 'vi' ? 'Lỗi: ' : 'Error: ') + data.error);
                     }
                 } catch(e) {
                     const errorMsg = lang === 'vi' ? 'Có lỗi kết nối xảy ra.' : 'A connection error occurred.';

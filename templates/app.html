@@ -658,19 +658,19 @@
                             <label class="form-label" data-i18n="app.label_mode">Chế độ biên soạn</label>
                             <div class="mode-grid" id="mode-group">
                                 <div class="mode-card active" onclick="setMode('auto', this)">
-                                    <span class="token-cost-badge">1 Token</span>
+                                    <span class="token-cost-badge">{{ phi_token_auto }} Token{{ 's' if phi_token_auto > 1 else '' }}</span>
                                     <i class="fa-solid fa-wand-magic-sparkles mode-icon"></i>
                                     <span class="mode-title">Auto</span>
                                     <span class="mode-desc" data-i18n="app.mode_auto_desc">Tự động hoàn toàn</span>
                                 </div>
                                 <div class="mode-card" onclick="setMode('expert', this)">
-                                    <span class="token-cost-badge">2 Tokens</span>
+                                    <span class="token-cost-badge">{{ phi_token_expert }} Token{{ 's' if phi_token_expert > 1 else '' }}</span>
                                     <i class="fa-solid fa-shield-halved mode-icon"></i>
                                     <span class="mode-title">Expert</span>
                                     <span class="mode-desc" data-i18n="app.mode_expert_desc">Chuyên gia audit</span>
                                 </div>
                                 <div class="mode-card" onclick="setMode('creative', this)">
-                                    <span class="token-cost-badge">3 Tokens</span>
+                                    <span class="token-cost-badge">{{ phi_token_creative }} Token{{ 's' if phi_token_creative > 1 else '' }}</span>
                                     <i class="fa-solid fa-lightbulb mode-icon"></i>
                                     <span class="mode-title">Creative</span>
                                     <span class="mode-desc" data-i18n="app.mode_creative_desc">Sáng tạo nội dung</span>
@@ -862,6 +862,12 @@
                 advancedPanel.style.display = 'none';
                 advancedToggle.style.display = 'flex';
                 document.getElementById('gear-icon').style.transform = 'rotate(0deg)';
+                
+                // Clear custom settings when reverting to Auto mode
+                document.getElementById('custom_so_chuong').value = '';
+                document.getElementById('manual_titles_toggle').checked = false;
+                updateTimeEstimate();
+                generateChapterInputs();
             } else {
                 scaleSection.style.display = 'none';
                 advancedPanel.style.display = 'block';
@@ -929,7 +935,7 @@
                     const res = await fetch(`/trang_thai/${activeMaCv}`);
                     const d = await res.json();
                     
-                    if (d.trang_thai === 'dang_chay') {
+                    if (d.trang_thai === 'dang_chay' || d.trang_thai === 'cho_xac_nhan') {
                         // Khôi phục giao diện tiến trình
                         const btn = document.getElementById('submit-btn');
                         btn.disabled = true;
@@ -995,6 +1001,12 @@
                     input.className = 'chapter-item-input';
                     input.placeholder = `Tên chương ${i}...`;
                     input.dataset.index = i;
+                    input.maxLength = 100;
+                    input.addEventListener('input', () => {
+                        if (input.value.length > 100) {
+                            input.value = input.value.slice(0, 100);
+                        }
+                    });
                     container.appendChild(input);
                 }
             }
@@ -1055,6 +1067,70 @@
             return false;
         }
 
+        function isAbbreviation(str) {
+            const trimmed = str.trim();
+            const cleanLower = trimmed.toLowerCase().replace(/[^a-zđàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ\s]/g, '');
+            
+            // Danh sách các từ viết tắt cực kỳ phổ biến được phép thông qua
+            const allowedCommonAbbrs = ["ai", "iot", "it", "cntt", "csdl", "html", "css", "sql", "dna", "rna", "gdp", "vpn", "wifi", "ip"];
+            
+            if (allowedCommonAbbrs.includes(cleanLower)) {
+                return false;
+            }
+            
+            if (/^[A-ZĐÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝĂĨŨƠƯ]{2,6}$/.test(trimmed)) {
+                if (allowedCommonAbbrs.includes(trimmed.toLowerCase())) {
+                    return false;
+                }
+                return true;
+            }
+            const words = trimmed.split(/\s+/);
+            if (words.length > 1 && words.length <= 4) {
+                const allUppercaseAndShort = words.every(w => {
+                    const cleanWord = w.replace(/[^a-zA-ZĐÀÁÂÃÈÉÊÌÍÒÓÔÕÙÝĂĨŨƠƯ]/g, '');
+                    if (cleanWord.length === 0) return true;
+                    return /^[A-ZĐÀÁÂÃÈÉÊÌÍÒÓÔÕÙÝĂĨŨƠƯ]+$/.test(cleanWord) && cleanWord.length <= 5;
+                });
+                if (allUppercaseAndShort) {
+                    const hasUnallowed = words.some(w => {
+                        const cleanW = w.toLowerCase().replace(/[^a-zđàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ]/g, '');
+                        if (cleanW.length >= 2 && !allowedCommonAbbrs.includes(cleanW)) {
+                            return true;
+                        }
+                        return false;
+                    });
+                    if (hasUnallowed) return true;
+                }
+            }
+            
+            const vowels = "aeiouyàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ";
+            for (let w of words) {
+                const cleanWord = w.toLowerCase().replace(/[^a-zđàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ]/g, '');
+                if (cleanWord.length === 0) continue;
+                
+                if (allowedCommonAbbrs.includes(cleanWord)) {
+                    continue;
+                }
+                
+                let hasVowel = false;
+                for (let char of cleanWord) {
+                    if (vowels.includes(char)) {
+                        hasVowel = true;
+                        break;
+                    }
+                }
+                if (!hasVowel && cleanWord.length >= 2) {
+                    return true;
+                }
+                
+                const commonAbbrs = ["nsnd", "rag", "gdp", "fdi", "wto", "who", "asean", "opec", "imf", "wb", "dns", "tcp", "udp", "http", "https", "ssl", "tls", "api", "dom", "xml", "nosql", "db", "mvc", "oop", "rest", "soap", "crud", "sdk", "ide", "gui", "cli", "cpu", "ram", "rom", "gpu", "ssd", "hdd", "lan", "wan", "vpn", "url", "uri", "seo", "sem", "b2b", "b2c", "kpi", "okr", "roi", "hr", "pr", "qa", "qc", "r&d", "saas", "paas", "iaas", "bi", "erp", "crm", "cms", "lms", "pos", "rfid", "gps", "gis", "cad", "cam", "cae"];
+                if (commonAbbrs.includes(cleanWord)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         async function handleFormSubmit(e) {
             e.preventDefault();
             const btn = document.getElementById('submit-btn');
@@ -1068,6 +1144,17 @@
                     title: 'Thông báo',
                     text: 'Hãy nhập đầy đủ tiêu đề để đạt được kết quả tốt nhất',
                     confirmButtonText: 'Tôi sẽ bổ sung',
+                    confirmButtonColor: '#059669'
+                });
+                return;
+            }
+            
+            if (isAbbreviation(chuDe)) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Thông báo',
+                    text: 'Hãy nhập đầy đủ nội dung để đạt được kết quả tốt nhất',
+                    confirmButtonText: 'Tôi hiểu',
                     confirmButtonColor: '#059669'
                 });
                 return;
@@ -1094,15 +1181,79 @@
                 return;
             }
 
-            // Get advanced data
-            const customCount = document.getElementById('custom_so_chuong').value;
-            const manualToggle = document.getElementById('manual_titles_toggle').checked;
+            // Get advanced data only if the panel is active/visible
+            const advancedPanel = document.getElementById('advanced-panel');
+            const isAdvancedVisible = advancedPanel && advancedPanel.style.display === 'block';
+
+            const customCount = isAdvancedVisible ? document.getElementById('custom_so_chuong').value : null;
+            const manualToggle = isAdvancedVisible ? document.getElementById('manual_titles_toggle').checked : false;
             let chapterTitles = [];
             if (manualToggle) {
                 const inputs = document.querySelectorAll('.chapter-item-input');
-                inputs.forEach(input => {
-                    if (input.value.trim()) chapterTitles.push(input.value.trim());
-                });
+                let hasAbbr = false;
+                let tooLong = false;
+                let hasEmpty = false;
+                let invalidInput = null;
+                let indexNum = 0;
+                
+                for (let input of inputs) {
+                    const val = input.value.trim();
+                    if (!val) {
+                        hasEmpty = true;
+                        invalidInput = input;
+                        indexNum = input.dataset.index;
+                        break;
+                    }
+                    if (val.length > 100) {
+                        tooLong = true;
+                        invalidInput = input;
+                        indexNum = input.dataset.index;
+                        break;
+                    }
+                    if (isAbbreviation(val)) {
+                        hasAbbr = true;
+                        invalidInput = input;
+                        indexNum = input.dataset.index;
+                        break;
+                    }
+                    chapterTitles.push(val);
+                }
+                
+                if (hasEmpty) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Thông báo',
+                        text: `Vui lòng nhập đầy đủ tiêu đề cho Chương ${indexNum}.`,
+                        confirmButtonText: 'Tôi hiểu',
+                        confirmButtonColor: '#059669'
+                    });
+                    if (invalidInput) invalidInput.focus();
+                    return;
+                }
+                
+                if (tooLong) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Thông báo',
+                        text: `Tên chương ${indexNum} vượt quá giới hạn 100 ký tự. Vui lòng rút ngắn lại.`,
+                        confirmButtonText: 'Tôi hiểu',
+                        confirmButtonColor: '#059669'
+                    });
+                    if (invalidInput) invalidInput.focus();
+                    return;
+                }
+                
+                if (hasAbbr) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Thông báo',
+                        text: `Tên chương ${indexNum} chứa từ viết tắt. Hãy nhập đầy đủ nội dung để đạt được kết quả tốt nhất.`,
+                        confirmButtonText: 'Tôi hiểu',
+                        confirmButtonColor: '#059669'
+                    });
+                    if (invalidInput) invalidInput.focus();
+                    return;
+                }
             }
 
             btn.disabled = true;
@@ -1221,6 +1372,45 @@
                         localStorage.removeItem('active_job_ma_cv');
                         localStorage.removeItem('active_job_title');
                         window.location.href = `/ket_qua/${ma_cv}`;
+                    } else if (d.trang_thai === 'cho_xac_nhan') {
+                        clearInterval(pollingInterval);
+                        pollingInterval = null;
+                        
+                        const isChapterDowngrade = d.loai_loi === 'CUSTOM_CHAPTER_DOWNGRADE';
+                        Swal.fire({
+                            title: isChapterDowngrade ? 'Xác nhận hạ số chương' : 'Xác nhận hạ quy mô',
+                            html: d.loi || (isChapterDowngrade ? 'Dữ liệu không đủ để tạo đủ số chương yêu cầu.' : 'Dữ liệu không đủ để tạo giáo trình ở mức quy mô hiện tại.'),
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#059669',
+                            cancelButtonColor: '#d33',
+                            confirmButtonText: isChapterDowngrade ? 'Đồng ý hạ số chương' : 'Đồng ý hạ quy mô',
+                            cancelButtonText: 'Từ chối (Hủy)',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false
+                        }).then(async (result) => {
+                            if (result.isConfirmed) {
+                                try {
+                                    const confirmRes = await fetch(`/xac_nhan/${ma_cv}/dong_y`, { method: 'POST' });
+                                    const confirmData = await confirmRes.json();
+                                    if (confirmData.status === 'success') {
+                                        pollStatus(ma_cv);
+                                    } else {
+                                        throw new Error(confirmData.message || "Lỗi không xác định");
+                                    }
+                                } catch (err) {
+                                    Swal.fire('Lỗi', 'Không thể gửi phản hồi: ' + err.message, 'error');
+                                    pollStatus(ma_cv);
+                                }
+                            } else {
+                                try {
+                                    await fetch(`/xac_nhan/${ma_cv}/tu_choi`, { method: 'POST' });
+                                } catch (err) {
+                                    console.error("Lỗi gửi từ chối:", err);
+                                }
+                                pollStatus(ma_cv);
+                            }
+                        });
                     } else if (d.trang_thai === 'that_bai') {
                         clearInterval(pollingInterval);
                         pollingInterval = null;

@@ -91,7 +91,9 @@ def fill_knowledge_gaps(gaps: list, api_keys_list: list, api_key_openai: str, ba
                 topic=query,
                 api_keys_list=api_keys_list,
                 quy_mo="can_ban", # Chỉ cào nhanh (3-5 bài) cho mục bù đắp
-                api_key_openai=api_key_openai
+                api_key_openai=api_key_openai,
+                original_topic=base_topic,
+                search_model="gpt-4o-mini"
             )
             return res.get("passages", [])
         except Exception as e:
@@ -99,7 +101,7 @@ def fill_knowledge_gaps(gaps: list, api_keys_list: list, api_key_openai: str, ba
             return []
         
     # Chạy song song để tiết kiệm thời gian, với timeout cho futures
-    with ThreadPoolExecutor(max_workers=3) as executor:
+    with ThreadPoolExecutor(max_workers=5) as executor:
         futures = {executor.submit(search_worker, q): q for q in search_targets}
         try:
             for future in as_completed(futures, timeout=150): # Timeout tối đa 2.5 phút cho bước bù đắp

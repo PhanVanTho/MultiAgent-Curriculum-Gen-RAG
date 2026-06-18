@@ -987,6 +987,7 @@ Constraints:
 - Do NOT generalize or specialize the content scope
 - Keep the SAME number of chapters and sections
 - Titles should be clear, descriptive, and suitable for a university textbook
+- STRICTLY FORBIDDEN to use placeholders, ellipses, or abbreviations (e.g., "...", "etc.", "v.v.", "tương tự"). Every title must be fully completed and detailed.
 - Return ONLY valid JSON: {{"outline": [...]}}
 
 Current outline:
@@ -1491,6 +1492,72 @@ def _programmatic_outline_builder(chu_de: str, terms_data: dict, target_ch: int,
     }
 
 
+def _clean_lazy_placeholders_from_outline(result: dict) -> dict:
+    """
+    Programmatic Post-Processing Cleanup Layer:
+    Guarantees 100% that no lazy placeholders (..., etc., v.v., tương tự) 
+    exist in the final outline.
+    """
+    if not result or not isinstance(result, dict):
+        return result
+    
+    outline = result.get("outline", [])
+    if not isinstance(outline, list):
+        return result
+        
+    def clean_text(text: str) -> str:
+        if not text or not isinstance(text, str):
+            return text
+        
+        # 1. Clean trailing placeholders with optional spaces/commas/conjunctions
+        # v.v. / v.v / etc. / etc / ...
+        text = re.sub(r'\s*(?:,\s*|và\s+)?(?:v\.v\.|v\.v|etc\.|etc|\.\.\.)\s*$', '', text, flags=re.IGNORECASE)
+        
+        # tương tự / tương tự...
+        text = re.sub(r'\s*(?:,\s*|và\s+)?(?:tương tự|tương tự\.\.\.)\s*$', '', text, flags=re.IGNORECASE)
+        
+        # các khía cạnh khác / các phần khác / các vấn đề khác / các nội dung khác
+        text = re.sub(r'\s*(?:,\s*|và\s+)?(?:các khía cạnh khác|các phần khác|các vấn đề khác|các nội dung khác)\s*$', '', text, flags=re.IGNORECASE)
+        
+        # 2. Final trim of punctuation and whitespace
+        text_clean = text.strip(". ,")
+        if text_clean.lower() in ("", "v.v", "v.v.", "etc", "etc.", "tương tự", "các phần khác", "khác", "khác..."):
+            return "Nội dung chi tiết"
+        return text.strip()
+
+    try:
+        for ch in outline:
+            if not isinstance(ch, dict):
+                continue
+            ch["title"] = clean_text(ch.get("title", ""))
+            
+            sections = ch.get("sections", [])
+            if not isinstance(sections, list):
+                continue
+            for sec in sections:
+                if not isinstance(sec, dict):
+                    continue
+                sec["title"] = clean_text(sec.get("title", ""))
+                
+                subsecs = sec.get("subsections", [])
+                if isinstance(subsecs, list):
+                    cleaned_subsecs = []
+                    for sub in subsecs:
+                        if isinstance(sub, str):
+                            cleaned_sub = clean_text(sub)
+                            if cleaned_sub and cleaned_sub not in ("Nội dung chi tiết", "Chi tiết"):
+                                cleaned_subsecs.append(cleaned_sub)
+                            else:
+                                cleaned_subsecs.append(f"Chi tiết về {sec.get('title', 'chủ đề')}")
+                        else:
+                            cleaned_subsecs.append(sub)
+                    sec["subsections"] = cleaned_subsecs
+    except Exception as e:
+        logger.warning(f"[Cleanup] Error in programmatic placeholder cleaning: {e}")
+        
+    return result
+
+
 def nhom_thuat_ngu_va_tao_dan_y(terms_data: dict, api_key: str, chu_de: str, so_chuong: int = 10, quy_mo: str = "tieu_chuan", semaphore=None, safety_class: str = "SAFE", ngon_ngu: str = "vi", so_chuong_custom=None, danh_sach_chuong=None, passages: list = None, is_hard_case: bool = False, domain_info: dict = None):
     """
     Cognitive Layer: Clustering & Outline.
@@ -1550,6 +1617,41 @@ def nhom_thuat_ngu_va_tao_dan_y(terms_data: dict, api_key: str, chu_de: str, so_
     elif so_chuong > 0:
         target_ch = so_chuong
         target_mode = "EXACT"
+    else:
+        # Dynamic Scaler: auto-determine optimal chapter count based on richness
+        passages_count = len(passages) if passages else 0
+        if quy_mo == "chuyen_sau":
+            if doc_count >= 40 and passages_count >= 300:
+                target_ch = 14
+            elif doc_count >= 25 and passages_count >= 200:
+                target_ch = 13
+            elif doc_count >= 15 and passages_count >= 100:
+                target_ch = 12
+            else:
+                target_ch = 11
+        elif quy_mo == "tieu_chuan":
+            if doc_count >= 30 and passages_count >= 250:
+                target_ch = 10
+            elif doc_count >= 20 and passages_count >= 150:
+                target_ch = 9
+            elif doc_count >= 10 and passages_count >= 80:
+                target_ch = 8
+            else:
+                target_ch = 7
+        elif quy_mo == "can_ban":
+            if doc_count >= 15 and passages_count >= 100:
+                target_ch = 6
+            elif doc_count >= 10 and passages_count >= 60:
+                target_ch = 5
+            elif doc_count >= 6 and passages_count >= 30:
+                target_ch = 4
+            else:
+                target_ch = 3
+        else:
+            target_ch = (ch_min + ch_max) // 2
+        
+        target_mode = "EXACT"
+        logger.info(f"[DynamicScaler] Richness: terms={doc_count}, passages={passages_count}. Selected target: {target_ch} chapters for scale '{quy_mo}'.")
 
     # 💎 V23.3+ Optimization: Chuyển đổi data sang text list
     core_list = terms_data.get("core_terms", [])
@@ -1645,10 +1747,11 @@ def nhom_thuat_ngu_va_tao_dan_y(terms_data: dict, api_key: str, chu_de: str, so_
 - Each chapter must have {sec_min} to {sec_max} sections.
 - You MUST generate EXACTLY {target_ch} chapters. Do not generate fewer under any circumstances."""
     else:
-        chapter_instruction = f"""- Generate EXACTLY {ch_max} chapters (the maximum for this scale). Only reduce to {ch_min} if there is genuinely insufficient data depth.
-- Each chapter must have {sec_min} to {sec_max} sections.
-- GOAL: Maximize chapter count to {ch_max}. Fill each chapter with substantive, distinct knowledge. Do NOT pad or repeat.
-- You MUST generate AT LEAST {ch_min} chapters. Do NOT generate fewer than {ch_min} under any circumstances."""
+        chapter_instruction = f"""- The number of chapters MUST be within the range [{ch_min}, {ch_max}] (inclusive).
+- Choose the optimal number of chapters in the range [{ch_min}, {ch_max}] based on the actual depth and breadth of the provided data (terms and knowledge map).
+- Do NOT force exactly {ch_max} chapters if the data is thin and does not support it, as this leads to duplication or empty content.
+- However, do NOT be lazy and default to the minimum {ch_min} chapters if the provided data is rich enough to support more chapters. Prioritize writing as many high-quality, distinct chapters as the data can support.
+- Each chapter must have {sec_min} to {sec_max} sections."""
 
     translation_rule = ""
     if ngon_ngu == "vi":
@@ -1716,7 +1819,11 @@ PHASE 4: OUTPUT REQUIREMENTS & STRICT CONSTRAINTS (CRITICAL)
    - Follow standard university textbook progression: Foundations → Core Theory → Systems → Applications → Advanced Topics.
 
 5. ACADEMIC TONE: {domain_tone} style. {domain_section_style}
-6. NO REASONING: Output ONLY the JSON. No explanations.{translation_rule}
+6. ANTI-LAZINESS & COMPLETENESS CONSTRAINT (CRITICAL):
+   - You are STRICTLY FORBIDDEN from using any placeholders, ellipses, or lazy abbreviations such as "...", "etc.", "v.v.", "tương tự", "các phần khác", "khái niệm liên quan", "và các thành phần khác" under any circumstances.
+   - Every single chapter title, section title, and subsection description MUST be fully written out, highly detailed, concrete, specific, and professionally polished.
+   - Generate the maximum possible number of high-quality chapters and sections allowed by the scale and supported by the rich knowledge base. Do not default to the minimum.
+7. NO REASONING: Output ONLY the JSON. No explanations.{translation_rule}
 
 RETURN ONLY JSON matching this format:
 {{
@@ -1853,7 +1960,8 @@ REQUIREMENTS:
 - AT LEAST {rescue_target} chapters (chapter_index 1 through {rescue_target} or more)
 - Each chapter: {sec_min}-{sec_max} sections
 - Flow: Introduction → Foundation → Mechanics → Advanced → Applications
-- Technical, specific titles. No generic names.{translation_rule}
+- Technical, specific titles. No generic names.
+- STRICTLY FORBIDDEN from using placeholders, ellipses, or abbreviations (e.g., "...", "etc.", "v.v.", "tương tự"). Every title must be fully completed and detailed.{translation_rule}
 
 RETURN ONLY VALID JSON with at least {rescue_target} items in the "outline" array."""
 
@@ -1915,6 +2023,7 @@ QUY TẮC BẮT BUỘC:
 - Tên mới phải giữ đúng ý nghĩa gốc của tên cũ, chỉ cải thiện cách diễn đạt
 - Ví dụ: "Dữ liệu tổng hợp" → "Phương pháp sinh và xử lý dữ liệu tổng hợp" (GIỮ ý gốc)
 - KHÔNG được đổi chủ đề: "Dữ liệu tổng hợp" → "Mạng nơ-ron" là SAI
+- KHÔNG sử dụng bất kỳ từ viết tắt, ký hiệu lửng lơ hay placeholder nào (như "v.v.", "etc.", "...", "tương tự", "các khía cạnh khác"). Tất cả các tên chương và mục phải được viết đầy đủ, chi tiết, học thuật.
 - Trả về JSON thuần túy, không markdown
 
 Trả về JSON:
@@ -2007,6 +2116,9 @@ Trả về JSON:
                 })
                 logger.warning(f"[TitleEnforce] Bổ sung chương bị thiếu: '{forced_title}'")
             result["outline"] = outline
+    
+    # 🆕 Programmatic Post-Processing Cleanup Layer: Ensure no placeholders
+    result = _clean_lazy_placeholders_from_outline(result)
     
     return result
 

@@ -485,6 +485,7 @@ def giam_sat_quy_mo(
     api_keys: list,
     model_lite: str = CauHinh.SUPERVISOR_MODEL_LITE,
     model_pro: str = CauHinh.SUPERVISOR_MODEL_PRO,
+    so_chuong_yeu_cau: int = 0,
 ) -> dict:
     """
     Gemini Supervisor kiểm tra xem giáo trình đã đáp ứng quy mô người dùng chọn chưa.
@@ -500,6 +501,7 @@ def giam_sat_quy_mo(
         quy_mo: "can_ban" | "tieu_chuan" | "chuyen_sau"
         api_keys: Gemini API keys
         model_lite/model_pro: Model để dùng
+        so_chuong_yeu_cau: Số chương yêu cầu thực tế (nếu custom)
 
     Returns:
         {
@@ -521,11 +523,15 @@ def giam_sat_quy_mo(
 
     # --- Yêu cầu quy mô (ngưỡng tối thiểu) ---
     NGUONG = {
-        "can_ban":    {"chuong_min": 4,  "trang_min": 10,  "chars_per_section": 300},
+        "can_ban":    {"chuong_min": 3,  "trang_min": 3,   "chars_per_section": 300},
         "tieu_chuan": {"chuong_min": 7,  "trang_min": 30,  "chars_per_section": 600},
-        "chuyen_sau": {"chuong_min": 12, "trang_min": 80,  "chars_per_section": 1500},
+        "chuyen_sau": {"chuong_min": 11, "trang_min": 80,  "chars_per_section": 1500},
     }
-    nguong = NGUONG.get(quy_mo, NGUONG["tieu_chuan"])
+    nguong = NGUONG.get(quy_mo, NGUONG["tieu_chuan"]).copy()
+    if so_chuong_yeu_cau > 0:
+        chuong_chuan = nguong["chuong_min"]
+        nguong["chuong_min"] = so_chuong_yeu_cau
+        nguong["trang_min"] = max(1, round(nguong["trang_min"] * so_chuong_yeu_cau / chuong_chuan))
     CHARS_PER_PAGE = 1800  # ~1800 ký tự = 1 trang A4
 
     # --- Phân tích thống kê thực tế ---

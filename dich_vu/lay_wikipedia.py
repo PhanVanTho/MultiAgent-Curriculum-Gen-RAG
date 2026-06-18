@@ -38,6 +38,51 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 logger = logging.getLogger(__name__)
 
 # --- UTILS ---
+def dich_tai_lieu_en_sang_vi(text: str, api_key_openai: str) -> str:
+    if not text or not api_key_openai:
+        return text
+    try:
+        from openai import OpenAI
+        from concurrent.futures import ThreadPoolExecutor
+        client = OpenAI(api_key=api_key_openai, max_retries=1)
+        chunks = []
+        chunk_size = 3500
+        for i in range(0, len(text), chunk_size):
+            chunks.append(text[i:i+chunk_size])
+            
+        def translate_chunk(index, chunk):
+            if len(chunk.strip()) < 10:
+                return index, ""
+            try:
+                resp = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": "You are a professional academic translator. Translate the following English Wikipedia content into natural, accurate, and formal academic Vietnamese. Preserve markdown format, numbers, proper names (e.g. Formula 1, Michael Schumacher, BRM), and formulas. Do not explain or add notes."},
+                        {"role": "user", "content": chunk}
+                    ],
+                    temperature=0.2,
+                    max_tokens=1500,
+                    timeout=25.0
+                )
+                return index, resp.choices[0].message.content.strip()
+            except Exception as e:
+                logger.warning(f"[CROSS-TRANSLATE] Error translating chunk {index}: {e}")
+                return index, chunk
+
+        results = []
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = [executor.submit(translate_chunk, idx, chunk) for idx, chunk in enumerate(chunks)]
+            for future in futures:
+                results.append(future.result())
+        
+        results.sort(key=lambda x: x[0])
+        translated_chunks = [r[1] for r in results if r[1]]
+        return "\n\n".join(translated_chunks)
+    except Exception as e:
+        logger.warning(f"[CROSS-TRANSLATE] Error translating EN doc chunk: {e}")
+        return text
+
+
 def _cat_text(text: str, max_chars: int):
     text = "\n".join([ln.strip() for ln in (text or "").splitlines() if ln.strip()])
     return text[:max_chars]
@@ -79,7 +124,7 @@ def hard_rule_filter(title: str, content: str):
 # EKRE V26.2 - ADAPTIVE HELPERS
 # =============================================================================
 
-def detect_topic_complexity(topic: str, api_key: str) -> str:
+def detect_topic_complexity(topic: str, api_key: str, search_model: str = None) -> str:
     """
     Dùng OpenAI để phân loại độ phức tạp của chủ đề:
       - 'high'   : Chuyên sâu, kỹ thuật cao, ít nguồn (VD: Topological Quantum Computing)
@@ -92,7 +137,7 @@ def detect_topic_complexity(topic: str, api_key: str) -> str:
     try:
         client = OpenAI(api_key=api_key)
         resp = client.chat.completions.create(
-            model=CauHinh.SEARCH_MODEL,
+            model=search_model or CauHinh.SEARCH_MODEL,
             messages=[
                 {"role": "system", "content": "You are a knowledge classifier. Return ONLY one word: 'high', 'medium', or 'low'."},
                 {"role": "user", "content": f"Classify the academic topic complexity for Wikipedia retrieval: '{topic}'.\n- 'high': niche, technical, sparse Wikipedia coverage\n- 'medium': standard academic topic\n- 'low': broad, popular, rich Wikipedia coverage\nReply with only one word."}
@@ -487,7 +532,7 @@ def lay_noi_dung_va_lien_ket(lang: str, title: str, max_links: int = 50):
             time.sleep(sleep_time)
     return "", [], ""
 
-def extract_truth_seed(lang: str, title: str, intro: str, api_key: str, original_topic: str = None) -> dict:
+def extract_truth_seed(lang: str, title: str, intro: str, api_key: str, original_topic: str = None, search_model: str = None) -> dict:
     """V27: Trích xuất Truth Seed (Category bằng API + Alias bằng LLM) để neo Entity."""
     cache_key = f"{lang}:{title}"
     with SEED_LOCK:
@@ -529,7 +574,7 @@ TEXT: {intro[:1000]}"""
         try:
             client = OpenAI(api_key=api_key)
             resp = client.chat.completions.create(
-                model=CauHinh.SEARCH_MODEL,
+                model=search_model or CauHinh.SEARCH_MODEL,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.1,
                 response_format={"type": "json_object"}
@@ -619,7 +664,7 @@ def semantic_query_deduplicate(queries: list, api_key: str, threshold: float = 0
 
 # --- MULTI-AGENT DISCOVERY (Planner -> Searcher -> Critic) ---
 
-def agent_curriculum_planner(topic: str, quy_mo: str, api_key: str) -> list:
+def agent_curriculum_planner(topic: str, quy_mo: str, api_key: str, search_model: str = None) -> list:
     """AGENT 1: The Curriculum Planner (Vạch ra Bản đồ tri thức)
     V41: Sinh pillars kèm wiki_suggestions để Search Specialist có thể tìm chính xác hơn.
     """
@@ -646,7 +691,7 @@ Return MUST be JSON:
     
     try:
         resp = client.chat.completions.create(
-            model=CauHinh.SEARCH_MODEL, 
+            model=search_model or CauHinh.SEARCH_MODEL, 
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"},
             temperature=0.2
@@ -668,7 +713,7 @@ Return MUST be JSON:
         logger.error(f"[Planner Agent] Error: {e}")
         return [{"name": "Tổng quan", "wiki_hints": []}, {"name": "Lịch sử hình thành", "wiki_hints": []}, {"name": "Đặc điểm cơ bản", "wiki_hints": []}]
 
-def agent_search_specialist(topic: str, pillars: list, api_key: str, truth_seed: dict = None, ngon_ngu: str = "vi") -> list:
+def agent_search_specialist(topic: str, pillars: list, api_key: str, truth_seed: dict = None, ngon_ngu: str = "vi", search_model: str = None) -> list:
     """AGENT 2: The Search Specialist (3-Tier Wikipedia Retrieval)
     V41: Fallback 3 tầng — Wiki Hints → AI Keywords → Cross-lingual fallback.
     V44: Language-aware — ưu tiên ngôn ngữ theo lựa chọn user.
@@ -698,11 +743,14 @@ def agent_search_specialist(topic: str, pillars: list, api_key: str, truth_seed:
         for hint in wiki_hints:
             if not hint or not isinstance(hint, str):
                 continue
-            res = tim_kiem_tieu_de(primary_lang, hint.strip(), gioi_han=1)
-            if res:
-                queries.append({"title": res[0], "lang": primary_lang, "reason": pillar_name})
-                found_for_pillar = True
-                logger.info(f"[Search Agent] TIER-1 HIT: '{hint}' → '{res[0]}' (pillar: {pillar_name})")
+            res = tim_kiem_tieu_de(primary_lang, hint.strip(), gioi_han=3)
+            for title in res:
+                if not truth_seed or is_title_relevant(truth_seed, title, query=hint, search_topic=topic):
+                    queries.append({"title": title, "lang": primary_lang, "reason": pillar_name})
+                    found_for_pillar = True
+                    logger.info(f"[Search Agent] TIER-1 HIT: '{hint}' → '{title}' (pillar: {pillar_name})")
+                    break
+            if found_for_pillar:
                 break
         
         if found_for_pillar:
@@ -718,7 +766,7 @@ These must be REAL encyclopedia article names, not chapter titles or textbook he
 CRITICAL RULE: The suggested articles MUST be strictly related to the main Topic ('{topic}'). Do NOT generate generic words, country names, social media platforms, or unrelated concepts.
 Return MUST be JSON: {{"keywords": ["keyword 1", "keyword 2", "keyword 3"]}}"""
             resp = client.chat.completions.create(
-                model=CauHinh.SEARCH_MODEL, 
+                model=search_model or CauHinh.SEARCH_MODEL, 
                 messages=[{"role": "user", "content": prompt}],
                 response_format={"type": "json_object"},
                 temperature=0.3
@@ -726,35 +774,43 @@ Return MUST be JSON: {{"keywords": ["keyword 1", "keyword 2", "keyword 3"]}}"""
             kw = json.loads(resp.choices[0].message.content).get("keywords", [])
             
             for k in kw:
-                res = tim_kiem_tieu_de(primary_lang, k, gioi_han=1)
-                if res:
-                    queries.append({"title": res[0], "lang": primary_lang, "reason": pillar_name})
-                    found_for_pillar = True
-                    logger.info(f"[Search Agent] TIER-2 HIT: '{k}' → '{res[0]}' (pillar: {pillar_name})")
+                res = tim_kiem_tieu_de(primary_lang, k, gioi_han=3)
+                for title in res:
+                    if not truth_seed or is_title_relevant(truth_seed, title, query=k, search_topic=topic):
+                        queries.append({"title": title, "lang": primary_lang, "reason": pillar_name})
+                        found_for_pillar = True
+                        logger.info(f"[Search Agent] TIER-2 HIT: '{k}' → '{title}' (pillar: {pillar_name})")
+                        break
+                if found_for_pillar:
                     break
         except Exception as e:
             logger.error(f"[Search Agent] TIER-2 Error on pillar '{pillar_name}': {e}")
         
         # Fallback tìm chính tên pillar
         if not found_for_pillar:
-            res = tim_kiem_tieu_de(primary_lang, pillar_name, gioi_han=1)
-            if res:
-                queries.append({"title": res[0], "lang": primary_lang, "reason": pillar_name})
-                found_for_pillar = True
-                logger.info(f"[Search Agent] TIER-2 FALLBACK: '{pillar_name}' → '{res[0]}'")
+            res = tim_kiem_tieu_de(primary_lang, pillar_name, gioi_han=3)
+            for title in res:
+                if not truth_seed or is_title_relevant(truth_seed, title, query=pillar_name, search_topic=topic):
+                    queries.append({"title": title, "lang": primary_lang, "reason": pillar_name})
+                    found_for_pillar = True
+                    logger.info(f"[Search Agent] TIER-2 FALLBACK: '{pillar_name}' → '{title}'")
+                    break
         
         # ═══ TIER 3: Cross-lingual fallback ═══
         if not found_for_pillar:
-            fl_res = tim_kiem_tieu_de(fallback_lang, pillar_name, gioi_han=1)
-            if fl_res:
-                queries.append({"title": fl_res[0], "lang": fallback_lang, "reason": pillar_name})
-                logger.info(f"[Search Agent] TIER-3 {fallback_lang.upper()}: '{pillar_name}' → '{fl_res[0]}'")
-            else:
+            fl_res = tim_kiem_tieu_de(fallback_lang, pillar_name, gioi_han=3)
+            for title in fl_res:
+                if not truth_seed or is_title_relevant(truth_seed, title, query=pillar_name, search_topic=topic):
+                    queries.append({"title": title, "lang": fallback_lang, "reason": pillar_name})
+                    logger.info(f"[Search Agent] TIER-3 {fallback_lang.upper()}: '{pillar_name}' → '{title}'")
+                    found_for_pillar = True
+                    break
+            if not found_for_pillar:
                 logger.warning(f"[Search Agent] ALL TIERS FAILED for pillar: '{pillar_name}'")
             
     return queries
 
-def agent_knowledge_critic(topic: str, pillars: list, found_queries: list, api_key: str) -> list:
+def agent_knowledge_critic(topic: str, pillars: list, found_queries: list, api_key: str, search_model: str = None) -> list:
     """AGENT 3: The Knowledge Critic (Kiểm toán rỗng)
     V41: Hỗ trợ pillars dạng dict.
     """
@@ -778,7 +834,7 @@ List any Required Pillars that are COMPLETELY MISSING from the retrieved list.
 Return MUST be JSON: {{"missing_pillars": ["...", "..."]}}"""
     try:
         resp = client.chat.completions.create(
-            model=CauHinh.SEARCH_MODEL, 
+            model=search_model or CauHinh.SEARCH_MODEL, 
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"},
             temperature=0.1
@@ -789,7 +845,7 @@ Return MUST be JSON: {{"missing_pillars": ["...", "..."]}}"""
         logger.error(f"[Critic Agent] Error: {e}")
         return []
 
-def agent_link_curator(topic: str, raw_links: list, api_key: str, max_links: int = 15, truth_seed: dict = None) -> list:
+def agent_link_curator(topic: str, raw_links: list, api_key: str, max_links: int = 15, truth_seed: dict = None, search_model: str = None) -> list:
     """
     AGENT 4 (V9 Upgraded): The Link Curator - Hybrid LLM Spidering
     Sử dụng BM25 để lọc thô, sau đó gọi OpenAI LLM để chọn lọc tinh các liên kết sâu.
@@ -881,7 +937,7 @@ Return JSON exactly like this:
 """
     try:
         resp = client.chat.completions.create(
-            model=CauHinh.SEARCH_MODEL,
+            model=search_model or CauHinh.SEARCH_MODEL,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.2,
             response_format={"type": "json_object"}
@@ -895,7 +951,7 @@ Return JSON exactly like this:
         logger.warning(f"[Link Curator] LLM Spidering failed: {e}. Falling back to BM25.")
         return top_candidates[:max_links]
 
-def multi_agent_identify_wiki_titles(topic: str, quy_mo: str = "tieu_chuan", api_key: str = None, is_expansion: bool = False, truth_seed: dict = None, ngon_ngu: str = "vi", **kwargs):
+def multi_agent_identify_wiki_titles(topic: str, quy_mo: str = "tieu_chuan", api_key: str = None, is_expansion: bool = False, truth_seed: dict = None, ngon_ngu: str = "vi", search_model: str = None, **kwargs):
     """
     Orchestrator: Planner -> Searcher -> Critic Loop
     V44: Language-aware Wikipedia retrieval.
@@ -905,21 +961,21 @@ def multi_agent_identify_wiki_titles(topic: str, quy_mo: str = "tieu_chuan", api
     primary_lang = "en" if ngon_ngu == "en" else "vi"
     
     logger.info(f"[MULTI-AGENT] 🗺️ Planner is mapping knowledge pillars for '{topic}'...")
-    pillars = agent_curriculum_planner(topic, quy_mo, api_key)
+    pillars = agent_curriculum_planner(topic, quy_mo, api_key, search_model=search_model)
     pillar_display = [p["name"] if isinstance(p, dict) else p for p in pillars]
     logger.info(f"[MULTI-AGENT] Target Pillars: {pillar_display}")
     
     logger.info(f"[MULTI-AGENT] 🔎 Search Specialist is hunting {len(pillars)} pillars on Wikipedia ({primary_lang})...")
-    queries = agent_search_specialist(topic, pillars, api_key, truth_seed, ngon_ngu=ngon_ngu)
+    queries = agent_search_specialist(topic, pillars, api_key, truth_seed, ngon_ngu=ngon_ngu, search_model=search_model)
     
     # Critic Audit (Vòng lặp)
     logger.info(f"[MULTI-AGENT] 🧐 Knowledge Critic is auditing coverage...")
-    missing = agent_knowledge_critic(topic, pillars, queries, api_key)
+    missing = agent_knowledge_critic(topic, pillars, queries, api_key, search_model=search_model)
     
     if missing:
         logger.warning(f"[MULTI-AGENT] ⚠️ Critic found missing pillars: {missing}. Dispatching Searcher again...")
         refined_missing = [f"{topic} {m}" for m in missing]
-        extra_queries = agent_search_specialist(topic, refined_missing, api_key, truth_seed, ngon_ngu=ngon_ngu)
+        extra_queries = agent_search_specialist(topic, refined_missing, api_key, truth_seed, ngon_ngu=ngon_ngu, search_model=search_model)
         queries.extend(extra_queries)
         logger.info(f"[MULTI-AGENT] Recovered {len(extra_queries)} additional sources.")
     else:
@@ -1034,7 +1090,7 @@ def is_title_relevant(truth_seed: dict, title: str, query: str = "", search_topi
     return False
 
 # --- ADAPTIVE KNOWLEDGE RETRIEVAL ENGINE (EKRE-V27 DIAMOND) ---
-def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_chuan", api_key_openai: str = None, original_topic: str = None, chapter_hints: list = None, ngon_ngu: str = "vi"):
+def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_chuan", api_key_openai: str = None, original_topic: str = None, chapter_hints: list = None, ngon_ngu: str = "vi", search_model: str = None):
     from .vector_search import hybrid_semantic_filter, deduplicate_by_embedding, ensure_topic_diversity, coverage_aware_ranking
     from .lam_sach_van_ban import chia_doan, lam_sach_trang
     
@@ -1053,7 +1109,30 @@ def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_c
         "lập trình wpf": "Windows Presentation Foundation",
         "lap trinh wpf": "Windows Presentation Foundation",
         "khởi nghiệp và đổi mới sáng tạo": "Khởi nghiệp",
-        "khoi nghiep va doi moi sang tao": "Khởi nghiệp"
+        "khoi nghiep va doi moi sang tao": "Khởi nghiệp",
+        # Programming specific mappings to prevent topic drift/character conflicts
+        "c#": "C Sharp (ngôn ngữ lập trình)",
+        "c sharp": "C Sharp (ngôn ngữ lập trình)",
+        "lập trình c#": "C Sharp (ngôn ngữ lập trình)",
+        "ngôn ngữ c#": "C Sharp (ngôn ngữ lập trình)",
+        "c++": "C++",
+        "lập trình c++": "C++",
+        "ngôn ngữ c++": "C++",
+        "swift": "Swift (ngôn ngữ lập trình)",
+        "lập trình swift": "Swift (ngôn ngữ lập trình)",
+        "ngôn ngữ swift": "Swift (ngôn ngữ lập trình)",
+        "golang": "Go (ngôn ngữ lập trình)",
+        "go": "Go (ngôn ngữ lập trình)",
+        "lập trình golang": "Go (ngôn ngữ lập trình)",
+        "python": "Python (ngôn ngữ lập trình)",
+        "lập trình python": "Python (ngôn ngữ lập trình)",
+        "ngôn ngữ python": "Python (ngôn ngữ lập trình)",
+        "rust": "Rust (ngôn ngữ lập trình)",
+        "lập trình rust": "Rust (ngôn ngữ lập trình)",
+        "ngôn ngữ rust": "Rust (ngôn ngữ lập trình)",
+        "kotlin": "Kotlin (ngôn ngữ lập trình)",
+        "lập trình kotlin": "Kotlin (ngôn ngữ lập trình)",
+        "ngôn ngữ kotlin": "Kotlin (ngôn ngữ lập trình)"
     }
     mapped_topic = TOPIC_SEARCH_MAPPING.get(search_topic.lower().strip())
     if mapped_topic:
@@ -1073,7 +1152,7 @@ def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_c
             try:
                 _client = OpenAI(api_key=api_key_openai, max_retries=0)
                 _resp = _client.chat.completions.create(
-                    model=CauHinh.SEARCH_MODEL,
+                    model=search_model or CauHinh.SEARCH_MODEL,
                     messages=[{"role": "user", "content": f"Translate this Vietnamese academic topic to English. Return ONLY the English translation, nothing else:\n\n{search_topic}"}],
                     temperature=0.0,
                     max_tokens=100,
@@ -1104,7 +1183,7 @@ def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_c
     
     content, links, url = lay_noi_dung_va_lien_ket(primary_lang, main_entity)
     intro = content[:1000] if content else ""
-    truth_seed = extract_truth_seed(primary_lang, main_entity, intro, api_key_openai, original_topic=search_topic)
+    truth_seed = extract_truth_seed(primary_lang, main_entity, intro, api_key_openai, original_topic=search_topic, search_model=search_model)
     
     all_raw_docs = []
     seen_titles = set()
@@ -1130,15 +1209,16 @@ def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_c
     if chapter_hints and isinstance(chapter_hints, list) and len(chapter_hints) > 0:
         # V37.2: Custom chapters → Tìm kiếm trực tiếp theo tên chương (skip AI Planner)
         ai_titles = []
+        ai_titles.append({"title": search_topic, "lang": primary_lang, "reason": f"Main topic: {search_topic}"})
         for ch_name in chapter_hints:
             ch_name = ch_name.strip()
             if ch_name:
                 ai_titles.append({"title": ch_name, "lang": primary_lang, "reason": f"Custom chapter: {ch_name}"})
                 ai_titles.append({"title": f"{search_topic} {ch_name}", "lang": primary_lang, "reason": f"Topic+Chapter: {ch_name}"})
-        logger.info(f"[EKRE-V37] Custom mode: Using {len(chapter_hints)} chapter names as search queries (lang={primary_lang}).")
+        logger.info(f"[EKRE-V37] Custom mode: Using main topic '{search_topic}' and {len(chapter_hints)} chapter names as search queries (lang={primary_lang}).")
     else:
         # Auto mode: Dùng AI Planner/Searcher/Critic bình thường
-        ai_titles = multi_agent_identify_wiki_titles(search_topic, quy_mo, api_key_openai, truth_seed=truth_seed, ngon_ngu=ngon_ngu)
+        ai_titles = multi_agent_identify_wiki_titles(search_topic, quy_mo, api_key_openai, truth_seed=truth_seed, ngon_ngu=ngon_ngu, search_model=search_model)
         
         # V40: Category Expansion
         if truth_seed and "categories" in truth_seed:
@@ -1176,6 +1256,13 @@ def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_c
             content, links, url = lay_noi_dung_va_lien_ket(lang, t)
             if not content:
                 logger.warning(f"[DEBUG-FETCH] '{t}' rejected: No content fetched (lay_noi_dung_va_lien_ket returned None)")
+                continue
+                
+            if lang == "en" and primary_lang == "vi" and api_key_openai:
+                logger.info(f"[CROSS-LINGUAL] Translating English Wikipedia article '{t}' to Vietnamese...")
+                content = dich_tai_lieu_en_sang_vi(content, api_key_openai)
+                t = f"{t} (Bản dịch)"
+                lang = "vi"
             
             with stats_lock:
                 if links:
@@ -1241,16 +1328,31 @@ def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_c
             for en_t in en_titles:
                 en_content, en_links, en_url = lay_noi_dung_va_lien_ket("en", en_t)
                 if en_content and not hard_rule_filter(en_t, en_content):
-                    all_raw_docs.append({
-                        "title": en_t, 
-                        "text": en_content, 
-                        "intro": en_content[:1000],
-                        "url": en_url, 
-                        "lang": "en", 
-                        "subtopic": "EN Anchor Expansion", 
-                        "id": str(uuid.uuid4())[:8],
-                        "is_en_anchor": True
-                    })
+                    if primary_lang == "vi" and api_key_openai:
+                        logger.info(f"[CROSS-LINGUAL] Translating progressive English Wikipedia doc '{en_t}' to Vietnamese...")
+                        vi_content = dich_tai_lieu_en_sang_vi(en_content, api_key_openai)
+                        vi_title = f"{en_t} (Bản dịch)"
+                        all_raw_docs.append({
+                            "title": vi_title, 
+                            "text": vi_content, 
+                            "intro": vi_content[:1000],
+                            "url": en_url, 
+                            "lang": "vi", 
+                            "subtopic": "EN Anchor Expansion", 
+                            "id": str(uuid.uuid4())[:8],
+                            "is_en_anchor": True
+                        })
+                    else:
+                        all_raw_docs.append({
+                            "title": en_t, 
+                            "text": en_content, 
+                            "intro": en_content[:1000],
+                            "url": en_url, 
+                            "lang": "en", 
+                            "subtopic": "EN Anchor Expansion", 
+                            "id": str(uuid.uuid4())[:8],
+                            "is_en_anchor": True
+                        })
                     if en_links: all_internal_links.extend(en_links)
     
     # Update score after potential EN expansion
@@ -1260,7 +1362,7 @@ def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_c
     # EKRE V26.2: ADAPTIVE THRESHOLD & SAFE DEGRADATION
     # =========================================================================
 
-    complexity = detect_topic_complexity(search_topic, api_key_openai)
+    complexity = detect_topic_complexity(search_topic, api_key_openai, search_model=search_model)
     xray["complexity"] = complexity
     logger.info(f"[EKRE-V26.2] Topic Complexity: {complexity.upper()} | RawDocs: {len(all_raw_docs)}")
 
@@ -1334,7 +1436,7 @@ def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_c
         logger.warning(f"[EKRE-V35.4] Post-Filter KB Under-spec ({', '.join(reason)}). Agent 4 (Spider) is activating...")
         
         spider_limit = 15 if quy_mo == "chuyen_sau" else 10
-        selected_links = agent_link_curator(search_topic, all_internal_links, api_key_openai, max_links=spider_limit, truth_seed=truth_seed)
+        selected_links = agent_link_curator(search_topic, all_internal_links, api_key_openai, max_links=spider_limit, truth_seed=truth_seed, search_model=search_model)
         
         spider_queries = []
         if selected_links:
@@ -1345,7 +1447,7 @@ def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_c
             from dich_vu.gemini_da_buoc import generate_related_topics_gemini
             extra_topics = generate_related_topics_gemini(search_topic, all_raw_docs, quy_mo, api_keys_list)
             if extra_topics:
-                extra_titles = multi_agent_identify_wiki_titles(f"{search_topic}: {', '.join(extra_topics)}", quy_mo, api_key_openai, is_expansion=True)
+                extra_titles = multi_agent_identify_wiki_titles(f"{search_topic}: {', '.join(extra_topics)}", quy_mo, api_key_openai, is_expansion=True, search_model=search_model)
                 spider_queries = []
                 for t in extra_titles:
                     if isinstance(t, dict):
@@ -1396,7 +1498,7 @@ def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_c
     if unique_topics_count < 5 and quy_mo == "chuyen_sau":
         logger.warning(f"[EKRE-V26.2] Critical Low Diversity ({unique_topics_count} < 5). Triggering final niche expansion...")
         extra_titles = multi_agent_identify_wiki_titles(
-            f"{search_topic} (các khía cạnh chuyên sâu và cơ chế cốt lõi)", "can_ban", api_key_openai, is_expansion=True
+            f"{search_topic} (các khía cạnh chuyên sâu và cơ chế cốt lõi)", "can_ban", api_key_openai, is_expansion=True, search_model=search_model
         )
         niche_floor = CauHinh.EKRE_MIN_SIM_FLOOR  # Nới lỏng tối đa cho niche expansion
         with ThreadPoolExecutor(max_workers=3) as executor:
@@ -1485,6 +1587,11 @@ def smart_search_crawl(missing_topics: list, ti_le_en: float = 0.8):
             for title in titles:
                 content, _, url = lay_noi_dung_va_lien_ket(lang, title)
                 if content and len(content) > 500:
+                    if lang == "en" and CauHinh.OPENAI_API_KEY:
+                        logger.info(f"[CROSS-LINGUAL] Translating smart crawl English doc '{title}' to Vietnamese...")
+                        content = dich_tai_lieu_en_sang_vi(content, CauHinh.OPENAI_API_KEY)
+                        title = f"{title} (Bản dịch)"
+                        lang = "vi"
                     return {"title": title, "text": content, "url": url, "lang": lang, "id": str(uuid.uuid4())[:8]}
         return None
     with ThreadPoolExecutor(max_workers=3) as executor:

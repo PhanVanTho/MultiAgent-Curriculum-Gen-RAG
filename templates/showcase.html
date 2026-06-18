@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root {
@@ -14,44 +14,55 @@
             --bg-color: #f8fafc;
             --text-dark: #0f172a;
             --text-muted: #64748b;
+            --font-main: 'Be Vietnam Pro', sans-serif;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: var(--font-main);
             background-color: var(--bg-color);
             color: var(--text-dark);
             -webkit-font-smoothing: antialiased;
+            letter-spacing: -0.01em;
         }
 
-        h1, h2, h3, h4, h5 {
-            font-family: 'Space Grotesk', sans-serif;
-            letter-spacing: -0.02em;
+        h1, h2, h3, h4, h5, h6, .navbar-brand, .nav-link, .btn {
+            font-family: var(--font-main);
+            font-weight: 700;
         }
 
         /* Navbar */
         .navbar-custom {
-            background-color: transparent;
-            padding: 1.5rem 0;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
+            background: rgba(2, 44, 34, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 1rem 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
         }
         .navbar-brand {
             font-family: 'Space Grotesk', sans-serif;
             font-weight: 700;
-            color: var(--primary) !important;
-            font-size: 1.25rem;
+            color: #34d399 !important;
+            font-size: 1.5rem;
         }
         .nav-link {
-            color: var(--text-muted);
+            color: rgba(255, 255, 255, 0.8) !important;
             font-weight: 500;
-            font-size: 0.9rem;
-            margin: 0 10px;
-            transition: color 0.2s;
+            font-size: 0.95rem;
+            margin: 0 15px;
+            transition: all 0.2s;
         }
         .nav-link:hover, .nav-link.active {
-            color: var(--text-dark);
+            color: #ffffff !important;
+            transform: translateY(-2px);
         }
         .nav-link.active {
-            border-bottom: 2px solid var(--primary);
+            border-bottom: 2px solid #34d399;
             padding-bottom: 4px;
         }
         .btn-signin {
@@ -67,68 +78,166 @@
             background-color: #065f46;
             color: white;
         }
+        .lang-btn {
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.82rem;
+            font-weight: 700;
+            padding: 5px 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.2s;
+            margin-right: 10px;
+        }
+        .lang-btn:hover { background: rgba(255,255,255,0.22); }
 
-        /* Showcase Section */
-        .showcase-header {
-            padding: 5rem 0 3rem;
+        /* Showcase Hero - Clean and high contrast */
+        .showcase-hero {
+            background: linear-gradient(135deg, #022c22 0%, #064e3b 100%);
+            color: white;
+            padding: 10rem 0 9rem;
             text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .showcase-hero::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(52, 211, 153, 0.15) 0%, transparent 80%);
+            z-index: 1;
+        }
+        .showcase-hero .container {
+            position: relative;
+            z-index: 2;
         }
         .showcase-title {
             font-size: 3rem;
-            font-weight: 700;
+            font-weight: 800;
             margin-bottom: 1rem;
+            background: linear-gradient(to right, #ffffff, #a7f3d0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         .showcase-desc {
-            color: var(--text-muted);
-            font-size: 1.1rem;
-            max-width: 600px;
+            color: #a7f3d0;
+            font-size: 1.15rem;
+            max-width: 700px;
             margin: 0 auto;
+            opacity: 0.9;
+        }
+
+        /* Showcase Section - Curve Top and Slide Overlap to eliminate stiff straight line */
+        .showcase-section {
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            position: relative;
+            padding: 3rem 0 6rem;
+            margin-top: -60px;
+            border-top-left-radius: 60px;
+            border-top-right-radius: 60px;
+            z-index: 10;
+            box-shadow: 0 -12px 30px rgba(2, 44, 34, 0.05);
+        }
+        .bg-glow-1 {
+            position: absolute;
+            top: 20%; left: -10%;
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, rgba(52, 211, 153, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 1;
+        }
+        .bg-glow-2 {
+            position: absolute;
+            bottom: 10%; right: -10%;
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(4, 120, 87, 0.06) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 1;
         }
 
         .product-card {
             background: white;
-            border-radius: 16px;
+            border-radius: 24px;
             padding: 2.5rem 2rem;
             height: 100%;
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01);
-            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
-            border: 1px solid rgba(0,0,0,0.03);
+            border: 1px solid rgba(226, 232, 240, 0.8);
             display: flex;
             flex-direction: column;
         }
         .product-card:hover {
             transform: translateY(-8px);
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.08), 0 8px 10px -6px rgba(0,0,0,0.02);
+            box-shadow: 0 20px 40px rgba(4, 120, 87, 0.08);
+            border-color: rgba(4, 120, 87, 0.15);
+        }
+        
+        /* Thin animated indicator line on hover */
+        .product-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #047857, #34d399);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+            transform-origin: left;
+        }
+        .product-card:hover::before {
+            transform: scaleX(1);
         }
         
         .product-badge {
             position: absolute;
             top: 20px;
             right: 20px;
-            background: rgba(4, 120, 87, 0.1);
-            color: var(--primary);
+            background: rgba(4, 120, 87, 0.08);
+            border: 1px solid rgba(4, 120, 87, 0.15);
+            color: #047857;
             padding: 4px 12px;
-            border-radius: 100px;
-            font-size: 0.75rem;
+            border-radius: 99px;
+            font-size: 0.72rem;
             font-weight: 700;
             text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: all 0.3s ease;
+        }
+        .product-card:hover .product-badge {
+            background: #047857;
+            color: white;
+            border-color: transparent;
         }
 
-        .product-icon {
-            font-size: 2.5rem;
+        .product-icon-container {
+            width: 60px;
+            height: 60px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(4, 120, 87, 0.08) 0%, rgba(52, 211, 153, 0.12) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             margin-bottom: 1.5rem;
-            display: inline-block;
-            background: -webkit-linear-gradient(45deg, var(--primary), #34d399);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #047857;
+            font-size: 1.5rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .product-card:hover .product-icon-container {
+            transform: scale(1.1) rotate(5deg);
+            background: linear-gradient(135deg, #047857 0%, #34d399 100%);
+            color: white;
         }
 
         .product-title {
             font-size: 1.4rem;
             font-weight: 700;
             margin-bottom: 1rem;
+            color: #0f172a;
         }
 
         .product-text {
@@ -141,103 +250,148 @@
 
         .product-stats {
             display: flex;
-            gap: 1.5rem;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-top: auto;
             margin-bottom: 1.5rem;
             padding-top: 1.5rem;
-            border-top: 1px solid rgba(0,0,0,0.05);
+            border-top: 1px solid #f1f5f9;
         }
 
         .stat-item {
-            display: flex;
-            flex-direction: column;
+            text-align: center;
+            flex: 1;
         }
 
         .stat-val {
             font-family: 'Space Grotesk', sans-serif;
             font-weight: 700;
-            font-size: 1.1rem;
-            color: var(--text-dark);
+            font-size: 1.15rem;
+            color: #0f172a;
+            line-height: 1.2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .text-emerald {
+            color: #10b981;
         }
 
         .stat-label {
-            font-size: 0.75rem;
-            color: var(--text-muted);
+            font-size: 0.7rem;
+            color: #64748b;
             text-transform: uppercase;
             letter-spacing: 0.05em;
+            margin-top: 0.25rem;
+            display: block;
         }
 
         .btn-view {
-            background: transparent;
-            color: var(--primary);
-            border: 2px solid var(--primary);
-            padding: 10px 24px;
-            border-radius: 8px;
+            background: #f0fdf4;
+            color: #047857;
+            border: 1px solid rgba(4, 120, 87, 0.2);
+            padding: 12px 24px;
+            border-radius: 10px;
             font-weight: 600;
+            font-size: 0.95rem;
             text-align: center;
             text-decoration: none;
-            transition: all 0.2s;
+            transition: all 0.3s ease;
             width: 100%;
-            display: inline-block;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
         .btn-view:hover {
-            background: var(--primary);
+            background: linear-gradient(135deg, #047857 0%, #065f46 100%);
             color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(4, 120, 87, 0.2);
+            transform: translateY(-1px);
         }
 
         /* Footer */
         .footer {
-            padding: 3rem 0 2rem;
-            text-align: center;
-            margin-top: 4rem;
-            border-top: 1px solid rgba(0,0,0,0.05);
+            background-color: #022c22;
+            color: #cbd5e1;
+            padding: 5rem 0 3rem;
+            border-top: 1px solid rgba(52, 211, 153, 0.1);
+            font-size: 0.9rem;
         }
-        .footer-logo {
-            color: var(--primary);
-            font-family: 'Space Grotesk', sans-serif;
+        .footer-heading {
+            font-size: 1rem;
             font-weight: 700;
-            font-size: 1.1rem;
+            color: #ffffff;
             margin-bottom: 1.5rem;
+            position: relative;
+            padding-bottom: 0.5rem;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        .footer-links {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-bottom: 2rem;
+        .footer-heading::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 30px;
+            height: 2px;
+            background-color: #34d399;
         }
-        .footer-links a {
-            color: var(--text-muted);
+        .footer-list li {
+            margin-bottom: 0.75rem;
+        }
+        .footer-list a {
+            color: #cbd5e1;
             text-decoration: none;
-            font-size: 0.8rem;
-            font-weight: 500;
-            text-transform: uppercase;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
         }
-        .footer-links a:hover {
-            color: var(--primary);
+        .footer-list a:hover {
+            color: #34d399;
+            padding-left: 4px;
         }
-        .footer-copy {
-            color: var(--text-muted);
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+        .footer-contact-info li {
+            color: #cbd5e1;
+            margin-bottom: 0.75rem;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
         }
-        .lang-btn {
-            background: #f1f5f9;
-            border: 1px solid #e2e8f0;
-            border-radius: 20px;
-            color: #475569;
-            cursor: pointer;
-            font-size: 0.82rem;
-            font-weight: 700;
-            padding: 5px 12px;
+        .footer-contact-info i {
+            color: #34d399;
+            width: 20px;
+        }
+        .footer-socials a {
+            color: #cbd5e1;
+            background: rgba(255, 255, 255, 0.05);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
             display: inline-flex;
             align-items: center;
-            gap: 5px;
-            transition: background 0.2s;
-            margin-right: 10px;
+            justify-content: center;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-decoration: none;
         }
-        .lang-btn:hover { background: #e2e8f0; }
+        .footer-socials a:hover {
+            color: #ffffff;
+            background-color: #047857;
+            border-color: #34d399;
+            transform: translateY(-3px);
+        }
+        .footer-divider {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .footer-copy {
+            color: #a7f3d0;
+            opacity: 0.6;
+            font-size: 0.8rem;
+            letter-spacing: 0.02em;
+        }
     </style>
 </head>
 <body>
@@ -259,7 +413,7 @@
             <div class="d-none d-lg-block">
                 {% if current_user.is_authenticated %}
                     <div class="d-flex align-items-center">
-                        <a href="{{ url_for('profile') }}" class="btn d-flex align-items-center me-3" style="background: white; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); padding: 6px 16px; text-decoration: none; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                        <a href="{{ url_for('profile') }}" class="btn d-flex align-items-center me-3" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); padding: 6px 16px; text-decoration: none; transition: all 0.3s;">
                             {% if current_user.anh_dai_dien %}
                                 {% if current_user.anh_dai_dien.startswith('http') %}
                                     <img src="{{ current_user.anh_dai_dien }}" alt="Avatar" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;" class="me-2">
@@ -272,12 +426,21 @@
                                 </div>
                             {% endif %}
                             <div class="text-start">
-                                <div style="font-size: 0.65rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Token</div>
-                                <div style="font-size: 1rem; color: #0f172a; font-weight: 700; line-height: 1;">{{ current_user.token }}</div>
+                                <div style="font-size: 0.65rem; color: rgba(255,255,255,0.6); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    {{ current_user.ho_ten or current_user.ten_dang_nhap }}
+                                </div>
+                                <div style="font-size: 0.9rem; color: white; font-weight: 700; line-height: 1;">
+                                    Tài khoản: 
+                                    {% if current_user.la_admin %}
+                                        ∞
+                                    {% else %}
+                                        {{ current_user.token }}
+                                    {% endif %}
+                                </div>
                             </div>
                         </a>
                         <button class="lang-btn" onclick="toggleLanguage()" title="Switch Language"><span id="langFlag">🇻🇳</span><span id="langLabel">VI</span></button>
-                        <a href="{{ url_for('logout') }}" class="btn-signin" style="background-color: #64748b;" data-i18n="nav.logout">Đăng xuất</a>
+                        <a href="{{ url_for('logout') }}" class="btn-signin" style="background-color: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.1);" data-i18n="nav.logout">Đăng xuất</a>
                     </div>
                 {% else %}
                     <button class="lang-btn" onclick="toggleLanguage()" title="Switch Language"><span id="langFlag">🇻🇳</span><span id="langLabel">VI</span></button>
@@ -287,118 +450,123 @@
         </div>
     </nav>
 
-    <!-- Admin Showcase Control Panel -->
-    {% if current_user.is_authenticated and current_user.la_admin %}
-    <div class="container mt-5 mb-2">
-        <div class="card border-0 shadow-sm" style="border-radius: 16px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); border: 1px solid rgba(4, 120, 87, 0.15);">
-            <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <div>
-                    <h5 class="card-title mb-1" style="font-weight: 700; color: var(--primary);">
-                        <i class="fa-solid fa-user-shield me-2"></i> Bảng điều khiển Admin - Lựa chọn giáo trình trưng bày
-                    </h5>
-                    <p class="text-muted small mb-0">Tích chọn các giáo trình bạn muốn hiển thị làm sản phẩm tiêu biểu trên trang này.</p>
-                </div>
-                <a href="/admin/curriculums" class="btn btn-sm btn-outline-primary" style="border-radius: 8px; font-weight: 600;">
-                    <i class="fa-solid fa-gear me-1"></i> Quản lý thư viện
-                </a>
-            </div>
-            <div class="card-body px-4 pb-4">
-                <div class="table-responsive" style="max-height: 250px; overflow-y: auto; border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; background: white;">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead style="position: sticky; top: 0; background: #f8fafc; z-index: 10; border-bottom: 2px solid #e2e8f0;">
-                            <tr>
-                                <th style="width: 80px;" class="ps-3">ID</th>
-                                <th>Chủ đề giáo trình</th>
-                                <th>Người tạo</th>
-                                <th>Ngày tạo</th>
-                                <th style="width: 120px;" class="text-center">Hiển thị</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% if all_curriculums %}
-                                {% for item in all_curriculums %}
-                                <tr>
-                                    <td class="ps-3 text-muted" style="font-size: 0.85rem;">#{{ item.id }}</td>
-                                    <td><strong style="color: var(--text-dark); font-size: 0.95rem;">{{ item.chu_de }}</strong></td>
-                                    <td><span class="badge bg-secondary" style="font-weight: 500;">{{ item.nguoi_dung.ten_dang_nhap if item.nguoi_dung else "Hệ thống" }}</span></td>
-                                    <td class="small text-muted">{{ item.ngay_tao.strftime('%d/%m/%Y %H:%M') if item.ngay_tao else "Không rõ" }}</td>
-                                    <td class="text-center">
-                                        <div class="form-check form-switch d-inline-block">
-                                            <input class="form-check-input" type="checkbox" role="switch" style="cursor: pointer;"
-                                                   {% if item.noi_bat %}checked{% endif %}
-                                                   onchange="toggleShowcaseDirect({{ item.id }}, this.checked)">
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            {% else %}
-                                <tr>
-                                    <td colspan="5" class="text-center text-muted py-4">Chưa có giáo trình nào trong hệ thống.</td>
-                                </tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-    async function toggleShowcaseDirect(id, checked) {
-        try {
-            const res = await fetch(`/admin/curriculums/toggle-showcase/${id}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ noi_bat: checked })
-            });
-            const data = await res.json();
-            if (data.success) {
-                const Toast = Swal.mixin({
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 1500,
-                    timerProgressBar: true
-                });
-                Toast.fire({
-                    icon: 'success',
-                    title: data.message
-                }).then(() => {
-                    location.reload();
-                });
-            } else {
-                Swal.fire('Lỗi', data.error || 'Không thể cập nhật', 'error');
-                location.reload();
-            }
-        } catch (err) {
-            console.error(err);
-            Swal.fire('Lỗi', 'Lỗi kết nối tới máy chủ', 'error');
-            location.reload();
-        }
-    }
-    </script>
-    {% endif %}
-
-    <!-- Showcase Header -->
-    <section class="showcase-header">
+    <!-- Showcase Hero Header -->
+    <header class="showcase-hero">
         <div class="container">
             <h1 class="showcase-title" data-i18n="showcase.title">Sản Phẩm Tiêu Biểu</h1>
             <p class="showcase-desc" data-i18n="showcase.desc">Khám phá các giáo trình chuyên sâu được hệ thống AI tự động tổng hợp và biên soạn từ những nguồn tài liệu học thuật uy tín nhất.</p>
         </div>
-    </section>
+    </header>
 
-    <!-- Showcase Grid -->
-    <section class="showcase-grid pb-5">
+    <!-- Showcase Grid Section with Rounded Top Overlap -->
+    <section class="showcase-section">
+        <div class="bg-glow-1"></div>
+        <div class="bg-glow-2"></div>
         <div class="container">
+            
+            <!-- Admin Showcase Control Panel (Elegantly placed inside the overlap block) -->
+            {% if current_user.is_authenticated and current_user.la_admin %}
+            <div class="row mb-5">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm" style="border-radius: 20px; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(20px); border: 1px solid rgba(4, 120, 87, 0.15); box-shadow: 0 10px 30px rgba(0,0,0,0.04);">
+                        <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div>
+                                <h5 class="card-title mb-1" style="font-weight: 700; color: var(--primary);">
+                                    <i class="fa-solid fa-user-shield me-2"></i> Bảng điều khiển Admin - Lựa chọn giáo trình trưng bày
+                                </h5>
+                                <p class="text-muted small mb-0">Tích chọn các giáo trình bạn muốn hiển thị làm sản phẩm tiêu biểu trên trang này.</p>
+                            </div>
+                            <a href="/admin/curriculums" class="btn btn-sm btn-outline-primary" style="border-radius: 8px; font-weight: 600;">
+                                <i class="fa-solid fa-gear me-1"></i> Quản lý thư viện
+                            </a>
+                        </div>
+                        <div class="card-body px-4 pb-4">
+                            <div class="table-responsive" style="max-height: 250px; overflow-y: auto; border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; background: white;">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead style="position: sticky; top: 0; background: #f8fafc; z-index: 10; border-bottom: 2px solid #e2e8f0;">
+                                        <tr>
+                                            <th style="width: 80px;" class="ps-3">ID</th>
+                                            <th>Chủ đề giáo trình</th>
+                                            <th>Người tạo</th>
+                                            <th>Ngày tạo</th>
+                                            <th style="width: 120px;" class="text-center">Hiển thị</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% if all_curriculums %}
+                                            {% for item in all_curriculums %}
+                                            <tr>
+                                                <td class="ps-3 text-muted" style="font-size: 0.85rem;">#{{ item.id }}</td>
+                                                <td><strong style="color: var(--text-dark); font-size: 0.95rem;">{{ item.chu_de }}</strong></td>
+                                                <td><span class="badge bg-secondary" style="font-weight: 500;">{{ item.nguoi_dung.ten_dang_nhap if item.nguoi_dung else "Hệ thống" }}</span></td>
+                                                <td class="small text-muted">{{ item.ngay_tao.strftime('%d/%m/%Y %H:%M') if item.ngay_tao else "Không rõ" }}</td>
+                                                <td class="text-center">
+                                                    <div class="form-check form-switch d-inline-block">
+                                                        <input class="form-check-input" type="checkbox" role="switch" style="cursor: pointer;"
+                                                               {% if item.noi_bat %}checked{% endif %}
+                                                               onchange="toggleShowcaseDirect({{ item.id }}, this.checked)">
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        {% else %}
+                                            <tr>
+                                                <td colspan="5" class="text-center text-muted py-4">Chưa có giáo trình nào trong hệ thống.</td>
+                                            </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+            async function toggleShowcaseDirect(id, checked) {
+                try {
+                    const res = await fetch(`/admin/curriculums/toggle-showcase/${id}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ noi_bat: checked })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        const Toast = Swal.mixin({
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 1500,
+                            timerProgressBar: true
+                        });
+                        Toast.fire({
+                            icon: 'success',
+                            title: data.message
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire('Lỗi', data.error || 'Không thể cập nhật', 'error');
+                        location.reload();
+                    }
+                } catch (err) {
+                    console.error(err);
+                    Swal.fire('Lỗi', 'Lỗi kết nối tới máy chủ', 'error');
+                    location.reload();
+                }
+            }
+            </script>
+            {% endif %}
+
             <div class="row g-4">
                 {% if products and products|length > 0 %}
                     {% set icons = ['fa-microchip', 'fa-chart-pie', 'fa-staff-snake', 'fa-book-open', 'fa-atom', 'fa-globe'] %}
-                    {% set badges = ['Học Thuật', 'Chuyên Sâu', 'Phân Tích', 'Nghiên Cứu', 'Cơ Bản'] %}
                     {% for item in products %}
                     <div class="col-lg-4 col-md-6">
                         <div class="product-card">
-                            <div class="product-badge">{{ badges[loop.index0 % badges|length] }}</div>
-                            <div class="product-icon"><i class="fa-solid {{ icons[loop.index0 % icons|length] }}"></i></div>
+                            <div class="product-icon-container">
+                                <i class="fa-solid {{ icons[loop.index0 % icons|length] }}"></i>
+                            </div>
                             <h3 class="product-title" title="{{ item.chu_de }}" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 60px; line-height: 1.3;">{{ item.chu_de }}</h3>
                             <p class="product-text" style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; height: 75px;" data-i18n="showcase.product_default_desc">
                                 Giáo trình được hệ thống Giáo Trình AI tổng hợp tự động với nội dung chi tiết, cập nhật và trình bày chuẩn học thuật.
@@ -406,15 +574,15 @@
                             
                             <div class="product-stats">
                                 <div class="stat-item">
-                                    <span class="stat-val">{{ item.chuong }}</span>
+                                    <span class="stat-val"><i class="fa-regular fa-file-lines me-1 text-emerald"></i> {{ item.chuong }}</span>
                                     <span class="stat-label" data-i18n="showcase.chapters_label">Chương</span>
                                 </div>
                                 <div class="stat-item">
-                                    <span class="stat-val">{{ item.chinh_xac }}%</span>
+                                    <span class="stat-val"><i class="fa-regular fa-circle-check me-1 text-emerald"></i> {{ item.chinh_xac }}%</span>
                                     <span class="stat-label" data-i18n="showcase.accuracy_label">Chính xác</span>
                                 </div>
                                 <div class="stat-item">
-                                    <span class="stat-val">{{ item.trich_dan }}</span>
+                                    <span class="stat-val"><i class="fa-solid fa-quote-right me-1 text-emerald"></i> {{ item.trich_dan }}</span>
                                     <span class="stat-label" data-i18n="showcase.citations_label">Trích dẫn</span>
                                 </div>
                             </div>
@@ -428,21 +596,23 @@
                 <div class="col-lg-4 col-md-6">
                     <div class="product-card">
                         <div class="product-badge" data-i18n="showcase.prod1.badge">Khoa Học Máy Tính</div>
-                        <div class="product-icon"><i class="fa-solid fa-microchip"></i></div>
+                        <div class="product-icon-container">
+                            <i class="fa-solid fa-microchip"></i>
+                        </div>
                         <h3 class="product-title" data-i18n="showcase.prod1.title">Kiến Trúc Máy Tính & HĐH</h3>
                         <p class="product-text" data-i18n="showcase.prod1.desc">Giáo trình chuyên sâu phân tích cấu trúc phần cứng, cách thức hoạt động của CPU, bộ nhớ, và nhân hệ điều hành Linux/Windows. Phù hợp cho sinh viên năm 2.</p>
                         
                         <div class="product-stats">
                             <div class="stat-item">
-                                <span class="stat-val">12</span>
+                                <span class="stat-val"><i class="fa-regular fa-file-lines me-1 text-emerald"></i> 12</span>
                                 <span class="stat-label" data-i18n="showcase.chapters_label">Chương</span>
                             </div>
                             <div class="stat-item">
-                                <span class="stat-val">98.5%</span>
+                                <span class="stat-val"><i class="fa-regular fa-circle-check me-1 text-emerald"></i> 98.5%</span>
                                 <span class="stat-label" data-i18n="showcase.accuracy_label">Chính xác</span>
                             </div>
                             <div class="stat-item">
-                                <span class="stat-val">152</span>
+                                <span class="stat-val"><i class="fa-solid fa-quote-right me-1 text-emerald"></i> 152</span>
                                 <span class="stat-label" data-i18n="showcase.citations_label">Trích dẫn</span>
                             </div>
                         </div>
@@ -454,21 +624,23 @@
                 <div class="col-lg-4 col-md-6">
                     <div class="product-card">
                         <div class="product-badge" data-i18n="showcase.prod2.badge">Kinh Tế Học</div>
-                        <div class="product-icon"><i class="fa-solid fa-chart-pie"></i></div>
+                        <div class="product-icon-container">
+                            <i class="fa-solid fa-chart-pie"></i>
+                        </div>
                         <h3 class="product-title" data-i18n="showcase.prod2.title">Kinh Tế Vĩ Mô Ứng Dụng</h3>
                         <p class="product-text" data-i18n="showcase.prod2.desc">Tìm hiểu các mô hình tăng trưởng kinh tế, lạm phát, chính sách tiền tệ của ngân hàng trung ương và sự vận hành của nền kinh tế toàn cầu.</p>
                         
                         <div class="product-stats">
                             <div class="stat-item">
-                                <span class="stat-val">8</span>
+                                <span class="stat-val"><i class="fa-regular fa-file-lines me-1 text-emerald"></i> 8</span>
                                 <span class="stat-label" data-i18n="showcase.chapters_label">Chương</span>
                             </div>
                             <div class="stat-item">
-                                <span class="stat-val">99.1%</span>
+                                <span class="stat-val"><i class="fa-regular fa-circle-check me-1 text-emerald"></i> 99.1%</span>
                                 <span class="stat-label" data-i18n="showcase.accuracy_label">Chính xác</span>
                             </div>
                             <div class="stat-item">
-                                <span class="stat-val">89</span>
+                                <span class="stat-val"><i class="fa-solid fa-quote-right me-1 text-emerald"></i> 89</span>
                                 <span class="stat-label" data-i18n="showcase.citations_label">Trích dẫn</span>
                             </div>
                         </div>
@@ -480,21 +652,23 @@
                 <div class="col-lg-4 col-md-6">
                     <div class="product-card">
                         <div class="product-badge" data-i18n="showcase.prod3.badge">Y Khoa</div>
-                        <div class="product-icon"><i class="fa-solid fa-staff-snake"></i></div>
+                        <div class="product-icon-container">
+                            <i class="fa-solid fa-staff-snake"></i>
+                        </div>
                         <h3 class="product-title" data-i18n="showcase.prod3.title">Sinh Lý Học Cơ Sở</h3>
                         <p class="product-text" data-i18n="showcase.prod3.desc">Tài liệu chi tiết về hoạt động chức năng của các cơ quan trong cơ thể người, từ tế bào đến hệ thống hô hấp, tuần hoàn, bài tiết và thần kinh.</p>
                         
                         <div class="product-stats">
                             <div class="stat-item">
-                                <span class="stat-val">15</span>
+                                <span class="stat-val"><i class="fa-regular fa-file-lines me-1 text-emerald"></i> 15</span>
                                 <span class="stat-label" data-i18n="showcase.chapters_label">Chương</span>
                             </div>
                             <div class="stat-item">
-                                <span class="stat-val">97.8%</span>
+                                <span class="stat-val"><i class="fa-regular fa-circle-check me-1 text-emerald"></i> 97.8%</span>
                                 <span class="stat-label" data-i18n="showcase.accuracy_label">Chính xác</span>
                             </div>
                             <div class="stat-item">
-                                <span class="stat-val">214</span>
+                                <span class="stat-val"><i class="fa-solid fa-quote-right me-1 text-emerald"></i> 214</span>
                                 <span class="stat-label" data-i18n="showcase.citations_label">Trích dẫn</span>
                             </div>
                         </div>
@@ -510,19 +684,66 @@
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <div class="footer-logo">GIÁO TRÌNH AI</div>
-            <div class="footer-links">
-                <a href="#">Privacy Policy</a>
-                <a href="#">Terms of Service</a>
-                <a href="#">Faculty Portal</a>
-                <a href="#">Contact</a>
+            <div class="row g-5">
+                <!-- Column 1: Brand & Socials -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" style="font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem; color: #34d399;" data-i18n="nav.logo">Giáo Trình AI</h5>
+                    <p class="footer-desc mt-3" data-i18n="footer.desc">
+                        Hệ thống biên soạn giáo trình thông minh bằng trí tuệ nhân tạo, kết hợp nghiên cứu khoa học đa tầng và phương pháp sư phạm hiện đại.
+                    </p>
+                    <div class="footer-socials d-flex gap-3 mt-4">
+                        <a href="https://www.facebook.com" target="_blank" class="social-link" title="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                        <a href="https://www.linkedin.com/login" target="_blank" class="social-link" title="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                        <a href="https://www.youtube.com" target="_blank" class="social-link" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                    </div>
+                </div>
+
+                <!-- Column 2: Explore -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" data-i18n="footer.col_explore">Khám Phá</h5>
+                    <ul class="footer-list list-unstyled">
+                        <li><a href="{{ url_for('trang_chu') }}" data-i18n="footer.home">Trang chủ</a></li>
+                        <li><a href="{{ url_for('san_pham') }}" data-i18n="footer.showcase">Sản phẩm tiêu biểu</a></li>
+                        <li><a href="{{ url_for('trang_chu') }}#guide-section" data-i18n="footer.guide">Hướng dẫn</a></li>
+                        <li><a href="{{ url_for('buy_tokens') }}" data-i18n="footer.pricing">Gói cước</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 3: Legal & Support -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" data-i18n="footer.col_support">Hỗ Trợ & Pháp Lý</h5>
+                    <ul class="footer-list list-unstyled">
+                        <li><a href="{{ url_for('privacy_policy') }}" data-i18n="footer.policy">Chính sách bảo mật</a></li>
+                        <li><a href="{{ url_for('terms_of_service') }}" data-i18n="footer.terms">Điều khoản dịch vụ</a></li>
+                        <li><a href="{{ url_for('data_deletion') }}" data-i18n="footer.data_deletion">Chính sách xóa dữ liệu</a></li>
+                        <li><a href="{{ url_for('support') }}" data-i18n="footer.support_faq">Hỗ trợ & FAQs</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 4: Contact -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" data-i18n="footer.col_contact">Liên Hệ</h5>
+                    <ul class="footer-contact-info list-unstyled">
+                        <li><i class="fa-solid fa-envelope me-2"></i><span data-i18n="footer.email_val">phanvantho082019@gmail.com</span></li>
+                        <li><i class="fa-solid fa-phone me-2"></i><span data-i18n="footer.phone_val">0327152710</span></li>
+                        <li><i class="fa-solid fa-location-dot me-2"></i><span data-i18n="footer.address_val">Cần Thơ, Việt Nam</span></li>
+                    </ul>
+                </div>
             </div>
-            <div class="footer-copy">
-                &copy; 2026 GIÁO TRÌNH AI. THE INTELLECTUAL LIGHT.
+
+            <hr class="footer-divider my-4">
+
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+                <div class="footer-copy" data-i18n="footer.copy">
+                    &copy; 2026 GIÁO TRÌNH AI. THE INTELLECTUAL LIGHT.
+                </div>
             </div>
         </div>
     </footer>
 
+    {% include 'chatbot.html' %}
+
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='i18n.js') }}"></script>
     <script>

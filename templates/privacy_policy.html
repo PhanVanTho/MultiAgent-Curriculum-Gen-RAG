@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title data-i18n="footer.policy">Chính sách bảo mật - Giáo Trình AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #047857; /* Emerald 700 */
+            --bg-color: #f8fafc;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --font-main: 'Be Vietnam Pro', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            -webkit-font-smoothing: antialiased;
+            letter-spacing: -0.01em;
+        }
+
+        h1, h2, h3, h4, h5, h6, .navbar-brand, .nav-link, .btn {
+            font-family: var(--font-main);
+            font-weight: 700;
+        }
+
+        /* Navbar */
+        .navbar-custom {
+            background: rgba(2, 44, 34, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 1rem 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+        .navbar-brand {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            color: #34d399 !important;
+            font-size: 1.5rem;
+        }
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8) !important;
+            font-weight: 500;
+            font-size: 0.95rem;
+            margin: 0 15px;
+            transition: all 0.2s;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #ffffff !important;
+            transform: translateY(-2px);
+        }
+        .btn-signin {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 600;
+            padding: 8px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .btn-signin:hover {
+            background-color: #065f46;
+            color: white;
+        }
+        .lang-btn {
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.82rem;
+            font-weight: 700;
+            padding: 5px 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.2s;
+            margin-right: 10px;
+        }
+        .lang-btn:hover { background: rgba(255,255,255,0.22); }
+
+        /* Hero Header */
+        .legal-hero {
+            background: linear-gradient(135deg, #022c22 0%, #064e3b 100%);
+            color: white;
+            padding: 8rem 0 4rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .legal-hero::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(52, 211, 153, 0.15) 0%, transparent 80%);
+            z-index: 1;
+        }
+        .legal-hero .container {
+            position: relative;
+            z-index: 2;
+        }
+        .legal-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+        .legal-subtitle {
+            color: #a7f3d0;
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+
+        /* Content Card */
+        .legal-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+            border: 1px solid rgba(0,0,0,0.05);
+            padding: 3rem;
+            margin-top: -2rem;
+            margin-bottom: 5rem;
+            position: relative;
+            z-index: 10;
+        }
+        .legal-card h2 {
+            font-size: 1.5rem;
+            color: #064e3b;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+            border-bottom: 2px solid #ecfdf5;
+            padding-bottom: 0.5rem;
+        }
+        .legal-card h2:first-of-type {
+            margin-top: 0;
+        }
+        .legal-card p, .legal-card ul {
+            font-size: 0.95rem;
+            line-height: 1.8;
+            color: #334155;
+            margin-bottom: 1.5rem;
+        }
+        .legal-card ul {
+            padding-left: 1.5rem;
+        }
+        .legal-card li {
+            margin-bottom: 0.5rem;
+        }
+        .highlight-box {
+            background-color: #f0fdf4;
+            border-left: 4px solid #10b981;
+            padding: 1.25rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1.5rem 0;
+        }
+
+
+        /* Footer */
+        .footer {
+            background-color: #022c22;
+            color: #e2e8f0;
+            padding: 5rem 0 3rem;
+            border-top: 1px solid rgba(52, 211, 153, 0.1);
+            font-size: 0.9rem;
+        }
+        .footer-heading {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 1.5rem;
+            position: relative;
+            padding-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .footer-heading::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 30px;
+            height: 2px;
+            background-color: #34d399;
+        }
+        .footer-list li {
+            margin-bottom: 0.75rem;
+        }
+        .footer-list a {
+            color: #cbd5e1;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
+        }
+        .footer-list a:hover {
+            color: #34d399;
+            padding-left: 4px;
+        }
+        .footer-contact-info li {
+            color: #cbd5e1;
+            margin-bottom: 0.75rem;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+        }
+        .footer-contact-info i {
+            color: #34d399;
+            width: 20px;
+        }
+        .footer-socials a {
+            color: #cbd5e1;
+            background: rgba(255, 255, 255, 0.05);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+        }
+        .footer-socials a:hover {
+            color: #ffffff;
+            background-color: #047857;
+            border-color: #34d399;
+            transform: translateY(-3px);
+        }
+        .footer-divider {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .footer-copy {
+            color: #a7f3d0;
+            opacity: 0.6;
+            font-size: 0.8rem;
+            letter-spacing: 0.02em;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-custom">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('trang_chu') }}">Giáo Trình AI</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
+                <ul class="navbar-nav gap-3">
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('trang_chu') }}" data-i18n="nav.intro">Giới Thiệu</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('trang_chu') }}#guide-section" data-i18n="nav.guide">Hướng Dẫn</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('san_pham') }}" data-i18n="nav.products">Sản Phẩm</a></li>
+                </ul>
+            </div>
+            <div class="d-none d-lg-block">
+                {% if current_user.is_authenticated %}
+                    <div class="d-flex align-items-center">
+                        <a href="{{ url_for('profile') }}" class="btn d-flex align-items-center me-3" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); padding: 6px 16px; text-decoration: none; transition: all 0.3s;">
+                            {% if current_user.anh_dai_dien %}
+                                {% if current_user.anh_dai_dien.startswith('http') %}
+                                    <img src="{{ current_user.anh_dai_dien }}" alt="Avatar" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;" class="me-2">
+                                {% else %}
+                                    <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.anh_dai_dien) }}" alt="Avatar" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;" class="me-2">
+                                {% endif %}
+                            {% else %}
+                                <div class="avatar-fallback me-2 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; border-radius: 50%; background: #10b981; color: white; font-weight: bold; font-size: 0.8rem;">
+                                    {{ (current_user.ho_ten or current_user.ten_dang_nhap)[0] | upper }}
+                                </div>
+                            {% endif %}
+                            <div class="text-start">
+                                <div style="font-size: 0.65rem; color: rgba(255,255,255,0.6); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    {{ current_user.ho_ten or current_user.ten_dang_nhap }}
+                                </div>
+                                <div style="font-size: 0.9rem; color: white; font-weight: 700; line-height: 1;">
+                                    Tài khoản: 
+                                    {% if current_user.la_admin %}
+                                        ∞
+                                    {% else %}
+                                        {{ current_user.token }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </a>
+                        <button class="lang-btn" onclick="toggleLanguage()" title="Switch Language"><span id="langFlag">🇻🇳</span><span id="langLabel">VI</span></button>
+                        <a href="{{ url_for('logout') }}" class="btn-signin" style="background-color: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.1);" data-i18n="nav.logout">Đăng xuất</a>
+                    </div>
+                {% else %}
+                    <button class="lang-btn" onclick="toggleLanguage()" title="Switch Language"><span id="langFlag">🇻🇳</span><span id="langLabel">VI</span></button>
+                    <a href="{{ url_for('login') }}" class="btn-signin" data-i18n="nav.login">Đăng nhập</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Header -->
+    <header class="legal-hero">
+        <div class="container">
+            <h1 class="legal-title lang-vi">Chính Sách Bảo Mật</h1>
+            <h1 class="legal-title lang-en d-none">Privacy Policy</h1>
+            <p class="legal-subtitle lang-vi">Cách chúng tôi bảo vệ và xử lý thông tin cá nhân của bạn</p>
+            <p class="legal-subtitle lang-en d-none">How we collect, use, and safeguard your personal information</p>
+        </div>
+    </header>
+
+    <!-- Content Card -->
+    <main class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10 col-xl-9">
+                <article class="legal-card">
+                    <!-- VIETNAMESE -->
+                    <div class="lang-vi">
+                        <h2>1. Giới thiệu tổng quan</h2>
+                        <p>Chào mừng bạn đến với <strong>Giáo Trình AI</strong>. Chúng tôi rất coi trọng quyền riêng tư của người dùng. Chính sách bảo mật này mô tả cách chúng tôi thu thập, sử dụng, lưu trữ và bảo vệ dữ liệu cá nhân của bạn khi bạn sử dụng ứng dụng web và các dịch vụ biên soạn giáo trình thông minh của chúng tôi.</p>
+                        
+                        <div class="highlight-box">
+                            <strong>Thông tin nhà phát triển / Đơn vị chủ quản:</strong><br>
+                            - Tên ứng dụng: Giáo Trình AI (AI Curriculum Generator)<br>
+                            - Email liên hệ: <a href="mailto:phanvantho082019@gmail.com">phanvantho082019@gmail.com</a><br>
+                            - Số điện thoại: 0327152710<br>
+                            - Địa chỉ: Cần Thơ, Việt Nam
+                        </div>
+
+                        <h2>2. Loại dữ liệu thu thập</h2>
+                        <p>Chúng tôi thu thập các thông tin sau để cung cấp và cải thiện dịch vụ:</p>
+                        <ul>
+                            <li><strong>Thông tin tài khoản:</strong> Tên đăng nhập, địa chỉ email, mật khẩu (được mã hóa một chiều), và ảnh đại diện (nếu bạn đăng nhập bằng Google).</li>
+                            <li><strong>Dữ liệu tạo giáo trình:</strong> Chủ đề giáo trình bạn nhập, các từ khóa, các tùy chỉnh cấu hình nâng cao, và nội dung giáo trình được AI tạo ra.</li>
+                            <li><strong>Dữ liệu lịch sử & Token:</strong> Lịch sử biên soạn giáo trình của bạn, các tài liệu bạn đã tải xuống (PDF, Word, Markdown) và nhật ký giao dịch token.</li>
+                        </ul>
+
+                        <h2>3. Mục đích sử dụng dữ liệu</h2>
+                        <p>Dữ liệu của bạn được thu thập nhằm các mục đích chính:</p>
+                        <ul>
+                            <li>Vận hành hệ thống biên soạn giáo trình tự động, thực hiện RAG (Retrieval-Augmented Generation) tìm kiếm và tổng hợp thông tin.</li>
+                            <li>Quản lý số dư token, tính toán chi phí token dựa trên các chế độ biên soạn và gói cước.</li>
+                            <li>Lưu trữ lịch sử trong thư viện cá nhân để bạn có thể xem lại và xuất bản tài liệu bất cứ lúc nào.</li>
+                            <li>Cung cấp hỗ trợ kỹ thuật và giải quyết các khiếu nại hoặc yêu cầu hoàn trả/xóa dữ liệu.</li>
+                        </ul>
+
+                        <h2>4. Chia sẻ dữ liệu với bên thứ ba</h2>
+                        <p>Chúng tôi không bán hoặc chia sẻ thông tin cá nhân của bạn cho bất kỳ bên thứ ba nào vì mục đích quảng cáo thương mại. Tuy nhiên, để thực hiện chức năng AI, chúng tôi gửi các truy vấn chủ đề và từ khóa của bạn đến các đối tác cung cấp mô hình ngôn ngữ lớn (LLM):</p>
+                        <ul>
+                            <li><strong>OpenAI & Google Gemini:</strong> Gửi thông tin chủ đề để tạo dàn ý và viết nội dung chương. Thông tin này không đi kèm danh tính tài khoản cá nhân của bạn.</li>
+                            <li><strong>Cổng thanh toán (VNPAY, SePay):</strong> Thực hiện truyền nhận thông tin thanh toán khi bạn nạp token để đảm bảo giao dịch được duyệt tự động.</li>
+                        </ul>
+
+                        <h2>5. Quyền của người dùng và Xóa dữ liệu</h2>
+                        <p>Bạn có toàn quyền kiểm soát thông tin cá nhân của mình:</p>
+                        <ul>
+                            <li>Bạn có thể xem và cập nhật thông tin cá nhân, thay đổi email hoặc mật khẩu trong mục <strong>Hồ sơ</strong>.</li>
+                            <li>Bạn có thể xóa thủ công từng giáo trình trong danh sách <strong>Lịch sử</strong>.</li>
+                            <li>Bạn có quyền yêu cầu xóa vĩnh viễn tài khoản và toàn bộ dữ liệu liên quan khỏi hệ thống bằng cách truy cập trang <a href="{{ url_for('data_deletion') }}">Yêu cầu xóa dữ liệu</a> hoặc liên hệ trực tiếp qua email <a href="mailto:phanvantho082019@gmail.com">phanvantho082019@gmail.com</a>.</li>
+                        </ul>
+
+                        <h2>6. An toàn dữ liệu</h2>
+                        <p>Chúng tôi áp dụng các biện pháp bảo mật tiêu chuẩn ngành bao gồm mã hóa cơ sở dữ liệu, băm một chiều mật khẩu bằng công nghệ bảo mật cao và truyền dữ liệu qua giao thức HTTPS an toàn. Tuy nhiên, xin lưu ý rằng không có phương thức truyền tải qua Internet nào là an toàn 100%.</p>
+
+                        <h2>7. Tuyên bố miễn trừ trách nhiệm về AI</h2>
+                        <p>Hệ thống Giáo Trình AI sử dụng các mô hình học máy thông minh để tổng hợp kiến thức từ Wikipedia và nguồn tài liệu học thuật. Nội dung do AI tạo ra có mục đích tham khảo, hỗ trợ soạn thảo sư phạm và có thể không chính xác 100%. Người dùng chịu hoàn toàn trách nhiệm kiểm chứng thông tin trước khi áp dụng vào giảng dạy thực tế.</p>
+                    </div>
+
+                    <!-- ENGLISH -->
+                    <div class="lang-en d-none">
+                        <h2>1. Overview & Introduction</h2>
+                        <p>Welcome to <strong>AI Curriculum</strong> (Giáo Trình AI). We heavily prioritize your privacy. This privacy policy describes how we collect, use, store, and protect your personal data when you use our web application and smart curriculum authoring services.</p>
+                        
+                        <div class="highlight-box">
+                            <strong>Developer / Organization Information:</strong><br>
+                            - App Name: AI Curriculum Generator (Giáo Trình AI)<br>
+                            - Support Email: <a href="mailto:phanvantho082019@gmail.com">phanvantho082019@gmail.com</a><br>
+                            - Phone: 0327152710<br>
+                            - Address: Can Tho, Vietnam
+                        </div>
+
+                        <h2>2. Data Collection</h2>
+                        <p>We collect the following information to provide and improve our services:</p>
+                        <ul>
+                            <li><strong>Account Credentials:</strong> Username, email address, one-way hashed passwords, and profile picture (if logged in via Google).</li>
+                            <li><strong>Curriculum Generation Input:</strong> Selected curriculum topics, keywords, advanced configuration choices, and generated content.</li>
+                            <li><strong>History & Token Logs:</strong> Generation history, exported files (PDF, Word, Markdown), and token transaction logs.</li>
+                        </ul>
+
+                        <h2>3. Use of Data</h2>
+                        <p>Your data is collected and processed for the following purposes:</p>
+                        <ul>
+                            <li>To operate the automated curriculum authoring flow utilizing RAG (Retrieval-Augmented Generation) technology.</li>
+                            <li>To manage token balances and calculate costs based on compiler settings and packages.</li>
+                            <li>To store history in your personal library so that you can view and export documents at any time.</li>
+                            <li>To provide technical support and process data deletion requests.</li>
+                        </ul>
+
+                        <h2>4. Third-Party Sharing</h2>
+                        <p>We do not sell or rent your personal information to third parties for advertising purposes. However, to execute AI generations, we process theme queries via large language model partners:</p>
+                        <ul>
+                            <li><strong>OpenAI & Google Gemini:</strong> Submitting prompt topics to generate outlines and chapter content. No personally identifiable account information is sent to these partners.</li>
+                            <li><strong>Payment Gateways (VNPAY, SePay):</strong> Transmitting payment details to process token transactions securely.</li>
+                        </ul>
+
+                        <h2>5. User Rights & Data Deletion</h2>
+                        <p>You have full control over your personal data:</p>
+                        <ul>
+                            <li>You can view and update your profile details, email, or password in the <strong>Profile</strong> tab.</li>
+                            <li>You can manually delete curriculum items from your <strong>History</strong>.</li>
+                            <li>You can request permanent deletion of your account and all associated records on our <a href="{{ url_for('data_deletion') }}">Data Deletion</a> page or by emailing us at <a href="mailto:phanvantho082019@gmail.com">phanvantho082019@gmail.com</a>.</li>
+                        </ul>
+
+                        <h2>6. Security</h2>
+                        <p>We apply standard security protocols, including database encryption, secure HTTPS transport, and one-way hashing for passwords. However, please note that no internet transmission method is 100% secure.</p>
+
+                        <h2>7. AI Output Disclaimer</h2>
+                        <p>The AI Curriculum Generator uses machine learning models to synthesize knowledge from public sources like Wikipedia. Content generated by AI is intended for reference and drafting assistance and may not be 100% accurate. Users are fully responsible for verifying all facts and curriculum information before using them in active classrooms.</p>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row g-5">
+                <!-- Column 1: Brand & Socials -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" style="font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem; color: #34d399;" data-i18n="nav.logo">Giáo Trình AI</h5>
+                    <p class="footer-desc mt-3" data-i18n="footer.desc">
+                        Hệ thống biên soạn giáo trình thông minh bằng trí tuệ nhân tạo, kết hợp nghiên cứu khoa học đa tầng và phương pháp sư phạm hiện đại.
+                    </p>
+                    <div class="footer-socials d-flex gap-3 mt-4">
+                        <a href="https://www.facebook.com" target="_blank" class="social-link" title="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                        <a href="https://www.linkedin.com/login" target="_blank" class="social-link" title="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                        <a href="https://www.youtube.com" target="_blank" class="social-link" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                    </div>
+                </div>
+
+                <!-- Column 2: Explore -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" data-i18n="footer.col_explore">Khám Phá</h5>
+                    <ul class="footer-list list-unstyled">
+                        <li><a href="{{ url_for('trang_chu') }}" data-i18n="footer.home">Trang chủ</a></li>
+                        <li><a href="{{ url_for('san_pham') }}" data-i18n="footer.showcase">Sản phẩm tiêu biểu</a></li>
+                        <li><a href="{{ url_for('trang_chu') }}#guide-section" data-i18n="footer.guide">Hướng dẫn</a></li>
+                        <li><a href="{{ url_for('buy_tokens') }}" data-i18n="footer.pricing">Gói cước</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 3: Legal & Support -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" data-i18n="footer.col_support">Hỗ Trợ & Pháp Lý</h5>
+                    <ul class="footer-list list-unstyled">
+                        <li><a href="{{ url_for('privacy_policy') }}" data-i18n="footer.policy">Chính sách bảo mật</a></li>
+                        <li><a href="{{ url_for('terms_of_service') }}" data-i18n="footer.terms">Điều khoản dịch vụ</a></li>
+                        <li><a href="{{ url_for('data_deletion') }}" data-i18n="footer.data_deletion">Chính sách xóa dữ liệu</a></li>
+                        <li><a href="{{ url_for('support') }}" data-i18n="footer.support_faq">Hỗ trợ & FAQs</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 4: Contact -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" data-i18n="footer.col_contact">Liên Hệ</h5>
+                    <ul class="footer-contact-info list-unstyled">
+                        <li><i class="fa-solid fa-envelope me-2"></i><span data-i18n="footer.email_val">phanvantho082019@gmail.com</span></li>
+                        <li><i class="fa-solid fa-phone me-2"></i><span data-i18n="footer.phone_val">0327152710</span></li>
+                        <li><i class="fa-solid fa-location-dot me-2"></i><span data-i18n="footer.address_val">Cần Thơ, Việt Nam</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <hr class="footer-divider my-4">
+
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+                <div class="footer-copy" data-i18n="footer.copy">
+                    &copy; 2026 GIÁO TRÌNH AI. THE INTELLECTUAL LIGHT.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='i18n.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            function updateVisibility(lang) {
+                if (lang === 'vi') {
+                    document.querySelectorAll('.lang-vi').forEach(el => el.classList.remove('d-none'));
+                    document.querySelectorAll('.lang-en').forEach(el => el.classList.add('d-none'));
+                } else {
+                    document.querySelectorAll('.lang-vi').forEach(el => el.classList.add('d-none'));
+                    document.querySelectorAll('.lang-en').forEach(el => el.classList.remove('d-none'));
+                }
+            }
+            
+            // Initial apply
+            const currentLang = localStorage.getItem('app_lang') || 'vi';
+            updateVisibility(currentLang);
+            
+            // Listen to changes
+            window.addEventListener('languageChanged', (e) => {
+                updateVisibility(e.detail.lang);
+            });
+        });
+    </script>
+</body>
+</html>

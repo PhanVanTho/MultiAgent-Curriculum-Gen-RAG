@@ -1,7 +1,84 @@
 # -*- coding: utf-8 -*-
 import os
+import base64
+import hashlib
+from cryptography.fernet import Fernet
 
-class CauHinh:
+def get_fernet_key():
+    secret = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
+    key_32 = hashlib.sha256(secret.encode("utf-8")).digest()
+    return base64.urlsafe_b64encode(key_32)
+
+def ma_hoa_key(raw_text: str) -> str:
+    if not raw_text:
+        return ""
+    try:
+        f = Fernet(get_fernet_key())
+        return f.encrypt(raw_text.strip().encode("utf-8")).decode("utf-8")
+    except Exception:
+        return ""
+
+def giai_ma_key(cipher_text: str) -> str:
+    if not cipher_text:
+        return ""
+    try:
+        f = Fernet(get_fernet_key())
+        return f.decrypt(cipher_text.encode("utf-8")).decode("utf-8")
+    except Exception:
+        return ""
+
+class CauHinhMeta(type):
+    def lay_tu_csdl(cls, khoa):
+        try:
+            from mo_hinh import CauHinhHeThong
+            item = CauHinhHeThong.query.filter_by(khoa=khoa).first()
+            if item and item.gia_tri:
+                decrypted = giai_ma_key(item.gia_tri)
+                if decrypted:
+                    return decrypted
+        except Exception:
+            pass
+        return None
+
+    @property
+    def OPENAI_API_KEY(cls):
+        val = cls.lay_tu_csdl("OPENAI_API_KEY")
+        return val if val is not None else cls._OPENAI_API_KEY
+
+    @OPENAI_API_KEY.setter
+    def OPENAI_API_KEY(cls, val):
+        cls._OPENAI_API_KEY = val
+
+    @property
+    def GEMINI_API_KEYS(cls):
+        val = cls.lay_tu_csdl("GEMINI_API_KEYS")
+        if val is not None:
+            return [k.strip() for k in val.split(",") if k.strip()]
+        return cls._GEMINI_API_KEYS
+
+    @GEMINI_API_KEYS.setter
+    def GEMINI_API_KEYS(cls, val):
+        cls._GEMINI_API_KEYS = val
+
+    @property
+    def SEPAY_API_KEY(cls):
+        val = cls.lay_tu_csdl("SEPAY_API_KEY")
+        return val if val is not None else cls._SEPAY_API_KEY
+
+    @SEPAY_API_KEY.setter
+    def SEPAY_API_KEY(cls, val):
+        cls._SEPAY_API_KEY = val
+
+    @property
+    def VNPAY_HASH_SECRET(cls):
+        val = cls.lay_tu_csdl("VNPAY_HASH_SECRET")
+        return val if val is not None else cls._VNPAY_HASH_SECRET
+
+    @VNPAY_HASH_SECRET.setter
+    def VNPAY_HASH_SECRET(cls, val):
+        cls._VNPAY_HASH_SECRET = val
+
+class CauHinh(metaclass=CauHinhMeta):
     # Flask
     KHOA_BI_MAT = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
 
@@ -16,14 +93,13 @@ class CauHinh:
     MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "ylifjkrtmpzpbomh")
     MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER", "phanvantho082019@gmail.com")
 
-
-
-    # OpenAI
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    # OpenAI (Fallback keys)
+    _OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
     OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
-    # Gemini
-    GEMINI_API_KEYS = [k.strip() for k in os.getenv("GEMINI_API_KEYS", os.getenv("GEMINI_API_KEY", "")).split(",") if k.strip()]
+    # Gemini (Fallback keys)
+    _GEMINI_API_KEYS = [k.strip() for k in os.getenv("GEMINI_API_KEYS", os.getenv("GEMINI_API_KEY", "")).split(",") if k.strip()]
+
     GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")           # Model mạnh — dùng cho việc cần độ chính xác cao
     GEMINI_MODEL_LITE = os.getenv("GEMINI_MODEL_LITE", "gemini-2.5-flash-lite")  # Model nhẹ — dùng cho hầu hết Supervisor tasks
     GEMINI_EMBEDDING_MODEL = os.getenv("GEMINI_EMBEDDING_MODEL", "gemini-embedding-2")
@@ -115,12 +191,12 @@ class CauHinh:
 
     # VNPAY Config
     VNPAY_TMN_CODE = os.getenv("VNPAY_TMN_CODE", "V2ZFH4ZT")
-    VNPAY_HASH_SECRET = os.getenv("VNPAY_HASH_SECRET", "V830F79D7834Q4M5F9VCZY5XFCWEWWUA")
+    _VNPAY_HASH_SECRET = os.getenv("VNPAY_HASH_SECRET", "V830F79D7834Q4M5F9VCZY5XFCWEWWUA")
     VNPAY_PAYMENT_URL = os.getenv("VNPAY_PAYMENT_URL", "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html")
     VNPAY_RETURN_URL = os.getenv("VNPAY_RETURN_URL", "http://127.0.0.1:5000/payment/callback")
 
     # SePay Config
-    SEPAY_API_KEY = os.getenv("SEPAY_API_KEY", "")
+    _SEPAY_API_KEY = os.getenv("SEPAY_API_KEY", "")
     SEPAY_ACCOUNT_NUMBER = os.getenv("SEPAY_ACCOUNT_NUMBER", "0327152710")
     SEPAY_BANK_BRAND = os.getenv("SEPAY_BANK_BRAND", "MBBank")
     SEPAY_WEB_NAME = os.getenv("SEPAY_WEB_NAME", "GTAI")
@@ -129,3 +205,8 @@ class CauHinh:
     # Toggle payments active status
     PAYMENT_VNPAY_ACTIVE = os.getenv("PAYMENT_VNPAY_ACTIVE", "True") == "True"
     PAYMENT_SEPAY_ACTIVE = os.getenv("PAYMENT_SEPAY_ACTIVE", "True") == "True"
+
+    # Phí token của các chế độ biên soạn
+    PHI_TOKEN_AUTO = int(os.getenv("PHI_TOKEN_AUTO", "1"))
+    PHI_TOKEN_EXPERT = int(os.getenv("PHI_TOKEN_EXPERT", "2"))
+    PHI_TOKEN_CREATIVE = int(os.getenv("PHI_TOKEN_CREATIVE", "3"))

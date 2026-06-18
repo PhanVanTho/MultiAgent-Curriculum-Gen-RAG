@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title data-i18n="footer.support_faq">Hỗ trợ & FAQs - Giáo Trình AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #047857; /* Emerald 700 */
+            --bg-color: #f8fafc;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --font-main: 'Be Vietnam Pro', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            -webkit-font-smoothing: antialiased;
+            letter-spacing: -0.01em;
+        }
+
+        h1, h2, h3, h4, h5, h6, .navbar-brand, .nav-link, .btn {
+            font-family: var(--font-main);
+            font-weight: 700;
+        }
+
+        /* Navbar */
+        .navbar-custom {
+            background: rgba(2, 44, 34, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 1rem 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+        .navbar-brand {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            color: #34d399 !important;
+            font-size: 1.5rem;
+        }
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8) !important;
+            font-weight: 500;
+            font-size: 0.95rem;
+            margin: 0 15px;
+            transition: all 0.2s;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #ffffff !important;
+            transform: translateY(-2px);
+        }
+        .btn-signin {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 600;
+            padding: 8px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .btn-signin:hover {
+            background-color: #065f46;
+            color: white;
+        }
+        .lang-btn {
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.82rem;
+            font-weight: 700;
+            padding: 5px 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.2s;
+            margin-right: 10px;
+        }
+        .lang-btn:hover { background: rgba(255,255,255,0.22); }
+
+        /* Hero Header */
+        .legal-hero {
+            background: linear-gradient(135deg, #022c22 0%, #064e3b 100%);
+            color: white;
+            padding: 8rem 0 4rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .legal-hero::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(52, 211, 153, 0.15) 0%, transparent 80%);
+            z-index: 1;
+        }
+        .legal-hero .container {
+            position: relative;
+            z-index: 2;
+        }
+        .legal-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+        .legal-subtitle {
+            color: #a7f3d0;
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+
+        /* Support Page Layout */
+        .support-container {
+            margin-top: -2rem;
+            margin-bottom: 5rem;
+            position: relative;
+            z-index: 10;
+        }
+        .faq-section {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+            border: 1px solid rgba(0,0,0,0.05);
+            padding: 3rem;
+            margin-bottom: 2rem;
+        }
+        .contact-form-section {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+            border: 1px solid rgba(0,0,0,0.05);
+            padding: 3rem;
+        }
+        .section-title {
+            font-size: 1.6rem;
+            color: #064e3b;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+            border-bottom: 2px solid #ecfdf5;
+            padding-bottom: 0.5rem;
+        }
+
+        /* FAQ Accordion Styling */
+        .accordion-button:not(.collapsed) {
+            background-color: #f0fdf4;
+            color: #047857;
+            box-shadow: none;
+        }
+        .accordion-button {
+            font-weight: 600;
+            color: #0f172a;
+            padding: 1.25rem;
+            font-size: 1rem;
+        }
+        .accordion-button:focus {
+            box-shadow: none;
+            border-color: rgba(4, 120, 87, 0.2);
+        }
+        .accordion-item {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px !important;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+        .accordion-body {
+            line-height: 1.8;
+            color: #475569;
+            font-size: 0.95rem;
+        }
+
+        /* Contact Details Card */
+        .contact-info-card {
+            background: linear-gradient(135deg, #022c22 0%, #064e3b 100%);
+            color: white;
+            border-radius: 16px;
+            padding: 2rem;
+            height: 100%;
+        }
+        .contact-info-title {
+            font-size: 1.25rem;
+            margin-bottom: 1.5rem;
+            color: #34d399;
+        }
+        .contact-info-list li {
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: flex-start;
+            font-size: 0.95rem;
+        }
+        .contact-info-list i {
+            color: #34d399;
+            font-size: 1.2rem;
+            margin-top: 0.2rem;
+            width: 25px;
+            flex-shrink: 0;
+        }
+        .contact-info-list span {
+            opacity: 0.9;
+        }
+        .contact-info-list a {
+            color: white;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .contact-info-list a:hover {
+            color: #34d399;
+        }
+
+        /* Form styling */
+        .form-control:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 0.25rem rgba(16, 185, 129, 0.25);
+        }
+        .btn-submit {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 600;
+            padding: 10px 30px;
+            border-radius: 8px;
+            border: none;
+            transition: all 0.2s;
+        }
+        .btn-submit:hover {
+            background-color: #065f46;
+            transform: translateY(-2px);
+        }
+
+
+
+        /* Footer */
+        .footer {
+            background-color: #022c22;
+            color: #e2e8f0;
+            padding: 5rem 0 3rem;
+            border-top: 1px solid rgba(52, 211, 153, 0.1);
+            font-size: 0.9rem;
+        }
+        .footer-heading {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 1.5rem;
+            position: relative;
+            padding-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .footer-heading::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 30px;
+            height: 2px;
+            background-color: #34d399;
+        }
+        .footer-list li {
+            margin-bottom: 0.75rem;
+        }
+        .footer-list a {
+            color: #cbd5e1;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
+        }
+        .footer-list a:hover {
+            color: #34d399;
+            padding-left: 4px;
+        }
+        .footer-contact-info li {
+            color: #cbd5e1;
+            margin-bottom: 0.75rem;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+        }
+        .footer-contact-info i {
+            color: #34d399;
+            width: 20px;
+        }
+        .footer-socials a {
+            color: #cbd5e1;
+            background: rgba(255, 255, 255, 0.05);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+        }
+        .footer-socials a:hover {
+            color: #ffffff;
+            background-color: #047857;
+            border-color: #34d399;
+            transform: translateY(-3px);
+        }
+        .footer-divider {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .footer-copy {
+            color: #a7f3d0;
+            opacity: 0.6;
+            font-size: 0.8rem;
+            letter-spacing: 0.02em;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-custom">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('trang_chu') }}">Giáo Trình AI</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
+                <ul class="navbar-nav gap-3">
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('trang_chu') }}" data-i18n="nav.intro">Giới Thiệu</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('trang_chu') }}#guide-section" data-i18n="nav.guide">Hướng Dẫn</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('san_pham') }}" data-i18n="nav.products">Sản Phẩm</a></li>
+                </ul>
+            </div>
+            <div class="d-none d-lg-block">
+                {% if current_user.is_authenticated %}
+                    <div class="d-flex align-items-center">
+                        <a href="{{ url_for('profile') }}" class="btn d-flex align-items-center me-3" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); padding: 6px 16px; text-decoration: none; transition: all 0.3s;">
+                            {% if current_user.anh_dai_dien %}
+                                {% if current_user.anh_dai_dien.startswith('http') %}
+                                    <img src="{{ current_user.anh_dai_dien }}" alt="Avatar" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;" class="me-2">
+                                {% else %}
+                                    <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.anh_dai_dien) }}" alt="Avatar" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;" class="me-2">
+                                {% endif %}
+                            {% else %}
+                                <div class="avatar-fallback me-2 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; border-radius: 50%; background: #10b981; color: white; font-weight: bold; font-size: 0.8rem;">
+                                    {{ (current_user.ho_ten or current_user.ten_dang_nhap)[0] | upper }}
+                                </div>
+                            {% endif %}
+                            <div class="text-start">
+                                <div style="font-size: 0.65rem; color: rgba(255,255,255,0.6); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    {{ current_user.ho_ten or current_user.ten_dang_nhap }}
+                                </div>
+                                <div style="font-size: 0.9rem; color: white; font-weight: 700; line-height: 1;">
+                                    Tài khoản: 
+                                    {% if current_user.la_admin %}
+                                        ∞
+                                    {% else %}
+                                        {{ current_user.token }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </a>
+                        <button class="lang-btn" onclick="toggleLanguage()" title="Switch Language"><span id="langFlag">🇻🇳</span><span id="langLabel">VI</span></button>
+                        <a href="{{ url_for('logout') }}" class="btn-signin" style="background-color: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.1);" data-i18n="nav.logout">Đăng xuất</a>
+                    </div>
+                {% else %}
+                    <button class="lang-btn" onclick="toggleLanguage()" title="Switch Language"><span id="langFlag">🇻🇳</span><span id="langLabel">VI</span></button>
+                    <a href="{{ url_for('login') }}" class="btn-signin" data-i18n="nav.login">Đăng nhập</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Header -->
+    <header class="legal-hero">
+        <div class="container">
+            <h1 class="legal-title lang-vi">Trung Tâm Hỗ Trợ & FAQs</h1>
+            <h1 class="legal-title lang-en d-none">Support Center & FAQs</h1>
+            <p class="legal-subtitle lang-vi">Giải đáp thắc mắc và tiếp nhận yêu cầu hỗ trợ kỹ thuật</p>
+            <p class="legal-subtitle lang-en d-none">Answering questions and receiving technical support tickets</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container support-container">
+        <div class="row">
+            <!-- Left Column: FAQ Accordion -->
+            <div class="col-lg-7 mb-4">
+                <section class="faq-section">
+                    <h2 class="section-title lang-vi">Câu hỏi thường gặp</h2>
+                    <h2 class="section-title lang-en d-none">Frequently Asked Questions</h2>
+                    
+                    <div class="accordion" id="faqAccordion">
+                        <!-- FAQ 1 -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingOne">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                                    <span class="lang-vi">Giáo Trình AI hoạt động như thế nào?</span>
+                                    <span class="lang-en d-none">How does AI Curriculum work?</span>
+                                </button>
+                            </h2>
+                            <div id="collapseOne" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    <span class="lang-vi">Hệ thống của chúng tôi sử dụng công nghệ tìm kiếm ngữ nghĩa RAG kết hợp với dữ liệu mở từ Wikipedia và các nguồn tài liệu học thuật tin cậy. Khi bạn nhập một chủ đề, AI sẽ phân tích cấu trúc kiến thức, xây dựng dàn ý chi tiết đa cấp độ và viết nội dung đầy đủ cho từng chương theo các phong cách sư phạm mà bạn cấu hình.</span>
+                                    <span class="lang-en d-none">Our system utilizes RAG semantic search combined with open data from Wikipedia and authoritative academic sources. When you provide a topic, the AI analyzes the knowledge structure, constructs a multi-level outline, and writes complete content for each chapter according to your pedagogical settings.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- FAQ 2 -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingTwo">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                                    <span class="lang-vi">Chính sách trừ token cụ thể ra sao?</span>
+                                    <span class="lang-en d-none">What is the exact token consumption policy?</span>
+                                </button>
+                            </h2>
+                            <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    <span class="lang-vi">Mỗi chế độ biên soạn sẽ trừ số lượng token khác nhau trên mỗi chương giáo trình: Chế độ <strong>Auto</strong> mặc định (trừ 1 token/chương), Chế độ <strong>Expert</strong> chất lượng cao RAG (trừ 2 token/chương). Bạn có thể kiểm tra số dư và lịch sử token trong hồ sơ cá nhân của mình bất cứ lúc nào.</span>
+                                    <span class="lang-en d-none">Different compilation modes deduct different amounts of tokens per chapter: Default <strong>Auto</strong> mode (deducts 1 token/chapter), high-quality RAG <strong>Expert</strong> mode (deducts 2 tokens/chapter). You can check your balance and token usage history in your profile at any time.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- FAQ 3 -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingThree">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
+                                    <span class="lang-vi">Làm sao để xuất giáo trình ra file Word/PDF?</span>
+                                    <span class="lang-en d-none">How can I export the curriculum to Word/PDF?</span>
+                                </button>
+                            </h2>
+                            <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    <span class="lang-vi">Sau khi AI hoàn thành quá trình biên soạn, nội dung giáo trình sẽ hiển thị trên màn hình kết quả. Tại đây, bạn sẽ thấy các nút chức năng <strong>"Xuất Word (.docx)"</strong> và <strong>"Tải PDF"</strong> ở góc trên bên phải thanh công cụ. File tải về sẽ được tự động định dạng chuẩn văn bản học thuật để in ấn.</span>
+                                    <span class="lang-en d-none">Once the AI finishes compiling, the curriculum content will display on the results screen. Here, you will find <strong>"Export Word (.docx)"</strong> and <strong>"Download PDF"</strong> actions in the top-right toolbar. The downloaded files are formatted to match professional academic document layouts.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- FAQ 4 -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingFour">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour">
+                                    <span class="lang-vi">Tôi bị trừ token nhưng gặp lỗi biên soạn, phải làm thế nào?</span>
+                                    <span class="lang-en d-none">I was charged tokens but compilation failed. What should I do?</span>
+                                </button>
+                            </h2>
+                            <div id="collapseFour" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    <span class="lang-vi">Đừng lo lắng! Nếu hệ thống gặp sự cố mạng hoặc lỗi mô hình ngôn ngữ lớn làm gián đoạn quá trình biên soạn, số token bị trừ sai sẽ được ghi nhận. Bạn chỉ cần gửi email tới <a href="mailto:phanvantho082019@gmail.com">phanvantho082019@gmail.com</a> hoặc gọi 0327152710 kèm tên đăng nhập, admin sẽ kiểm tra nhật ký máy chủ và hoàn trả lại token cho bạn ngay lập tức.</span>
+                                    <span class="lang-en d-none">Don't worry! If a network issue or LLM API timeout halts the compilation, the token deduction is logged. Just email <a href="mailto:phanvantho082019@gmail.com">phanvantho082019@gmail.com</a> or call 0327152710 with your username, and the admin will verify server logs and restore your tokens immediately.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Column: Contact Details & Support Ticket Form -->
+            <div class="col-lg-5 mb-4">
+                <section class="contact-form-section d-flex flex-column gap-4">
+                    <div class="contact-info-card">
+                        <h3 class="contact-info-title lang-vi">Thông tin liên lạc trực tiếp</h3>
+                        <h3 class="contact-info-title lang-en d-none">Direct Contact Coordinates</h3>
+                        <ul class="contact-info-list list-unstyled mb-0">
+                            <li>
+                                <i class="fa-solid fa-envelope"></i>
+                                <div>
+                                    <strong>Email:</strong><br>
+                                    <a href="mailto:phanvantho082019@gmail.com">phanvantho082019@gmail.com</a>
+                                </div>
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-phone"></i>
+                                <div>
+                                    <strong>Hotline:</strong><br>
+                                    <a href="tel:0327152710">0327152710</a>
+                                </div>
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-location-dot"></i>
+                                <div>
+                                    <strong>Địa chỉ:</strong><br>
+                                    <span class="lang-vi">Cần Thơ, Việt Nam</span>
+                                    <span class="lang-en d-none">Can Tho, Vietnam</span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h3 class="section-title lang-vi">Gửi yêu cầu hỗ trợ</h3>
+                        <h3 class="section-title lang-en d-none">Submit a Support Ticket</h3>
+                        
+                        <form id="supportForm" onsubmit="handleSupportSubmit(event)">
+                            <div class="mb-3">
+                                <label for="contactName" class="form-label lang-vi">Họ và tên</label>
+                                <label for="contactName" class="form-label lang-en d-none">Full Name</label>
+                                <input type="text" class="form-control" id="contactName" required placeholder="Nguyen Van A">
+                            </div>
+                            <div class="mb-3">
+                                <label for="contactEmail" class="form-label lang-vi">Email liên hệ</label>
+                                <label for="contactEmail" class="form-label lang-en d-none">Email Address</label>
+                                <input type="email" class="form-control" id="contactEmail" required placeholder="name@example.com">
+                            </div>
+                            <div class="mb-3">
+                                <label for="contactSubject" class="form-label lang-vi">Tiêu đề</label>
+                                <label for="contactSubject" class="form-label lang-en d-none">Subject</label>
+                                <input type="text" class="form-control" id="contactSubject" required placeholder="Lỗi trừ token, góp ý sản phẩm...">
+                            </div>
+                            <div class="mb-3">
+                                <label for="contactMessage" class="form-label lang-vi">Nội dung tin nhắn</label>
+                                <label for="contactMessage" class="form-label lang-en d-none">Message Details</label>
+                                <textarea class="form-control" id="contactMessage" rows="4" required placeholder="Mô tả cụ thể yêu cầu của bạn..."></textarea>
+                            </div>
+                            <button type="submit" class="btn-submit w-100">
+                                <span class="lang-vi">Gửi hỗ trợ</span>
+                                <span class="lang-en d-none">Send Ticket</span>
+                            </button>
+                        </form>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row g-5">
+                <!-- Column 1: Brand & Socials -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" style="font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem; color: #34d399;" data-i18n="nav.logo">Giáo Trình AI</h5>
+                    <p class="footer-desc mt-3" data-i18n="footer.desc">
+                        Hệ thống biên soạn giáo trình thông minh bằng trí tuệ nhân tạo, kết hợp nghiên cứu khoa học đa tầng và phương pháp sư phạm hiện đại.
+                    </p>
+                    <div class="footer-socials d-flex gap-3 mt-4">
+                        <a href="https://www.facebook.com" target="_blank" class="social-link" title="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                        <a href="https://www.linkedin.com/login" target="_blank" class="social-link" title="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                        <a href="https://www.youtube.com" target="_blank" class="social-link" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                    </div>
+                </div>
+
+                <!-- Column 2: Explore -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" data-i18n="footer.col_explore">Khám Phá</h5>
+                    <ul class="footer-list list-unstyled">
+                        <li><a href="{{ url_for('trang_chu') }}" data-i18n="footer.home">Trang chủ</a></li>
+                        <li><a href="{{ url_for('san_pham') }}" data-i18n="footer.showcase">Sản phẩm tiêu biểu</a></li>
+                        <li><a href="{{ url_for('trang_chu') }}#guide-section" data-i18n="footer.guide">Hướng dẫn</a></li>
+                        <li><a href="{{ url_for('buy_tokens') }}" data-i18n="footer.pricing">Gói cước</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 3: Legal & Support -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" data-i18n="footer.col_support">Hỗ Trợ & Pháp Lý</h5>
+                    <ul class="footer-list list-unstyled">
+                        <li><a href="{{ url_for('privacy_policy') }}" data-i18n="footer.policy">Chính sách bảo mật</a></li>
+                        <li><a href="{{ url_for('terms_of_service') }}" data-i18n="footer.terms">Điều khoản dịch vụ</a></li>
+                        <li><a href="{{ url_for('data_deletion') }}" data-i18n="footer.data_deletion">Chính sách xóa dữ liệu</a></li>
+                        <li><a href="{{ url_for('support') }}" data-i18n="footer.support_faq">Hỗ trợ & FAQs</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 4: Contact -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" data-i18n="footer.col_contact">Liên Hệ</h5>
+                    <ul class="footer-contact-info list-unstyled">
+                        <li><i class="fa-solid fa-envelope me-2"></i><span data-i18n="footer.email_val">phanvantho082019@gmail.com</span></li>
+                        <li><i class="fa-solid fa-phone me-2"></i><span data-i18n="footer.phone_val">0327152710</span></li>
+                        <li><i class="fa-solid fa-location-dot me-2"></i><span data-i18n="footer.address_val">Cần Thơ, Việt Nam</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <hr class="footer-divider my-4">
+
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+                <div class="footer-copy" data-i18n="footer.copy">
+                    &copy; 2026 GIÁO TRÌNH AI. THE INTELLECTUAL LIGHT.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    {% include 'chatbot.html' %}
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='i18n.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            function updateVisibility(lang) {
+                if (lang === 'vi') {
+                    document.querySelectorAll('.lang-vi').forEach(el => el.classList.remove('d-none'));
+                    document.querySelectorAll('.lang-en').forEach(el => el.classList.add('d-none'));
+                } else {
+                    document.querySelectorAll('.lang-vi').forEach(el => el.classList.add('d-none'));
+                    document.querySelectorAll('.lang-en').forEach(el => el.classList.remove('d-none'));
+                }
+            }
+            
+            // Initial apply
+            const currentLang = localStorage.getItem('app_lang') || 'vi';
+            updateVisibility(currentLang);
+            
+            // Listen to changes
+            window.addEventListener('languageChanged', (e) => {
+                updateVisibility(e.detail.lang);
+            });
+        });
+
+        function handleSupportSubmit(event) {
+            event.preventDefault();
+            const currentLang = localStorage.getItem('app_lang') || 'vi';
+            
+            const msg = currentLang === 'vi' 
+                ? "Cảm ơn bạn! Yêu cầu hỗ trợ của bạn đã được gửi thành công. Chúng tôi sẽ phản hồi lại bạn sớm nhất qua email." 
+                : "Thank you! Your support ticket has been submitted successfully. We will get back to you shortly via email.";
+                
+            alert(msg);
+            document.getElementById('supportForm').reset();
+        }
+    </script>
+</body>
+</html>

@@ -15,7 +15,7 @@
         <form id="settings-form" class="row g-4">
             <div class="col-md-6">
                 <label class="form-label fw-bold">OpenAI API Key</label>
-                <input type="password" class="form-control" id="OPENAI_API_KEY" value="{{ masked_openai }}" placeholder="sk-...">
+                <input type="text" class="form-control" id="OPENAI_API_KEY" value="{{ masked_openai }}" placeholder="sk-...">
                 <div class="form-text" data-i18n="admin.settings.openai_desc">Dùng cho gpt-4o-mini (Writer/Search)</div>
             </div>
             <div class="col-md-6">
@@ -79,7 +79,7 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-bold small text-muted">VNPAY Hash Secret (Chuỗi mật khẩu)</label>
-                    <input type="password" class="form-control" id="VNPAY_HASH_SECRET" value="{{ masked_vnpay_secret or '' }}">
+                    <input type="text" class="form-control" id="VNPAY_HASH_SECRET" value="{{ masked_vnpay_secret or '' }}">
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-bold small text-muted">VNPAY Payment URL (Cổng Sandbox/Live)</label>
@@ -99,7 +99,7 @@
                 
                 <div class="mb-3">
                     <label class="form-label fw-bold small text-muted">SePay API Key (Mã Token kết nối)</label>
-                    <input type="password" class="form-control" id="SEPAY_API_KEY" value="{{ masked_sepay_key or '' }}">
+                    <input type="text" class="form-control" id="SEPAY_API_KEY" value="{{ masked_sepay_key or '' }}">
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-bold small text-muted">Số tài khoản Ngân hàng (Account Number)</label>
@@ -119,6 +119,26 @@
                     <label class="form-label fw-bold small text-muted">Mã XOR Key bảo mật (Dạng Hex 0x...)</label>
                     <input type="text" class="form-control" id="SEPAY_XOR_KEY" value="0x{{ '%X' % cau_hinh.SEPAY_XOR_KEY if cau_hinh.SEPAY_XOR_KEY is integer else cau_hinh.SEPAY_XOR_KEY }}">
                 </div>
+            </div>
+
+            <div class="col-12">
+                <h6 class="border-bottom pb-2 mb-3 mt-4 text-primary"><i class="fa-solid fa-coins me-2"></i><span data-i18n="admin.settings.token_pricing_section">Cấu hình giá Token cho các chế độ biên soạn</span></h6>
+            </div>
+            
+            <div class="col-md-4">
+                <label class="form-label fw-bold" data-i18n="admin.settings.phi_token_auto">Chế độ Auto (Tokens)</label>
+                <input type="number" class="form-control" id="PHI_TOKEN_AUTO" value="{{ cau_hinh.PHI_TOKEN_AUTO or 1 }}" min="0">
+                <div class="form-text" data-i18n="admin.settings.phi_token_auto_desc">Phí token khi chạy chế độ Tự động hoàn toàn (mặc định: 1)</div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold" data-i18n="admin.settings.phi_token_expert">Chế độ Expert (Tokens)</label>
+                <input type="number" class="form-control" id="PHI_TOKEN_EXPERT" value="{{ cau_hinh.PHI_TOKEN_EXPERT or 2 }}" min="0">
+                <div class="form-text" data-i18n="admin.settings.phi_token_expert_desc">Phí token khi chạy chế độ Chuyên gia audit (mặc định: 2)</div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold" data-i18n="admin.settings.phi_token_creative">Chế độ Creative (Tokens)</label>
+                <input type="number" class="form-control" id="PHI_TOKEN_CREATIVE" value="{{ cau_hinh.PHI_TOKEN_CREATIVE or 3 }}" min="0">
+                <div class="form-text" data-i18n="admin.settings.phi_token_creative_desc">Phí token khi chạy chế độ Sáng tạo nội dung (mặc định: 3)</div>
             </div>
 
             <div class="col-12 text-end mt-4">
@@ -161,7 +181,10 @@
             SEPAY_ACCOUNT_NUMBER: document.getElementById('SEPAY_ACCOUNT_NUMBER').value,
             SEPAY_BANK_BRAND: document.getElementById('SEPAY_BANK_BRAND').value,
             SEPAY_WEB_NAME: document.getElementById('SEPAY_WEB_NAME').value,
-            SEPAY_XOR_KEY: document.getElementById('SEPAY_XOR_KEY').value
+            SEPAY_XOR_KEY: document.getElementById('SEPAY_XOR_KEY').value,
+            PHI_TOKEN_AUTO: document.getElementById('PHI_TOKEN_AUTO').value,
+            PHI_TOKEN_EXPERT: document.getElementById('PHI_TOKEN_EXPERT').value,
+            PHI_TOKEN_CREATIVE: document.getElementById('PHI_TOKEN_CREATIVE').value
         };
 
         try {

@@ -192,6 +192,7 @@ const TRANSLATIONS = {
   'profile.tab_info':   { vi: 'Thông tin cá nhân', en: 'Personal Info' },
   'profile.tab_security': { vi: 'Đổi mật khẩu', en: 'Change Password' },
   'profile.label_fullname': { vi: 'Họ và tên', en: 'Full Name' },
+  'profile.label_username': { vi: 'Tên đăng nhập', en: 'Username' },
   'profile.label_email': { vi: 'Địa chỉ Email', en: 'Email Address' },
   'profile.email_change_note': { vi: 'Lưu ý: Nếu thay đổi Email, hệ thống sẽ gửi một mã OTP xác thực tới Email mới của bạn để xác nhận.', en: 'Note: If you change your email, the system will send a verification OTP to your new email to confirm.' },
   'profile.label_pw_old': { vi: 'Mật khẩu hiện tại', en: 'Current Password' },
@@ -278,6 +279,15 @@ const TRANSLATIONS = {
   'result.view_content':         { vi: 'Nội dung giáo trình', en: 'Curriculum Content' },
   'result.view_summaries':       { vi: 'Tóm tắt các chương', en: 'Chapter Summaries' },
   'result.view_glossary':        { vi: 'Bảng thuật ngữ', en: 'Glossary' },
+  'result.scale_warning_title':  { vi: '⚠️ Cảnh báo quy mô giáo trình', en: '⚠️ Curriculum Scale Warning' },
+  'result.scale_warning_desc':   { vi: 'Quy mô thực tế chưa đạt hoàn toàn so với mức lựa chọn ban đầu do nguồn tư liệu Wikipedia bị giới hạn hoặc thiếu tính tương thích học thuật sâu sắc. Tuy nhiên, hệ thống đã nỗ lực biên soạn và đóng gói phiên bản tối ưu nhất dưới đây.', en: 'The actual curriculum scale did not fully meet the initial setting due to limited source materials on Wikipedia or lack of deeper academic compatibility. However, the system has successfully compiled and packaged the best possible version below.' },
+  'result.scale_warning_detail': { vi: 'Chi tiết đánh giá của AI Supervisor:', en: 'AI Supervisor Evaluation Details:' },
+  'result.scale_warning_coverage': { vi: 'Độ bao phủ:', en: 'Coverage:' },
+  'result.scale_warning_density': { vi: 'Độ đậm đặc:', en: 'Density:' },
+  'result.scale_warning_length':  { vi: 'Độ dài trang:', en: 'Page Length:' },
+  'result.scale_warning_expected': { vi: 'yêu cầu tối thiểu', en: 'minimum required' },
+  'result.scale_warning_pages':   { vi: 'trang', en: 'pages' },
+  'result.scale_warning_missing_topics': { vi: 'Chủ đề còn thiếu khuyến nghị tìm thêm:', en: 'Missing topics recommended for further research:' },
   
   /* ===== TECHNICALtransparency MODAL ===== */
   'tech.modal_title':      { vi: 'AI Analytics & Transparency Dashboard', en: 'AI Analytics & Transparency Dashboard' },
@@ -310,9 +320,24 @@ const TRANSLATIONS = {
   'tech.btn_close':          { vi: 'Đóng', en: 'Close' },
   
   /* ===== FOOTER ===== */
-  'footer.policy':           { vi: 'Chính sách', en: 'Privacy Policy' },
-  'footer.terms':            { vi: 'Điều khoản', en: 'Terms of Service' },
+  'footer.policy':           { vi: 'Chính sách bảo mật', en: 'Privacy Policy' },
+  'footer.terms':            { vi: 'Điều khoản dịch vụ', en: 'Terms of Service' },
+  'footer.data_deletion':    { vi: 'Chính sách xóa dữ liệu', en: 'Data Deletion Policy' },
+  'footer.support_faq':      { vi: 'Hỗ trợ & FAQs', en: 'Support & FAQs' },
   'footer.tagline':          { vi: 'Hệ thống biên soạn giáo trình tự động', en: 'Automated Curriculum Compilation System' },
+  'footer.desc':             { vi: 'Hệ thống biên soạn giáo trình thông minh bằng trí tuệ nhân tạo, kết hợp nghiên cứu khoa học đa tầng và phương pháp sư phạm hiện đại.', en: 'Intelligent curriculum compilation system powered by AI, combining multi-layer scientific research and modern pedagogy.' },
+  'footer.col_explore':      { vi: 'Khám Phá', en: 'Explore' },
+  'footer.col_support':      { vi: 'Hỗ Trợ & Pháp Lý', en: 'Support & Legal' },
+  'footer.col_contact':      { vi: 'Liên Hệ', en: 'Contact Us' },
+  'footer.home':             { vi: 'Trang chủ', en: 'Home' },
+  'footer.showcase':         { vi: 'Sản phẩm tiêu biểu', en: 'Featured Products' },
+  'footer.guide':            { vi: 'Hướng dẫn', en: 'Guide' },
+  'footer.pricing':          { vi: 'Gói cước', en: 'Pricing' },
+  'footer.faqs':             { vi: 'Câu hỏi thường gặp', en: 'FAQs' },
+  'footer.contact_support':  { vi: 'Liên hệ hỗ trợ', en: 'Contact Support' },
+  'footer.email_val':        { vi: 'phanvantho082019@gmail.com', en: 'phanvantho082019@gmail.com' },
+  'footer.phone_val':        { vi: '0327152710', en: '0327152710' },
+  'footer.address_val':      { vi: 'Cần Thơ, Việt Nam', en: 'Can Tho, Vietnam' },
 
   /* ===== APP CONFIG PAGE ===== */
   'app.title':            { vi: 'Thiết lập giáo trình', en: 'Curriculum Setup' },
@@ -481,6 +506,7 @@ const TRANSLATIONS = {
   'admin.users.new_password':   { vi: 'Mật khẩu', en: 'Password' },
   'admin.users.add_btn':        { vi: 'Thêm', en: 'Add' },
   'admin.users.list_title':     { vi: 'Danh sách người dùng', en: 'User List' },
+  'admin.users.search_placeholder': { vi: 'Tìm kiếm người dùng (Tên, ID, Vai trò)...', en: 'Search users (Name, ID, Role)...' },
   'admin.users.col_id':         { vi: 'ID', en: 'ID' },
   'admin.users.col_username':   { vi: 'Tên đăng nhập', en: 'Username' },
   'admin.users.col_role':       { vi: 'Vai trò', en: 'Role' },
@@ -495,6 +521,9 @@ const TRANSLATIONS = {
   'admin.users.edit_fullname':  { vi: 'Họ và tên', en: 'Full Name' },
   'admin.users.edit_email':     { vi: 'Email', en: 'Email' },
   'admin.users.edit_token':     { vi: 'Số dư Token (Credits)', en: 'Token Balance (Credits)' },
+  'admin.users.edit_password':  { vi: 'Mật khẩu mới (để trống nếu không đổi)', en: 'New Password (leave empty if no change)' },
+  'admin.users.password_note':  { vi: 'Mật khẩu được mã hóa một chiều. Bạn không thể xem mật khẩu hiện tại nhưng có thể cấp lại mật khẩu mới tại đây.', en: 'Passwords are one-way encrypted. You cannot view the current password but can issue a new one here.' },
+  'admin.users.btn_generate':   { vi: 'Tạo ngẫu nhiên', en: 'Generate' },
   'admin.users.edit_admin_role': { vi: 'Quyền quản trị viên (Admin)', en: 'Administrator Privileges (Admin)' },
   'admin.users.btn_cancel':     { vi: 'Hủy', en: 'Cancel' },
   'admin.users.btn_save':       { vi: 'Lưu thay đổi', en: 'Save Changes' },
@@ -526,6 +555,7 @@ const TRANSLATIONS = {
   'admin.curriculums.title':    { vi: 'Thư viện giáo trình', en: 'Curriculum Library' },
   'admin.curriculums.subtitle': { vi: 'Xem danh sách các giáo trình được biên soạn tự động.', en: 'View the list of automatically generated curricula.' },
   'admin.curriculums.list_title': { vi: 'Thư viện giáo trình', en: 'Curriculum Library' },
+  'admin.curriculums.search_placeholder': { vi: 'Tìm kiếm giáo trình (Chủ đề, ID, Người tạo)...', en: 'Search curriculums (Topic, ID, Creator)...' },
   'admin.curriculums.col_id':   { vi: 'ID', en: 'ID' },
   'admin.curriculums.col_user': { vi: 'Người tạo', en: 'Created By' },
   'admin.curriculums.col_topic': { vi: 'Chủ đề', en: 'Topic' },
@@ -555,7 +585,14 @@ const TRANSLATIONS = {
   'admin.settings.vnpay_active': { vi: 'Kích hoạt thanh toán VNPAY', en: 'Enable VNPAY Payments' },
   'admin.settings.sepay_active': { vi: 'Kích hoạt thanh toán SePay', en: 'Enable SePay Payments' },
   'admin.settings.save_btn':     { vi: 'Lưu Cài đặt', en: 'Save Settings' },
-  'admin.settings.saving_text':  { vi: 'Đang lưu...', en: 'Saving...' }
+  'admin.settings.saving_text':  { vi: 'Đang lưu...', en: 'Saving...' },
+  'admin.settings.token_pricing_section': { vi: 'Cấu hình giá Token cho các chế độ biên soạn', en: 'Token Pricing Configuration for Compilation Modes' },
+  'admin.settings.phi_token_auto': { vi: 'Chế độ Auto (Tokens)', en: 'Auto Mode Cost (Tokens)' },
+  'admin.settings.phi_token_auto_desc': { vi: 'Phí token khi chạy chế độ Tự động hoàn toàn (mặc định: 1)', en: 'Token fee for Fully Automatic mode (default: 1)' },
+  'admin.settings.phi_token_expert': { vi: 'Chế độ Expert (Tokens)', en: 'Expert Mode Cost (Tokens)' },
+  'admin.settings.phi_token_expert_desc': { vi: 'Phí token khi chạy chế độ Chuyên gia audit (mặc định: 2)', en: 'Token fee for Expert Audit mode (default: 2)' },
+  'admin.settings.phi_token_creative': { vi: 'Chế độ Creative (Tokens)', en: 'Creative Mode Cost (Tokens)' },
+  'admin.settings.phi_token_creative_desc': { vi: 'Phí token khi chạy chế độ Sáng tạo nội dung (mặc định: 3)', en: 'Token fee for Content Creation mode (default: 3)' }
 };
 
 /* ──────────────────────────────────────────

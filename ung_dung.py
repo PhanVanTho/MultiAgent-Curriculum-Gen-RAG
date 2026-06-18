@@ -15,6 +15,91 @@ from concurrent.futures import ThreadPoolExecutor
 import threading
 import math
 
+# --- ADAPTIVE MULTI-PORT DATABASE ORCHESTRATOR ---
+if __name__ == "__main__":
+    import sys
+    import socket
+    import subprocess
+
+    def is_port_open(host, port):
+        for h in [host, "127.0.0.1", "::1"]:
+            try:
+                with socket.create_connection((h, port), timeout=0.5) as conn:
+                    return True
+            except OSError:
+                continue
+        return False
+
+    if not os.getenv("GTAI_SUBPROCESS"):
+        mongo_active = is_port_open("localhost", 27017)
+        mysql_active = is_port_open("localhost", 3306)
+
+        if mongo_active and mysql_active:
+            print("\n" + "="*80)
+            print("🚀 PHÁT HIỆN CẢ MONGODB VÀ MYSQL ĐANG BẬT!")
+            print("Hệ thống sẽ chạy song song 2 luồng độc lập:")
+            print(" - Luồng MongoDB: http://localhost:5000")
+            print(" - Luồng MySQL:   http://localhost:5001")
+            print("="*80 + "\n")
+            
+            env_mongo = os.environ.copy()
+            env_mongo["GTAI_OVERRIDE_DB_TYPE"] = "mongodb"
+            env_mongo["GTAI_OVERRIDE_USE_SQLITE"] = "False"
+            env_mongo["GTAI_OVERRIDE_PORT"] = "5000"
+            env_mongo["GTAI_SUBPROCESS"] = "True"
+            
+            env_mysql = os.environ.copy()
+            env_mysql["GTAI_OVERRIDE_DB_TYPE"] = "mysql"
+            env_mysql["GTAI_OVERRIDE_USE_SQLITE"] = "False"
+            env_mysql["GTAI_OVERRIDE_PORT"] = "5001"
+            env_mysql["GTAI_SUBPROCESS"] = "True"
+            
+            p_mongo = subprocess.Popen([sys.executable, __file__], env=env_mongo)
+            p_mysql = subprocess.Popen([sys.executable, __file__], env=env_mysql)
+            
+            try:
+                while True:
+                    time.sleep(1)
+                    if p_mongo.poll() is not None or p_mysql.poll() is not None:
+                        break
+            except KeyboardInterrupt:
+                print("\n🛑 Đang dừng các ứng dụng...")
+                p_mongo.terminate()
+                p_mysql.terminate()
+                p_mongo.wait()
+                p_mysql.wait()
+            sys.exit(0)
+
+        elif mongo_active:
+            print("\n" + "="*80)
+            print("🚀 PHÁT HIỆN CHỈ MONGODB ĐANG BẬT!")
+            print("Hệ thống chạy với cơ sở dữ liệu: MongoDB tại http://localhost:5000")
+            print("="*80 + "\n")
+            os.environ["GTAI_OVERRIDE_DB_TYPE"] = "mongodb"
+            os.environ["GTAI_OVERRIDE_USE_SQLITE"] = "False"
+            os.environ["GTAI_OVERRIDE_PORT"] = "5000"
+            os.environ["GTAI_SUBPROCESS"] = "True"
+
+        elif mysql_active:
+            print("\n" + "="*80)
+            print("🚀 PHÁT HIỆN CHỈ MYSQL (XAMPP) ĐANG BẬT!")
+            print("Hệ thống chạy với cơ sở dữ liệu: MySQL tại http://localhost:5000")
+            print("="*80 + "\n")
+            os.environ["GTAI_OVERRIDE_DB_TYPE"] = "mysql"
+            os.environ["GTAI_OVERRIDE_USE_SQLITE"] = "False"
+            os.environ["GTAI_OVERRIDE_PORT"] = "5000"
+            os.environ["GTAI_SUBPROCESS"] = "True"
+
+        else:
+            print("\n" + "="*80)
+            print("⚠️ KHÔNG PHÁT HIỆN MONGODB HOẶC MYSQL ĐANG BẬT!")
+            print("Hệ thống tự động sử dụng SQLite ngoại tuyến tại http://localhost:5000")
+            print("="*80 + "\n")
+            os.environ["GTAI_OVERRIDE_USE_SQLITE"] = "True"
+            os.environ["GTAI_OVERRIDE_PORT"] = "5000"
+            os.environ["GTAI_SUBPROCESS"] = "True"
+
+
 try:
     import numpy as _np
 except ImportError:
@@ -76,6 +161,57 @@ def is_meaningful(query):
     if len(query.strip()) < 2:
         return False
     return not is_gibberish(query)
+
+def is_abbreviation(text):
+    trimmed = text.strip()
+    clean_lower = re.sub(r'[^a-zđàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ\s]', '', trimmed.lower())
+    
+    allowed_common_abbrs = {"ai", "iot", "it", "cntt", "csdl", "html", "css", "sql", "dna", "rna", "gdp", "vpn", "wifi", "ip"}
+    
+    if clean_lower in allowed_common_abbrs:
+        return False
+        
+    if re.match(r'^[A-ZĐÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝĂĨŨƠƯ]{2,6}$', trimmed):
+        if trimmed.lower() in allowed_common_abbrs:
+            return False
+        return True
+        
+    words = trimmed.split()
+    if 1 < len(words) <= 4:
+        all_uppercase_and_short = True
+        for w in words:
+            clean_word = re.sub(r'[^a-zA-ZĐÀÁÂÃÈÉÊÌÍÒÓÔÕÙÝĂĨŨƠƯ]', '', w)
+            if len(clean_word) > 0:
+                if not re.match(r'^[A-ZĐÀÁÂÃÈÉÊÌÍÒÓÔÕÙÝĂĨŨƠƯ]+$', clean_word) or len(clean_word) > 5:
+                    all_uppercase_and_short = False
+                    break
+        if all_uppercase_and_short:
+            has_unallowed = False
+            for w in words:
+                clean_w = re.sub(r'[^a-zđàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ]', '', w.lower())
+                if len(clean_w) >= 2 and clean_w not in allowed_common_abbrs:
+                    has_unallowed = True
+                    break
+            if has_unallowed:
+                return True
+                
+    vowels = set("aeiouyàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ")
+    for w in words:
+        clean_word = re.sub(r'[^a-zđàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ]', '', w.lower())
+        if not clean_word:
+            continue
+        if clean_word in allowed_common_abbrs:
+            continue
+            
+        has_vowel = any(char in vowels for char in clean_word)
+        if not has_vowel and len(clean_word) >= 2:
+            return True
+            
+        common_abbrs = {"nsnd", "rag", "gdp", "fdi", "wto", "who", "asean", "opec", "imf", "wb", "dns", "tcp", "udp", "http", "https", "ssl", "tls", "api", "dom", "xml", "nosql", "db", "mvc", "oop", "rest", "soap", "crud", "sdk", "ide", "gui", "cli", "cpu", "ram", "rom", "gpu", "ssd", "hdd", "lan", "wan", "vpn", "url", "uri", "seo", "sem", "b2b", "b2c", "kpi", "okr", "roi", "hr", "pr", "qa", "qc", "r&d", "saas", "paas", "iaas", "bi", "erp", "crm", "cms", "lms", "pos", "rfid", "gps", "gis", "cad", "cam", "cae"}
+        if clean_word in common_abbrs:
+            return True
+            
+    return False
 # --- BỘ HÃM XUNG TOÀN CỤC (GLOBAL THROTTLING V23.1) ---
 OPENAI_SEMAPHORE = threading.BoundedSemaphore(6)
 TERMS_LOCK = threading.Lock()
@@ -106,12 +242,19 @@ def gemini_throttled_call(func, *args, **kwargs):
             LAST_GEMINI_CALL["time"] = time.time()
 
 from flask import Flask, request, render_template, jsonify, send_file, url_for, flash, redirect, session
-from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user, AnonymousUserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 
 # --- NẠP CẤU HÌNH & DB ---
 load_dotenv(override=True)
+if os.getenv("GTAI_SUBPROCESS") == "True":
+    if os.getenv("GTAI_OVERRIDE_DB_TYPE"):
+        os.environ["DB_TYPE"] = os.getenv("GTAI_OVERRIDE_DB_TYPE")
+    if os.getenv("GTAI_OVERRIDE_USE_SQLITE"):
+        os.environ["DB_USE_SQLITE"] = os.getenv("GTAI_OVERRIDE_USE_SQLITE")
+    if os.getenv("GTAI_OVERRIDE_PORT"):
+        os.environ["PORT"] = os.getenv("GTAI_OVERRIDE_PORT")
 from cau_hinh import CauHinh
 from mo_hinh import db, NguoiDung, LichSuGiaoTrinh, XacThucOTP, GoiCuoc
 
@@ -151,23 +294,38 @@ from dich_vu.xuat_tai_lieu.markdown_parser import parse_markdown
 app = Flask(__name__, template_folder="templates", static_folder="static")
 app.jinja_env.filters['markdown'] = parse_markdown
 app.config["SECRET_KEY"] = CauHinh.KHOA_BI_MAT
-db_uri = f"mysql+pymysql://{os.getenv('DB_USER', 'root')}:{os.getenv('DB_PASS', '')}@{os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', '3306')}/{os.getenv('DB_NAME', 'giao_trinh_ai')}"
-if os.getenv("DB_USE_SQLITE") == "True":
-    db_uri = "sqlite:///giao_trinh_ai.db"
-app.config["SQLALCHEMY_DATABASE_URI"] = db_uri
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 280,
-    "pool_pre_ping": True,
-    "connect_args": {
-        "connect_timeout": 5
-    },
-}
+from mo_hinh import db_type
+if db_type == "mongodb":
+    app.config["SQLALCHEMY_DATABASE_URI"] = "mongodb://localhost:27017"
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+elif db_type == "sqlite" or os.getenv("DB_USE_SQLITE") == "True":
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///giao_trinh_ai.db"
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+else:
+    db_uri = f"mysql+pymysql://{os.getenv('DB_USER', 'root')}:{os.getenv('DB_PASS', '')}@{os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', '3306')}/{os.getenv('DB_NAME', 'giao_trinh_ai')}"
+    app.config["SQLALCHEMY_DATABASE_URI"] = db_uri
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_recycle": 280,
+        "pool_pre_ping": True,
+    }
 
 db.init_app(app)
 login_manager = LoginManager()
 login_manager.login_view = "login"
 login_manager.init_app(app)
+
+class KhachAnonymous(AnonymousUserMixin):
+    id = None
+    ten_dang_nhap = "Khách"
+    ho_ten = "Khách"
+    token = 0
+    anh_dai_dien = None
+    la_admin = False
+    email = None
+    bi_khoa = False
+
+login_manager.anonymous_user = KhachAnonymous
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -189,7 +347,63 @@ def admin_required(f):
 # Demo store (In-memory)
 CONG_VIEC = {}
 
+def seed_system_config():
+    try:
+        from mo_hinh import CauHinhHeThong
+        from cau_hinh import ma_hoa_key
+        if CauHinhHeThong.query.count() == 0:
+            logger.info("Đồng bộ cấu hình từ .env vào CSDL lần đầu...")
+            keys_to_sync = [
+                "OPENAI_API_KEY", "OPENAI_MODEL", 
+                "GEMINI_API_KEYS", "GEMINI_MODEL", "GEMINI_MODEL_LITE",
+                "WRITER_MODEL", "SEARCH_MODEL", "SUPERVISOR_MODEL_LITE", "SUPERVISOR_MODEL_PRO",
+                "PAYMENT_VNPAY_ACTIVE", "PAYMENT_SEPAY_ACTIVE",
+                "VNPAY_TMN_CODE", "VNPAY_HASH_SECRET", "VNPAY_PAYMENT_URL", "VNPAY_RETURN_URL",
+                "SEPAY_API_KEY", "SEPAY_ACCOUNT_NUMBER", "SEPAY_BANK_BRAND", "SEPAY_WEB_NAME", "SEPAY_XOR_KEY",
+                "PHI_TOKEN_AUTO", "PHI_TOKEN_EXPERT", "PHI_TOKEN_CREATIVE"
+            ]
+            api_keys_to_encrypt = ["OPENAI_API_KEY", "GEMINI_API_KEYS", "SEPAY_API_KEY", "VNPAY_HASH_SECRET"]
+            
+            for key in keys_to_sync:
+                val = os.getenv(key)
+                if val is not None:
+                    db_val = ma_hoa_key(val) if key in api_keys_to_encrypt else str(val)
+                    item = CauHinhHeThong(khoa=key, gia_tri=db_val)
+                    db.session.add(item)
+            db.session.commit()
+            logger.info("Đồng bộ cấu hình lần đầu thành công.")
+    except Exception as e:
+        logger.error(f"Lỗi đồng bộ cấu hình từ .env vào CSDL: {e}")
+
 def seed_admin():
+    from mo_hinh import db_type
+    if db_type == "mongodb":
+        with app.app_context():
+            db.create_all()
+            admin = NguoiDung.query.filter_by(ten_dang_nhap="admin").first()
+            if not admin:
+                hashed_pw = generate_password_hash("admin123")
+                new_admin = NguoiDung(ten_dang_nhap="admin", mat_khau=hashed_pw, la_admin=True, email="admin@local")
+                db.session.add(new_admin)
+                db.session.commit()
+                logger.info("Default admin seed complete in MongoDB.")
+            try:
+                if GoiCuoc.query.count() == 0:
+                    logger.info("Seeding default GoiCuoc packages in MongoDB...")
+                    default_packages = [
+                        GoiCuoc(ten_goi="Trải nghiệm", gia_tien=10000, so_token=10, mo_ta="Tạo giáo trình chuyên sâu, Tốc độ ưu tiên cao, Hỗ trợ 24/7"),
+                        GoiCuoc(ten_goi="Khởi đầu", gia_tien=20000, so_token=30, mo_ta="Tạo giáo trình chuyên sâu, Tốc độ ưu tiên cao, Hỗ trợ 24/7"),
+                        GoiCuoc(ten_goi="Cơ bản", gia_tien=60000, so_token=100, mo_ta="Tạo giáo trình chuyên sâu, Tốc độ ưu tiên cao, Hỗ trợ 24/7")
+                    ]
+                    for p in default_packages:
+                        db.session.add(p)
+                    db.session.commit()
+                    logger.info("Default GoiCuoc seed complete.")
+            except Exception as e:
+                logger.error(f"Error seeding default GoiCuoc: {e}")
+            seed_system_config()
+        return
+
     from sqlalchemy import inspect
     with app.app_context():
         # Auto-migration for existing tables
@@ -247,6 +461,10 @@ def seed_admin():
                     logger.info("Column 'token' is missing from 'nguoi_dung'. Adding...")
                     db.session.execute(db.text("ALTER TABLE nguoi_dung ADD COLUMN token INT DEFAULT 10"))
                     db.session.commit()
+                if 'ngay_tao' not in user_cols:
+                    logger.info("Column 'ngay_tao' is missing from 'nguoi_dung'. Adding...")
+                    db.session.execute(db.text("ALTER TABLE nguoi_dung ADD COLUMN ngay_tao DATETIME DEFAULT '2026-06-15 00:00:00'"))
+                    db.session.commit()
                 if 'mysql' in str(db.engine.url):
                     logger.info("Ensuring mat_khau_hash is nullable in MySQL...")
                     db.session.execute(db.text("ALTER TABLE nguoi_dung MODIFY COLUMN mat_khau_hash VARCHAR(255) NULL DEFAULT NULL"))
@@ -298,6 +516,7 @@ def seed_admin():
                 logger.info("Dummy curriculum seed complete.")
         except Exception as e:
             logger.error(f"Error seeding dummy curriculum: {e}")
+        seed_system_config()
 
 seed_admin()
 os.makedirs(CauHinh.THU_MUC_JSON, exist_ok=True)
@@ -336,7 +555,6 @@ def _link_guest_curriculum(user):
                     noi_dung_html=noi_dung_html,
                     duong_dan_file=path_pdf,
                     da_xuat_file=True,
-                    ma_cv=guest_ma_cv,
                     do_dai_ky_tu=tong_ky_tu
                 )
                 db.session.add(ls); db.session.commit()
@@ -732,10 +950,7 @@ def auth_google():
 @login_required
 def lich_su():
     # 1. Lấy lịch sử hoàn thành từ DB
-    if current_user.la_admin:
-        completed = LichSuGiaoTrinh.query.order_by(LichSuGiaoTrinh.ngay_tao.desc()).all()
-    else:
-        completed = LichSuGiaoTrinh.query.filter_by(nguoi_dung_id=current_user.id).order_by(LichSuGiaoTrinh.ngay_tao.desc()).all()
+    completed = LichSuGiaoTrinh.query.filter_by(nguoi_dung_id=current_user.id).order_by(LichSuGiaoTrinh.ngay_tao.desc()).all()
     
     items = []
     for item in completed:
@@ -751,32 +966,19 @@ def lich_su():
         
     # 2. Lấy lịch sử đang chạy / lỗi từ bộ nhớ CONG_VIEC
     for ma_cv, job in CONG_VIEC.items():
-        if current_user.la_admin or job.get("user_id") == current_user.id:
+        if job.get("user_id") == current_user.id:
             # Bỏ qua nếu đã lưu trong DB
             if any(x["ma_cv"] == ma_cv for x in items):
                 continue
                 
             ngay_tao = job.get("ngay_tao", datetime.now())
-            do_dai_ky_tu = 0
-            if job.get("trang_thai") == "hoan_thanh":
-                try:
-                    p_json = os.path.join(CauHinh.THU_MUC_JSON, f"{ma_cv}.json")
-                    if os.path.exists(p_json):
-                        with open(p_json, 'r', encoding='utf-8') as f:
-                            data = json.load(f)
-                        book_vi = data.get('book_vi', {})
-                        for chap in book_vi.get("chapters", []):
-                            for sec in chap.get("sections", []):
-                                do_dai_ky_tu += len(sec.get("content", ""))
-                except Exception as e:
-                    logger.error(f"Error reading character length from json in history: {e}")
             items.append({
                 "loai": "active",
                 "id": None,
                 "ma_cv": ma_cv,
                 "chu_de": job.get("tieu_de", "Không rõ chủ đề"),
                 "ngay_tao": ngay_tao,
-                "do_dai_ky_tu": do_dai_ky_tu,
+                "do_dai_ky_tu": 0,
                 "trang_thai": job.get("trang_thai", "dang_chay"),
                 "tien_do": job.get("tien_do", 0),
                 "buoc": job.get("buoc", "Đang xử lý"),
@@ -786,6 +988,109 @@ def lich_su():
     # Sắp xếp theo thời gian mới nhất lên đầu
     items.sort(key=lambda x: x["ngay_tao"], reverse=True)
     return render_template("history.html", history=items)
+
+@app.route("/api/chat", methods=["POST"])
+@login_required
+def api_chat():
+    from flask import request, jsonify
+    from flask_login import current_user
+    from openai import OpenAI
+    from cau_hinh import CauHinh
+    from mo_hinh import LichSuChatbot, db
+
+    try:
+        data = request.get_json() or {}
+        user_message_text = data.get("message")
+        if not user_message_text:
+            return jsonify({"error": "Message is required"}), 400
+
+        # 1. Save user's message to DB
+        user_msg = LichSuChatbot(
+            nguoi_dung_id=current_user.id,
+            role="user",
+            content=user_message_text
+        )
+        db.session.add(user_msg)
+        db.session.commit()
+
+        # 2. Fetch full chat history from database for context
+        history_records = LichSuChatbot.query.filter_by(nguoi_dung_id=current_user.id).order_by(LichSuChatbot.ngay_tao.asc()).all()
+
+        # 3. Construct system instruction
+        system_instruction = (
+            "You are a virtual assistant supporting information for the AI Curriculum Compilation System (Giáo Trình AI / AI Curriculum System).\n"
+            "You MUST ONLY answer queries directly related to this system (e.g., how to register/login, purchasing tokens, pricing packages, Auto/Expert/Creative compilation modes, featured product display, privacy policy, terms of service, or technical support regarding this software).\n\n"
+            "FOR ANY OTHER QUESTIONS OR TOPICS outside this system (e.g., solving math, writing code, general homework, writing essays, cooking recipes, weather, news, general history/geography/science...), you MUST politely but firmly refuse to answer.\n"
+            "Example refusal in Vietnamese: 'Tôi xin lỗi, nhưng tôi chỉ được phép trả lời các câu hỏi liên quan đến hệ thống Biên soạn Giáo trình AI.'\n"
+            "Example refusal in English: 'I apologize, but I am only allowed to answer questions related to the AI Curriculum Compilation System.'\n\n"
+            "Language policy:\n"
+            "- If the user queries in Vietnamese, respond in friendly, polite, and concise Vietnamese.\n"
+            "- If the user queries in English, respond in friendly, polite, and concise English."
+        )
+
+        openai_messages = [{"role": "system", "content": system_instruction}]
+        
+        # Append history
+        for record in history_records:
+            openai_messages.append({"role": record.role, "content": record.content})
+
+        # Initialize OpenAI client
+        api_key = CauHinh.OPENAI_API_KEY
+        if not api_key:
+            err_reply = "Tôi xin lỗi, nhưng hệ thống chưa được cấu hình API Key của OpenAI. Vui lòng liên hệ Admin."
+            bot_msg = LichSuChatbot(
+                nguoi_dung_id=current_user.id,
+                role="assistant",
+                content=err_reply
+            )
+            db.session.add(bot_msg)
+            db.session.commit()
+            return jsonify({"reply": err_reply})
+
+        client = OpenAI(api_key=api_key, max_retries=1)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=openai_messages,
+            temperature=0.5,
+            max_tokens=600
+        )
+
+        reply = response.choices[0].message.content
+
+        # 4. Save bot's reply to DB
+        bot_msg = LichSuChatbot(
+            nguoi_dung_id=current_user.id,
+            role="assistant",
+            content=reply
+        )
+        db.session.add(bot_msg)
+        db.session.commit()
+
+        return jsonify({"reply": reply})
+
+    except Exception as e:
+        logging.error(f"Chatbot API error: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({"error": "Có lỗi xảy ra trong quá trình xử lý phản hồi."}), 500
+
+@app.route("/api/chat/history", methods=["GET"])
+@login_required
+def api_chat_history():
+    from flask import jsonify
+    from flask_login import current_user
+    from mo_hinh import LichSuChatbot
+
+    try:
+        history_records = LichSuChatbot.query.filter_by(nguoi_dung_id=current_user.id).order_by(LichSuChatbot.ngay_tao.asc()).all()
+        history = []
+        for record in history_records:
+            history.append({
+                "role": record.role,
+                "content": record.content
+            })
+        return jsonify({"history": history})
+    except Exception as e:
+        logging.error(f"Chatbot history API error: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({"error": "Không thể tải lịch sử chatbot."}), 500
 
 @app.route("/san-pham")
 def san_pham():
@@ -901,10 +1206,33 @@ def xem_san_pham(id):
 def trang_chu():
     return render_template("index.html")
 
+@app.get("/privacy-policy")
+def privacy_policy():
+    return render_template("privacy_policy.html")
+
+@app.get("/terms-of-service")
+def terms_of_service():
+    return render_template("terms_of_service.html")
+
+@app.get("/data-deletion")
+def data_deletion():
+    return render_template("data_deletion.html")
+
+@app.get("/support")
+def support():
+    return render_template("support.html")
+
 @app.get("/tao-giao-trinh")
 @login_required
 def trang_tao_giao_trinh():
-    return render_template("app.html", mac_dinh_top_k=CauHinh.SO_DOAN_THAM_KHAO, mac_dinh_linked=CauHinh.SO_TRANG_LIEN_KET)
+    return render_template(
+        "app.html", 
+        mac_dinh_top_k=CauHinh.SO_DOAN_THAM_KHAO, 
+        mac_dinh_linked=CauHinh.SO_TRANG_LIEN_KET,
+        phi_token_auto=getattr(CauHinh, "PHI_TOKEN_AUTO", 1),
+        phi_token_expert=getattr(CauHinh, "PHI_TOKEN_EXPERT", 2),
+        phi_token_creative=getattr(CauHinh, "PHI_TOKEN_CREATIVE", 3)
+    )
 
 @app.route("/admin")
 @login_required
@@ -934,68 +1262,10 @@ def admin_users():
 @login_required
 @admin_required
 def admin_curriculums():
-    completed = LichSuGiaoTrinh.query.order_by(LichSuGiaoTrinh.ngay_tao.desc()).all()
-    
-    items = []
-    for item in completed:
-        items.append({
-            "loai": "completed",
-            "id": item.id,
-            "ma_cv": item.ma_cv,
-            "chu_de": item.chu_de,
-            "ngay_tao": item.ngay_tao or datetime.utcnow(),
-            "do_dai_ky_tu": item.do_dai_ky_tu or 0,
-            "trang_thai": "hoan_thanh",
-            "noi_bat": item.noi_bat,
-            "nguoi_tao": item.nguoi_dung.ten_dang_nhap if item.nguoi_dung else (item.nguoi_dung_id or "Khách lẻ")
-        })
-        
-    for ma_cv, job in CONG_VIEC.items():
-        if any(x["ma_cv"] == ma_cv for x in items):
-            continue
-            
-        ngay_tao = job.get("ngay_tao", datetime.now())
-        do_dai_ky_tu = 0
-        if job.get("trang_thai") == "hoan_thanh":
-            try:
-                p_json = os.path.join(CauHinh.THU_MUC_JSON, f"{ma_cv}.json")
-                if os.path.exists(p_json):
-                    with open(p_json, 'r', encoding='utf-8') as f:
-                        data = json.load(f)
-                    book_vi = data.get('book_vi', {})
-                    for chap in book_vi.get("chapters", []):
-                        for sec in chap.get("sections", []):
-                            do_dai_ky_tu += len(sec.get("content", ""))
-            except Exception as e:
-                logger.error(f"Error reading character length: {e}")
-                
-        from mo_hinh import NguoiDung
-        user_name = "Khách lẻ"
-        u_id = job.get("user_id")
-        if u_id:
-            u = db.session.get(NguoiDung, u_id)
-            if u:
-                user_name = u.ten_dang_nhap
-
-        items.append({
-            "loai": "active",
-            "id": None,
-            "ma_cv": ma_cv,
-            "chu_de": job.get("tieu_de", "Không rõ chủ đề"),
-            "ngay_tao": ngay_tao,
-            "do_dai_ky_tu": do_dai_ky_tu,
-            "trang_thai": job.get("trang_thai", "dang_chay"),
-            "tien_do": job.get("tien_do", 0),
-            "buoc": job.get("buoc", "Đang xử lý"),
-            "loi": job.get("loi", ""),
-            "noi_bat": False,
-            "nguoi_tao": user_name
-        })
-        
-    items.sort(key=lambda x: x["ngay_tao"], reverse=True)
+    history = LichSuGiaoTrinh.query.order_by(LichSuGiaoTrinh.ngay_tao.desc()).all()
     return render_template(
         "admin_curriculums.html",
-        history=items,
+        history=history,
         current_section="curriculums"
     )
 
@@ -1071,19 +1341,10 @@ def admin_toggle_showcase(id):
 @login_required
 @admin_required
 def admin_settings():
-    def mask_key(key):
-        if not key:
-            return ""
-        key = key.strip()
-        if len(key) <= 10:
-            return "********"
-        return f"{key[:6]}...{key[-4:]}"
-        
-    masked_openai = mask_key(CauHinh.OPENAI_API_KEY)
-    masked_gemini_list = [mask_key(k) for k in CauHinh.GEMINI_API_KEYS if k]
-    masked_gemini = ", ".join(masked_gemini_list)
-    masked_vnpay_secret = mask_key(CauHinh.VNPAY_HASH_SECRET)
-    masked_sepay_key = mask_key(CauHinh.SEPAY_API_KEY)
+    masked_openai = CauHinh.OPENAI_API_KEY or ""
+    masked_gemini = ", ".join(CauHinh.GEMINI_API_KEYS) if CauHinh.GEMINI_API_KEYS else ""
+    masked_vnpay_secret = CauHinh.VNPAY_HASH_SECRET or ""
+    masked_sepay_key = CauHinh.SEPAY_API_KEY or ""
     
     return render_template(
         "admin_settings.html",
@@ -1130,7 +1391,8 @@ def admin_update_settings():
         "WRITER_MODEL", "SEARCH_MODEL", "SUPERVISOR_MODEL_LITE", "SUPERVISOR_MODEL_PRO",
         "PAYMENT_VNPAY_ACTIVE", "PAYMENT_SEPAY_ACTIVE",
         "VNPAY_TMN_CODE", "VNPAY_HASH_SECRET", "VNPAY_PAYMENT_URL", "VNPAY_RETURN_URL",
-        "SEPAY_API_KEY", "SEPAY_ACCOUNT_NUMBER", "SEPAY_BANK_BRAND", "SEPAY_WEB_NAME", "SEPAY_XOR_KEY"
+        "SEPAY_API_KEY", "SEPAY_ACCOUNT_NUMBER", "SEPAY_BANK_BRAND", "SEPAY_WEB_NAME", "SEPAY_XOR_KEY",
+        "PHI_TOKEN_AUTO", "PHI_TOKEN_EXPERT", "PHI_TOKEN_CREATIVE"
     ]
     
     def mask_key(key):
@@ -1148,14 +1410,14 @@ def admin_update_settings():
                 
                 # Check for masked keys
                 if key in ["OPENAI_API_KEY", "VNPAY_HASH_SECRET", "SEPAY_API_KEY"]:
-                    if "..." in new_val:
+                    if "..." in new_val or "*" in new_val:
                         # Keep original key
                         continue
                 elif key == "GEMINI_API_KEYS":
                     tokens = [t.strip() for t in new_val.split(",") if t.strip()]
                     resolved_keys = []
                     for t in tokens:
-                        if "..." in t:
+                        if "..." in t or "*" in t:
                             matched = None
                             for orig in CauHinh.GEMINI_API_KEYS:
                                 if mask_key(orig) == t:
@@ -1170,11 +1432,31 @@ def admin_update_settings():
                 # Write to .env
                 set_key(env_path, key, new_val)
                 
+                # Write to DB
+                try:
+                    from mo_hinh import CauHinhHeThong
+                    from cau_hinh import ma_hoa_key
+                    api_keys_to_encrypt = ["OPENAI_API_KEY", "GEMINI_API_KEYS", "SEPAY_API_KEY", "VNPAY_HASH_SECRET"]
+                    db_val = ma_hoa_key(new_val) if key in api_keys_to_encrypt else new_val
+                    
+                    config_item = CauHinhHeThong.query.filter_by(khoa=key).first()
+                    if not config_item:
+                        config_item = CauHinhHeThong(khoa=key, gia_tri=db_val)
+                        db.session.add(config_item)
+                    else:
+                        config_item.gia_tri = db_val
+                    db.session.commit()
+                except Exception as db_err:
+                    db.session.rollback()
+                    logger.error(f"Lỗi lưu CSDL cho key {key}: {db_err}")
+                
                 # Update in memory
                 if key == "GEMINI_API_KEYS":
                     CauHinh.GEMINI_API_KEYS = [k.strip() for k in new_val.split(",") if k.strip()]
                 elif key in ["PAYMENT_VNPAY_ACTIVE", "PAYMENT_SEPAY_ACTIVE"]:
                     setattr(CauHinh, key, new_val == "True")
+                elif key in ["PHI_TOKEN_AUTO", "PHI_TOKEN_EXPERT", "PHI_TOKEN_CREATIVE"]:
+                    setattr(CauHinh, key, int(new_val))
                 elif key == "SEPAY_XOR_KEY":
                     val = int(new_val, 16) if "0x" in new_val.lower() else int(new_val)
                     setattr(CauHinh, key, val)
@@ -1208,6 +1490,27 @@ def admin_toggle_block_user():
     
     action = "khóa" if user.bi_khoa else "mở khóa"
     return jsonify({"success": True, "bi_khoa": user.bi_khoa, "message": f"Đã {action} tài khoản thành viên {user.ten_dang_nhap}!"})
+
+@app.route("/admin/delete_user", methods=["POST"])
+@login_required
+@admin_required
+def admin_delete_user():
+    data = request.json or {}
+    user_id = data.get("user_id")
+    if not user_id:
+        return jsonify({"success": False, "error": "Thiếu user_id"}), 400
+        
+    user = db.session.get(NguoiDung, int(user_id))
+    if not user:
+        return jsonify({"success": False, "error": "Không tìm thấy người dùng"}), 404
+        
+    if user.la_admin and user.id == current_user.id:
+        return jsonify({"success": False, "error": "Bạn không thể tự xóa tài khoản của chính mình!"}), 400
+        
+    db.session.delete(user)
+    db.session.commit()
+    
+    return jsonify({"success": True, "message": f"Đã xóa tài khoản thành viên {user.ten_dang_nhap}!"})
 
 @app.route("/admin/packages", methods=["GET"])
 @login_required
@@ -1316,7 +1619,8 @@ def hien_thi_lich_su(id):
                 "tai_pdf": f"/tai/pdf/{ma_cv}",
                 "tai_docx_plain": f"/tai/docx/{ma_cv}_plain",
                 "tai_pdf_plain": f"/tai/pdf/{ma_cv}_plain",
-                "nguon": data.get('references', [])
+                "nguon": data.get('references', []),
+                "audit_quy_mo": data.get('audit_quy_mo')
             }
             return render_template("result.html", ma_cv=ma_cv, thong_tin=fake_info, book=data.get('book_vi', {}), references=data.get('references', []), glossary=data.get('glossary', []), grounding=data.get('grounding', {}), extracted_terms=data.get('extracted_terms', []), kb_headings=data.get('kb_headings', []))
             
@@ -1345,6 +1649,72 @@ def hien_thi_lich_su(id):
         
     return "Nội dung giáo trình không còn khả dụng hoặc đã bị lỗi khi lưu.", 404
 
+@app.route("/lich-su/xoa/<int:id>", methods=["POST"])
+@login_required
+def xoa_lich_su(id):
+    try:
+        from mo_hinh import db, LichSuGiaoTrinh
+        import os
+        item = db.session.get(LichSuGiaoTrinh, id)
+        if not item:
+            return jsonify({"success": False, "error": "Không tìm thấy giáo trình."}), 404
+        
+        # Verify ownership
+        if not current_user.la_admin and item.nguoi_dung_id != current_user.id:
+            return jsonify({"success": False, "error": "Bạn không có quyền xóa giáo trình này."}), 403
+            
+        ma_cv = item.ma_cv
+        if ma_cv:
+            # File paths to delete
+            file_paths = [
+                os.path.join(CauHinh.THU_MUC_JSON, f"{ma_cv}.json"),
+                os.path.join(CauHinh.THU_MUC_JSON, f"{ma_cv}_plain.json"),
+                os.path.join(CauHinh.THU_MUC_PDF, f"{ma_cv}.pdf"),
+                os.path.join(CauHinh.THU_MUC_PDF, f"{ma_cv}_plain.pdf"),
+                os.path.join(CauHinh.THU_MUC_DOCX, f"{ma_cv}.docx"),
+                os.path.join(CauHinh.THU_MUC_DOCX, f"{ma_cv}_plain.docx")
+            ]
+            for p in file_paths:
+                if os.path.exists(p):
+                    try:
+                        os.remove(p)
+                    except Exception as fe:
+                        logger.error(f"Error removing file {p}: {fe}")
+                        
+            # Delete from Azure Blob Storage if configured
+            try:
+                from dich_vu.azure_blob import delete_from_blob
+                delete_from_blob(f"json/{ma_cv}.json")
+                delete_from_blob(f"json/{ma_cv}_plain.json")
+                delete_from_blob(f"pdf/{ma_cv}.pdf")
+                delete_from_blob(f"pdf/{ma_cv}_plain.pdf")
+                delete_from_blob(f"docx/{ma_cv}.docx")
+                delete_from_blob(f"docx/{ma_cv}_plain.docx")
+            except Exception as blob_err:
+                logger.error(f"Error removing files from Azure Blob Storage: {blob_err}")
+                
+        db.session.delete(item)
+        db.session.commit()
+        return jsonify({"success": True, "message": "Xóa lịch sử giáo trình thành công."})
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error deleting curriculum history {id}: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/lich-su/xoa-luu-tam/<string:ma_cv>", methods=["POST"])
+@login_required
+def xoa_luu_tam(ma_cv):
+    if ma_cv in CONG_VIEC:
+        job = CONG_VIEC[ma_cv]
+        if job.get("user_id") == current_user.id:
+            if job.get("trang_thai") in ["that_bai", "huy_bo"]:
+                CONG_VIEC.pop(ma_cv)
+                return jsonify({"success": True, "message": "Xóa thông tin tiến trình thành công."})
+            else:
+                return jsonify({"success": False, "error": "Không thể xóa tiến trình đang chạy."}), 400
+    return jsonify({"success": False, "error": "Không tìm thấy tiến trình."}), 404
+
+
 @app.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
@@ -1354,6 +1724,7 @@ def profile():
         from werkzeug.utils import secure_filename
         from werkzeug.security import generate_password_hash, check_password_hash
 
+        new_ten_dang_nhap = (request.form.get("ten_dang_nhap") or "").strip()
         new_ho_ten = request.form.get("ho_ten")
         new_email = (request.form.get("email") or "").strip().lower()
         mat_khau_cu = request.form.get("mat_khau_cu")
@@ -1362,6 +1733,22 @@ def profile():
         avatar_file = request.files.get("anh_dai_dien")
         
         profile_updated = False
+
+        # 0. Cập nhật tên đăng nhập
+        if new_ten_dang_nhap and new_ten_dang_nhap != current_user.ten_dang_nhap:
+            if " " in new_ten_dang_nhap:
+                flash("Tên đăng nhập không được chứa khoảng trắng.", "danger")
+                return redirect(url_for("profile"))
+            if len(new_ten_dang_nhap) < 3:
+                flash("Tên đăng nhập phải có ít nhất 3 ký tự.", "danger")
+                return redirect(url_for("profile"))
+            existing_user = NguoiDung.query.filter_by(ten_dang_nhap=new_ten_dang_nhap).first()
+            if existing_user:
+                flash("Tên đăng nhập này đã được sử dụng bởi tài khoản khác.", "danger")
+                return redirect(url_for("profile"))
+            current_user.ten_dang_nhap = new_ten_dang_nhap
+            db.session.commit()
+            profile_updated = True
 
         # 1. Cập nhật họ tên
         if new_ho_ten and new_ho_ten != current_user.ho_ten:
@@ -2299,6 +2686,8 @@ def admin_update_user():
     if 'email' in data: user.email = data['email']
     if 'token' in data: user.token = int(data['token'])
     if 'la_admin' in data: user.la_admin = bool(data['la_admin'])
+    if 'mat_khau' in data and data['mat_khau'].strip():
+        user.mat_khau = generate_password_hash(data['mat_khau'].strip())
     
     db.session.commit()
     return jsonify({"success": True})
@@ -2310,6 +2699,19 @@ def huy_giao_trinh(ma_cv):
         CONG_VIEC[ma_cv]["huy_bo"] = True
         return {"status": "success", "message": "Đã gửi lệnh hủy"}
     return {"status": "error", "message": "Không tìm thấy tiến trình"}, 404
+
+@app.post("/xac_nhan/<ma_cv>/<quyet_dinh>")
+def xac_nhan_ha_quy_mo(ma_cv, quyet_dinh):
+    if ma_cv not in CONG_VIEC:
+        return jsonify({"status": "error", "message": "Không tìm thấy tiến trình"}), 404
+    if quyet_dinh == "dong_y":
+        CONG_VIEC[ma_cv]["xac_nhan_cho_phep"] = True
+        return jsonify({"status": "success", "message": "Đã đồng ý hạ quy mô"})
+    elif quyet_dinh == "tu_choi":
+        CONG_VIEC[ma_cv]["xac_nhan_cho_phep"] = False
+        return jsonify({"status": "success", "message": "Đã từ chối hạ quy mô"})
+    return jsonify({"status": "error", "message": "Quyết định không hợp lệ"}), 400
+
 
 @app.post("/tao")
 def tao_giao_trinh():
@@ -2340,6 +2742,46 @@ def tao_giao_trinh():
             "loi": "Chủ đề quá ngắn. Vui lòng nhập từ khóa có ý nghĩa từ 2 ký tự trở lên."
         }), 400
 
+    if is_abbreviation(tieu_de):
+        return jsonify({
+            "status": "INVALID_INPUT",
+            "loi": "Chủ đề chứa từ viết tắt. Hãy nhập đầy đủ nội dung để đạt được kết quả tốt nhất."
+        }), 400
+
+    # Lấy các tham số nâng cao (V31+)
+    so_chuong_custom = du_lieu.get("so_chuong_custom")
+    danh_sach_chuong = du_lieu.get("danh_sach_chuong")
+    che_do = du_lieu.get("che_do", "auto")
+
+    if danh_sach_chuong:
+        if not isinstance(danh_sach_chuong, list):
+            return jsonify({
+                "status": "INVALID_INPUT",
+                "loi": "Danh sách chương phải là một mảng."
+            }), 400
+        for i, ch in enumerate(danh_sach_chuong, 1):
+            if not isinstance(ch, str):
+                return jsonify({
+                    "status": "INVALID_INPUT",
+                    "loi": f"Tên chương {i} không hợp lệ."
+                }), 400
+            ch_strip = ch.strip()
+            if not ch_strip:
+                return jsonify({
+                    "status": "INVALID_INPUT",
+                    "loi": f"Tên chương {i} không được để trống."
+                }), 400
+            if len(ch_strip) > 100:
+                return jsonify({
+                    "status": "INVALID_INPUT",
+                    "loi": f"Tên chương {i} vượt quá giới hạn 100 ký tự. Vui lòng rút ngắn lại."
+                }), 400
+            if is_abbreviation(ch_strip):
+                return jsonify({
+                    "status": "INVALID_INPUT",
+                    "loi": f"Tên chương {i} chứa từ viết tắt. Hãy nhập đầy đủ nội dung để đạt được kết quả tốt nhất."
+                }), 400
+
     from flask_login import current_user
     u_id = current_user.id if current_user.is_authenticated else None
 
@@ -2352,16 +2794,11 @@ def tao_giao_trinh():
         "user_id": u_id,
         "ngay_tao": datetime.now()
     }
-    
-    # Lấy các tham số nâng cao (V31+)
-    so_chuong_custom = du_lieu.get("so_chuong_custom")
-    danh_sach_chuong = du_lieu.get("danh_sach_chuong")
-    che_do = du_lieu.get("che_do", "auto")
 
     # Xác định phí token (V32+)
-    phi_token = 1
-    if che_do == "expert": phi_token = 2
-    elif che_do == "creative": phi_token = 3
+    phi_token = getattr(CauHinh, "PHI_TOKEN_AUTO", 1)
+    if che_do == "expert": phi_token = getattr(CauHinh, "PHI_TOKEN_EXPERT", 2)
+    elif che_do == "creative": phi_token = getattr(CauHinh, "PHI_TOKEN_CREATIVE", 3)
 
     # Lấy user_id ngay trong request context trước khi chuyển sang background thread
     from flask_login import current_user
@@ -2495,7 +2932,10 @@ CHỈ trả về JSON array, KHÔNG giải thích."""
                             temperature=0,
                             max_tokens=100
                         )
+                        import re as _re
                         _val_text = _val_resp.choices[0].message.content.strip()
+                        _val_text = _re.sub(r"^```(?:json)?\s*", "", _val_text, flags=_re.IGNORECASE)
+                        _val_text = _re.sub(r"\s*```$", "", _val_text).strip()
                         
                         # Parse JSON response
                         _val_results = _json_val.loads(_val_text)
@@ -2623,7 +3063,7 @@ CHỈ trả về JSON array, KHÔNG giải thích."""
                         
                     # Phân tích scale hạ cấp
                     suggested_scale = None
-                    if quy_mo in SCALE_DOWNGRADE:
+                    if reason not in ("NO_RELIABLE_DOCS", "LOW_CONFIDENCE") and quy_mo in SCALE_DOWNGRADE:
                         lower = SCALE_DOWNGRADE[quy_mo]
                         lower_threshold = SUFFICIENCY_THRESHOLDS[lower]
                         if kb_score >= lower_threshold:
@@ -2632,7 +3072,7 @@ CHỈ trả về JSON array, KHÔNG giải thích."""
                     if reason == "API_QUOTA_EXHAUSTED":
                         error_msg = "Tất cả API Key Gemini đã cạn kiệt Quota. Không thể chuyển đổi Vector tài liệu. Vui lòng thêm API Key mới hoặc thử lại sau."
                     else:
-                        error_msg = f"Tìm thấy {len(hardened_docs)} nguồn nhưng độ tin cậy và mức độ liên quan quá thấp (có thể do bài viết quá ngắn hoặc nội dung đi chệch chủ đề '{tieu_de}')."
+                        error_msg = "Thông tin tìm kiếm của bạn trên Wikipedia không đủ để viết một bài giáo trình."
                         
                         # --- Gọi OpenAI để gợi ý chủ đề ---
                         try:
@@ -2659,29 +3099,74 @@ CHỈ trả về JSON array, KHÔNG giải thích."""
                             pass
                     
                     if suggested_scale:
-                        error_msg += f"\n\nTuy nhiên, với lượng kiến thức mỏng này ({kb_score:.0f} điểm), bạn vẫn có thể thử tạo giáo trình ở mức {SCALE_LABELS.get(suggested_scale, suggested_scale)}."
+                        error_msg_html = f"Thông tin tìm kiếm của bạn trên Wikipedia không đủ để viết một bài giáo trình ở mức {SCALE_LABELS.get(quy_mo, quy_mo)}.<br><br>Tuy nhiên, bạn có thể tiếp tục tạo giáo trình ở mức quy mô thấp hơn: <b>{SCALE_LABELS.get(suggested_scale, suggested_scale)}</b>."
+                        CONG_VIEC[ma_cv].update({
+                            "trang_thai": "cho_xac_nhan",
+                            "loai_loi": "INSUFFICIENT_DATA",
+                            "loi": error_msg_html,
+                            "chi_tiet": reason,
+                            "suggestions": preview,
+                            "suggested_scale": suggested_scale,
+                            "suggested_scale_label": SCALE_LABELS.get(suggested_scale, suggested_scale),
+                            "kb_score": round(kb_score, 1),
+                            "required_score": min_threshold,
+                            "current_scale": quy_mo,
+                            "current_scale_label": SCALE_LABELS.get(quy_mo, quy_mo),
+                            "xac_nhan_cho_phep": None
+                        })
+                        
+                        wait_seconds = 120
+                        start_wait = time.time()
+                        ghi_nhat_ky(f"Chờ người dùng xác nhận hạ quy mô từ {quy_mo} xuống {suggested_scale}...")
+                        while CONG_VIEC[ma_cv].get("xac_nhan_cho_phep") is None:
+                            time.sleep(1.0)
+                            if CONG_VIEC[ma_cv].get("huy_bo"):
+                                CONG_VIEC[ma_cv]["xac_nhan_cho_phep"] = False
+                                break
+                            if time.time() - start_wait > wait_seconds:
+                                CONG_VIEC[ma_cv]["xac_nhan_cho_phep"] = False
+                                break
+                                
+                        if CONG_VIEC[ma_cv].get("xac_nhan_cho_phep") is True:
+                            ghi_nhat_ky(f"Người dùng đã đồng ý hạ quy mô xuống {suggested_scale}. Tiếp tục biên soạn.")
+                            quy_mo = suggested_scale
+                            CONG_VIEC[ma_cv].update({
+                                "trang_thai": "dang_chay",
+                                "quy_mo": quy_mo,
+                                "loi": None,
+                                "suggested_scale": None,
+                                "xac_nhan_cho_phep": None
+                            })
+                            du_lieu["quy_mo"] = quy_mo
+                            min_threshold = SUFFICIENCY_THRESHOLDS.get(quy_mo, 30)
+                        else:
+                            ghi_nhat_ky("Tiến trình bị dừng do từ chối hạ quy mô hoặc hết thời gian chờ.")
+                            CONG_VIEC[ma_cv].update({
+                                "trang_thai": "that_bai",
+                                "loi": "Người dùng đã từ chối hạ quy mô giáo trình. Tiến trình bị hủy."
+                            })
+                            return
                     else:
                         error_msg += "\n\nHệ thống bắt buộc phải dừng để đảm bảo chất lượng. Vui lòng thử một chủ đề phổ biến hơn."
-
-                    CONG_VIEC[ma_cv].update({
-                        "trang_thai": "that_bai",
-                        "loai_loi": "INSUFFICIENT_DATA" if suggested_scale else "NO_RELIABLE_SOURCES",
-                        "loi": error_msg,
-                        "chi_tiet": reason,
-                        "suggestions": preview,
-                        "suggested_scale": suggested_scale,
-                        "suggested_scale_label": SCALE_LABELS.get(suggested_scale, suggested_scale) if suggested_scale else None,
-                        "kb_score": round(kb_score, 1),
-                        "required_score": min_threshold,
-                        "current_scale": quy_mo,
-                        "current_scale_label": SCALE_LABELS.get(quy_mo, quy_mo),
-                        "query_suggestions": [
-                            f"{tieu_de} là gì",
-                            f"{tieu_de} cơ bản",
-                            f"Tổng quan về {tieu_de}"
-                        ]
-                    })
-                    return # Dừng toàn bộ pipeline một cách êm ái
+                        CONG_VIEC[ma_cv].update({
+                            "trang_thai": "that_bai",
+                            "loai_loi": "NO_RELIABLE_SOURCES",
+                            "loi": error_msg,
+                            "chi_tiet": reason,
+                            "suggestions": preview,
+                            "suggested_scale": None,
+                            "suggested_scale_label": None,
+                            "kb_score": round(kb_score, 1),
+                            "required_score": min_threshold,
+                            "current_scale": quy_mo,
+                            "current_scale_label": SCALE_LABELS.get(quy_mo, quy_mo),
+                            "query_suggestions": [
+                                f"{tieu_de} là gì",
+                                f"{tieu_de} cơ bản",
+                                f"Tổng quan về {tieu_de}"
+                            ]
+                        })
+                        return
                 
                 # --- DATA SUFFICIENCY GATE (V31 — Kiểm tra đủ dữ liệu cho quy mô) ---
                 
@@ -2757,11 +3242,12 @@ CHỈ trả về JSON array, KHÔNG giải thích."""
                 if kb_score < min_threshold:
                     # Xác định quy mô khả thi (nếu có)
                     suggested_scale = None
-                    if quy_mo in SCALE_DOWNGRADE:
-                        lower = SCALE_DOWNGRADE[quy_mo]
-                        lower_threshold = SUFFICIENCY_THRESHOLDS[lower]
-                        if kb_score >= lower_threshold:
-                            suggested_scale = lower
+                    if not is_topic_absent and topic_presence_ratio >= 0.10:
+                        if quy_mo in SCALE_DOWNGRADE:
+                            lower = SCALE_DOWNGRADE[quy_mo]
+                            lower_threshold = SUFFICIENCY_THRESHOLDS[lower]
+                            if kb_score >= lower_threshold:
+                                suggested_scale = lower
                     
                     # Gợi ý chủ đề thay thế bằng LLM (1 call nhẹ)
                     alt_topics = []
@@ -2792,49 +3278,76 @@ Trả về ONLY JSON: {{"topics": ["topic1", "topic2", "topic3", "topic4"]}}"""}
                         logger.warning(f"[DATA-GATE] Alternative topic suggestion failed: {e_alt}")
                         alt_topics = []
                     
-                    if topic_presence_ratio < 0.10:
-                        error_msg = (
-                            f"Chủ đề \"{tieu_de}\" không được tìm thấy trên Wikipedia. "
-                            f"Các tài liệu hệ thống thu thập được không hề đề cập đến chủ đề này. "
-                            f"Vui lòng kiểm tra lại chính tả hoặc thử một chủ đề khác."
-                        )
-                    else:
-                        error_msg = (
-                            f"Chủ đề \"{tieu_de}\" không có đủ dữ liệu chất lượng trên Wikipedia "
-                            f"để xây dựng giáo trình ở quy mô {SCALE_LABELS.get(quy_mo, quy_mo)}."
-                        )
+                    error_msg = "Thông tin tìm kiếm của bạn trên Wikipedia không đủ để viết một bài giáo trình."
                     
                     if alt_topics:
                         error_msg += f"<br><br>💡 <b>Gợi ý chủ đề tương đương có nhiều dữ liệu hơn:</b><br>"
                         for s in alt_topics:
                             error_msg += f"- {s}<br>"
                     
-                    gate_result = {
-                        "trang_thai": "that_bai",
-                        "loai_loi": "INSUFFICIENT_DATA",
-                        "loi": error_msg,
-                        "kb_score": round(kb_score, 1),
-                        "required_score": min_threshold,
-                        "current_scale": quy_mo,
-                        "current_scale_label": SCALE_LABELS.get(quy_mo, quy_mo),
-                        "query_suggestions": alt_topics,
-                    }
-                    
-                    # Nếu có thể hạ quy mô → gợi ý (KHÔNG tự động hạ, hỏi người dùng)
                     if suggested_scale:
-                        gate_result["suggested_scale"] = suggested_scale
-                        gate_result["suggested_scale_label"] = SCALE_LABELS.get(suggested_scale, suggested_scale)
-                        gate_result["loi"] += (
-                            f"\n\nTuy nhiên, dữ liệu hiện có ({kb_score:.0f} điểm) đủ để tạo giáo trình "
-                            f"ở mức {SCALE_LABELS.get(suggested_scale, suggested_scale)}."
-                        )
-                    
-                    logger.warning(
-                        f"[DATA-GATE] INSUFFICIENT: '{tieu_de}' | score={kb_score:.1f} < {min_threshold} | "
-                        f"suggested_scale={suggested_scale} | alt_topics={alt_topics}"
-                    )
-                    CONG_VIEC[ma_cv].update(gate_result)
-                    return  # DỪNG pipeline — chờ người dùng quyết định
+                        error_msg_html = f"Thông tin tìm kiếm của bạn trên Wikipedia không đủ để viết một bài giáo trình ở mức {SCALE_LABELS.get(quy_mo, quy_mo)}.<br><br>Tuy nhiên, bạn có thể tiếp tục tạo giáo trình ở mức quy mô thấp hơn: <b>{SCALE_LABELS.get(suggested_scale, suggested_scale)}</b>."
+                        if alt_topics:
+                            error_msg_html += f"<br><br>💡 <b>Gợi ý chủ đề tương đương có nhiều dữ liệu hơn:</b><br>"
+                            for s in alt_topics:
+                                error_msg_html += f"- {s}<br>"
+                                
+                        CONG_VIEC[ma_cv].update({
+                            "trang_thai": "cho_xac_nhan",
+                            "loai_loi": "INSUFFICIENT_DATA",
+                            "loi": error_msg_html,
+                            "suggested_scale": suggested_scale,
+                            "suggested_scale_label": SCALE_LABELS.get(suggested_scale, suggested_scale),
+                            "kb_score": round(kb_score, 1),
+                            "required_score": min_threshold,
+                            "current_scale": quy_mo,
+                            "current_scale_label": SCALE_LABELS.get(quy_mo, quy_mo),
+                            "xac_nhan_cho_phep": None
+                        })
+                        
+                        wait_seconds = 120
+                        start_wait = time.time()
+                        ghi_nhat_ky(f"Chờ người dùng xác nhận hạ quy mô từ {quy_mo} xuống {suggested_scale}...")
+                        while CONG_VIEC[ma_cv].get("xac_nhan_cho_phep") is None:
+                            time.sleep(1.0)
+                            if CONG_VIEC[ma_cv].get("huy_bo"):
+                                CONG_VIEC[ma_cv]["xac_nhan_cho_phep"] = False
+                                break
+                            if time.time() - start_wait > wait_seconds:
+                                CONG_VIEC[ma_cv]["xac_nhan_cho_phep"] = False
+                                break
+                                
+                        if CONG_VIEC[ma_cv].get("xac_nhan_cho_phep") is True:
+                            ghi_nhat_ky(f"Người dùng đã đồng ý hạ quy mô xuống {suggested_scale}. Tiếp tục biên soạn.")
+                            quy_mo = suggested_scale
+                            CONG_VIEC[ma_cv].update({
+                                "trang_thai": "dang_chay",
+                                "quy_mo": quy_mo,
+                                "loi": None,
+                                "suggested_scale": None,
+                                "xac_nhan_cho_phep": None
+                            })
+                            du_lieu["quy_mo"] = quy_mo
+                            min_threshold = SUFFICIENCY_THRESHOLDS.get(quy_mo, 30)
+                        else:
+                            ghi_nhat_ky("Tiến trình bị dừng do từ chối hạ quy mô hoặc hết thời gian chờ.")
+                            CONG_VIEC[ma_cv].update({
+                                "trang_thai": "that_bai",
+                                "loi": "Người dùng đã từ chối hạ quy mô giáo trình. Tiến trình bị hủy."
+                            })
+                            return
+                    else:
+                        CONG_VIEC[ma_cv].update({
+                            "trang_thai": "that_bai",
+                            "loai_loi": "INSUFFICIENT_DATA",
+                            "loi": error_msg,
+                            "kb_score": round(kb_score, 1),
+                            "required_score": min_threshold,
+                            "current_scale": quy_mo,
+                            "current_scale_label": SCALE_LABELS.get(quy_mo, quy_mo),
+                            "query_suggestions": alt_topics,
+                        })
+                        return
                 
                 # Mọi thứ an toàn, tiếp tục tạo Vector DB
                 if not passages:
@@ -3012,6 +3525,50 @@ Trả về ONLY JSON: {{"topics": ["topic1", "topic2", "topic3", "topic4"]}}"""}
                         )
                 
                 raw_outline = outline_data.get("outline", [])
+                actual_ch = len(raw_outline)
+                if so_chuong_yeu_cau > 0 and actual_ch < so_chuong_yeu_cau:
+                    error_msg_html = (
+                        f"Chủ đề <b>'{ctx.tieu_de}'</b> khan hiếm dữ liệu trên Wikipedia.<br>"
+                        f"Số chương tối đa có thể biên soạn dựa trên dữ liệu hiện có là <b>{actual_ch} chương</b> thay vì <b>{so_chuong_yeu_cau} chương</b> như yêu cầu.<br><br>"
+                        f"Bạn có đồng ý hạ số chương xuống <b>{actual_ch} chương</b> không?"
+                    )
+                    
+                    CONG_VIEC[ma_cv].update({
+                        "trang_thai": "cho_xac_nhan",
+                        "loai_loi": "CUSTOM_CHAPTER_DOWNGRADE",
+                        "loi": error_msg_html,
+                        "suggested_chapters": actual_ch,
+                        "requested_chapters": so_chuong_yeu_cau,
+                        "xac_nhan_cho_phep": None
+                    })
+                    
+                    wait_seconds = 120
+                    start_wait = time.time()
+                    ghi_nhat_ky(f"Chờ người dùng xác nhận hạ số chương từ {so_chuong_yeu_cau} xuống {actual_ch}...")
+                    while CONG_VIEC[ma_cv].get("xac_nhan_cho_phep") is None:
+                        time.sleep(1.0)
+                        if CONG_VIEC[ma_cv].get("huy_bo"):
+                            CONG_VIEC[ma_cv]["xac_nhan_cho_phep"] = False
+                            break
+                        if time.time() - start_wait > wait_seconds:
+                            CONG_VIEC[ma_cv]["xac_nhan_cho_phep"] = False
+                            break
+                            
+                    if CONG_VIEC[ma_cv].get("xac_nhan_cho_phep") is True:
+                        ghi_nhat_ky(f"Người dùng đã đồng ý hạ số chương xuống {actual_ch}. Tiếp tục biên soạn.")
+                        CONG_VIEC[ma_cv].update({
+                            "trang_thai": "dang_chay",
+                            "loi": None,
+                            "xac_nhan_cho_phep": None
+                        })
+                    else:
+                        ghi_nhat_ky("Tiến trình bị dừng do từ chối hạ số chương hoặc hết thời gian chờ.")
+                        CONG_VIEC[ma_cv].update({
+                            "trang_thai": "that_bai",
+                            "loi": "Người dùng đã từ chối hạ số chương giáo trình. Tiến trình bị hủy."
+                        })
+                        return
+                
                 total_sections = sum([len(c.get("sections", [])) for c in raw_outline])
                 CONG_VIEC[ma_cv]["tong_chuong"] = len(raw_outline)
                 CONG_VIEC[ma_cv]["tong_muc"] = total_sections
@@ -3314,7 +3871,21 @@ Trả về ONLY JSON: {{"topics": ["topic1", "topic2", "topic3", "topic4"]}}"""}
                                 kb_headings.append(heading)
 
                 all_refs = ordered_refs
-                ket_qua = {"topic": tieu_de, "book_vi": book_export, "references": all_refs, "ui_book": final_book, "glossary": glossary, "grounding": grounding_stats, "extracted_terms": [{"term": t.get("term", t) if isinstance(t, dict) else str(t), "meaning": t.get("meaning", "") if isinstance(t, dict) else ""} for t in ctx.terms], "kb_headings": kb_headings}
+
+                # Bước 6: Kiểm định cuối cùng (Final Audit for Scale Compliance)
+                from dich_vu.gemini_giam_sat import giam_sat_quy_mo
+                audit_quy_mo = giam_sat_quy_mo(
+                    tieu_de, 
+                    final_chapters, 
+                    quy_mo, 
+                    api_keys=CauHinh.GEMINI_API_KEYS,
+                    so_chuong_yeu_cau=(len(final_chapters) if (so_chuong_custom or danh_sach_chuong) else 0)
+                )
+                if audit_quy_mo.get("status") == "fail":
+                    logger.warning(f"Quy mô chưa đạt kỳ vọng: {audit_quy_mo.get('issues')}")
+                    ghi_nhat_ky(f"Cảnh báo quy mô: {audit_quy_mo.get('status')}. Vẫn tiếp tục đóng gói bản tốt nhất.")
+
+                ket_qua = {"topic": tieu_de, "book_vi": book_export, "references": all_refs, "ui_book": final_book, "glossary": glossary, "grounding": grounding_stats, "extracted_terms": [{"term": t.get("term", t) if isinstance(t, dict) else str(t), "meaning": t.get("meaning", "") if isinstance(t, dict) else ""} for t in ctx.terms], "kb_headings": kb_headings, "audit_quy_mo": audit_quy_mo}
                 
                 # --- PHIÊN BẢN SẠCH (KHÔNG TRÍCH DẪN) - V23.5 ---
                 import copy
@@ -3369,23 +3940,22 @@ Trả về ONLY JSON: {{"topics": ["topic1", "topic2", "topic3", "topic4"]}}"""}
                     "tai_pdf": f"/tai/pdf/{ma_cv}",
                     "tai_docx_plain": f"/tai/docx/{ma_cv}_plain",
                     "tai_pdf_plain": f"/tai/pdf/{ma_cv}_plain",
-                    "giam_sat": {"chapters": len(final_chapters), "circuit_breaker": getattr(ctx, 'use_gemini_only', False)}
+                    "giam_sat": {"chapters": len(final_chapters), "circuit_breaker": getattr(ctx, 'use_gemini_only', False)},
+                    "audit_quy_mo": audit_quy_mo
                 })
-                # Bước 6: Kiểm định cuối cùng (Final Audit for Scale Compliance)
-                from dich_vu.gemini_giam_sat import giam_sat_quy_mo
-                audit_quy_mo = giam_sat_quy_mo(tieu_de, final_chapters, quy_mo, api_keys=CauHinh.GEMINI_API_KEYS)
-                if audit_quy_mo.get("status") == "fail":
-                    # V23.5.3 Hardening: Chuyển từ Crash sang Warning để bảo vệ Pipeline
-                    logger.warning(f"Quy mô chưa đạt kỳ vọng: {audit_quy_mo.get('issues')}")
-                    ghi_nhat_ky(f"Cảnh báo quy mô: {audit_quy_mo.get('status')}. Vẫn tiếp tục đóng gói bản tốt nhất.")
                 
                 ghi_nhat_ky(f"Quy trình hoàn tất thành công trong {time.time() - start_time:.1f} giây.")
                 logger.info(f"Job {ma_cv}: COMPLETED in {time.time() - start_time:.2f} seconds.")
 
                 # Lưu lịch sử database (Hotfix V18.9: Bỏ qua nếu là khách lẻ và DB chưa migrate)
                 try:
-                    from mo_hinh import LichSuGiaoTrinh
+                    from mo_hinh import LichSuGiaoTrinh, NguoiDung
+                    from flask_login import login_user
                     with app.test_request_context('/'):
+                        if user_id:
+                            user = db.session.get(NguoiDung, user_id)
+                            if user:
+                                login_user(user)
                         noi_dung_html = render_template("result.html", ma_cv=ma_cv, thong_tin=CONG_VIEC[ma_cv], book=book_export, references=all_refs)
                     
                     if user_id:
@@ -3420,8 +3990,8 @@ Trả về ONLY JSON: {{"topics": ["topic1", "topic2", "topic3", "topic4"]}}"""}
                     CONG_VIEC[ma_cv]["loi"] = "Pipeline terminated unexpectedly."
 
     # Chạy Background
-    import threading
-    threading.Thread(target=run_pipeline, args=(u_id, so_chuong_custom, danh_sach_chuong)).start()
+    t = threading.Thread(target=run_pipeline, name="pipeline_thread", args=(u_id, so_chuong_custom, danh_sach_chuong))
+    t.start()
     return jsonify({"ma_cv": ma_cv, "trang_thai": "dang_chay"})
 
 @app.get("/trang_thai/<ma_cv>")
@@ -3757,19 +4327,39 @@ def cleanup_old_jobs():
 # Khởi chạy thread dọn dẹp ngầm
 threading.Thread(target=cleanup_old_jobs, daemon=True).start()
 
-@app.route("/check-db-schema")
-def check_db_schema():
-    try:
-        from sqlalchemy import inspect
-        inspector = inspect(db.engine)
-        cols = inspector.get_columns('lich_su_giao_trinh')
-        res = []
-        for c in cols:
-            res.append(f"{c['name']}: {c['type']}")
-        return "<br>".join(res)
-    except Exception as e:
-        return f"Error: {e}"
+def migrate_database_ngay_tao():
+    from mo_hinh import db_type, NguoiDung
+    import datetime
+    
+    if db_type == "mongodb":
+        try:
+            import pymongo
+            mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017/giao_trinh_ai")
+            parsed = pymongo.uri_parser.parse_uri(mongo_uri)
+            db_name = parsed.get("database") or "giao_trinh_ai"
+            client = pymongo.MongoClient(mongo_uri)
+            col = client[db_name]["nguoi_dung"]
+            default_date = datetime.datetime(2026, 6, 15, 0, 0, 0)
+            res = col.update_many({"ngay_tao": {"$exists": False}}, {"$set": {"ngay_tao": default_date}})
+            logger.info(f"MongoDB: Updated missing ngay_tao for nguoi_dung table. Modified: {res.modified_count}")
+        except Exception as e:
+            logger.error(f"MongoDB migration error: {e}")
+    else:
+        try:
+            from sqlalchemy import text
+            db.session.execute(text("SELECT ngay_tao FROM nguoi_dung LIMIT 1"))
+        except Exception:
+            db.session.rollback()
+            try:
+                db.session.execute(text("ALTER TABLE nguoi_dung ADD COLUMN ngay_tao DATETIME DEFAULT '2026-06-15 00:00:00'"))
+                db.session.commit()
+                logger.info("SQL database: Added column ngay_tao to nguoi_dung table.")
+            except Exception as alter_err:
+                db.session.rollback()
+                logger.error(f"SQL migration error (ALTER TABLE): {alter_err}")
 
 if __name__ == "__main__":
-    with app.app_context(): db.create_all()
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)), debug=True)
+    with app.app_context():
+        db.create_all()
+        migrate_database_ngay_tao()
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)), debug=True, use_reloader=False)

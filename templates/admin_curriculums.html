@@ -8,8 +8,14 @@
 {% block content %}
 <!-- History Table -->
 <div class="table-card" id="history-section">
-    <div class="table-card-header">
-        <h5 data-i18n="admin.curriculums.list_title">Thư viện giáo trình</h5>
+    <div class="table-card-header d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+        <h5 data-i18n="admin.curriculums.list_title" class="mb-0">Thư viện giáo trình</h5>
+        <div class="search-box-wrapper" style="position: relative; max-width: 300px; width: 100%;">
+            <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-dim); pointer-events: none;">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </span>
+            <input type="text" id="curriculum-search-input" class="form-control" data-i18n="admin.curriculums.search_placeholder" placeholder="Tìm kiếm giáo trình..." style="padding-left: 35px; border-radius: var(--radius-sm); font-size: 0.85rem; background: rgba(0,0,0,0.02); border: 1px solid var(--glass-border);">
+        </div>
     </div>
     <div class="table-responsive">
         <table class="table table-hover mb-0">
@@ -27,63 +33,32 @@
             <tbody>
                 {% for item in history %}
                 <tr>
-                    <td style="color: var(--text-dim); font-size:0.82rem;">#{{ item.id or 'M' }}</td>
-                    <td><strong>{{ item.nguoi_tao }}</strong></td>
-                    <td style="color: var(--primary);">
-                        {{ item.chu_de }}
-                        {% if item.do_dai_ky_tu > 0 %}
-                        <div style="font-size:0.75rem; color: var(--text-muted);" class="mt-1">
-                            <i class="fa-regular fa-file-lines me-1"></i> {{ '{:,}'.format(item.do_dai_ky_tu) }} ký tự
-                        </div>
-                        {% endif %}
-                    </td>
-                    <td style="color: var(--text-muted); font-size:0.82rem;">{{ item.ngay_tao.strftime('%b %d, %Y %H:%M') if item.ngay_tao else '—' }}</td>
+                    <td style="color: var(--text-dim); font-size:0.82rem;">#{{ item.id }}</td>
+                    <td><strong>{{ item.nguoi_dung.ten_dang_nhap if item.nguoi_dung else item.nguoi_dung_id }}</strong></td>
+                    <td style="color: var(--primary);">{{ item.chu_de }}</td>
+                    <td style="color: var(--text-muted); font-size:0.82rem;">{{ item.ngay_tao.strftime('%b %d, %Y') if item.ngay_tao else '—' }}</td>
                     <td>
-                        {% if item.trang_thai == 'hoan_thanh' %}
+                        {% if item.ma_cv %}
                         <span class="badge bg-success" data-i18n="admin.curriculums.status_available">Có sẵn</span>
-                        {% elif item.trang_thai == 'dang_chay' %}
-                        <span class="badge bg-warning">Đang chạy ({{ item.tien_do }}%)</span>
                         {% else %}
-                        <span class="badge bg-danger">Thất bại</span>
+                        <span class="badge bg-warning" data-i18n="admin.curriculums.status_not_saved">Chưa lưu</span>
                         {% endif %}
                     </td>
                     <td>
-                        {% if item.id %}
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" role="switch" id="showcase-{{ item.id }}" 
                                    {% if item.noi_bat %}checked{% endif %} 
                                    onchange="toggleShowcase({{ item.id }}, this.checked)">
                         </div>
-                        {% else %}
-                        —
-                        {% endif %}
                     </td>
                     <td>
-                        <div class="d-flex gap-1 flex-wrap">
-                            {% if item.id %}
+                        <div class="d-flex gap-1">
                             <a href="{{ url_for('hien_thi_lich_su', id=item.id) }}" class="btn btn-sm btn-outline-primary" title="Xem">
                                 <i class="fa-solid fa-eye"></i>
                             </a>
-                            {% elif item.ma_cv and item.trang_thai == 'hoan_thanh' %}
-                            <a href="{{ url_for('ket_qua', ma_cv=item.ma_cv) }}" class="btn btn-sm btn-outline-primary" title="Xem">
-                                <i class="fa-solid fa-eye"></i>
-                            </a>
-                            {% endif %}
-                            
-                            {% if item.ma_cv and item.trang_thai == 'hoan_thanh' %}
-                            <a href="{{ url_for('tai_file', loai='pdf', ma=item.ma_cv) }}" class="btn btn-sm btn-outline-danger" title="Tải PDF">
-                                <i class="fa-solid fa-file-pdf"></i>
-                            </a>
-                            <a href="{{ url_for('tai_file', loai='docx', ma=item.ma_cv) }}" class="btn btn-sm btn-outline-primary" title="Tải Word">
-                                <i class="fa-solid fa-file-word"></i>
-                            </a>
-                            {% endif %}
-
-                            {% if item.id %}
                             <button class="btn btn-sm btn-outline-danger" onclick="deleteCurriculum({{ item.id }}, '{{ item.chu_de|replace("'", "\\'") }}')" title="Xóa">
                                 <i class="fa-solid fa-trash-can"></i>
                             </button>
-                            {% endif %}
                         </div>
                     </td>
                 </tr>
@@ -164,5 +139,24 @@
             document.getElementById(`showcase-${id}`).checked = !checked;
         }
     }
+
+    // Client-side search and filter for curriculums table
+    document.getElementById('curriculum-search-input').addEventListener('input', function() {
+        const query = this.value.toLowerCase().trim();
+        const rows = document.querySelectorAll('#history-section tbody tr');
+        
+        rows.forEach(row => {
+            const id = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+            const creator = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+            const topic = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
+            const status = row.querySelector('td:nth-child(5)').textContent.toLowerCase();
+            
+            if (id.includes(query) || creator.includes(query) || topic.includes(query) || status.includes(query)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
 </script>
 {% endblock %}

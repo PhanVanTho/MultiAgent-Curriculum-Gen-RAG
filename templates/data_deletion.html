@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title data-i18n="footer.data_deletion">Chính sách xóa dữ liệu - Giáo Trình AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #047857; /* Emerald 700 */
+            --bg-color: #f8fafc;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --font-main: 'Be Vietnam Pro', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            -webkit-font-smoothing: antialiased;
+            letter-spacing: -0.01em;
+        }
+
+        h1, h2, h3, h4, h5, h6, .navbar-brand, .nav-link, .btn {
+            font-family: var(--font-main);
+            font-weight: 700;
+        }
+
+        /* Navbar */
+        .navbar-custom {
+            background: rgba(2, 44, 34, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 1rem 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+        .navbar-brand {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            color: #34d399 !important;
+            font-size: 1.5rem;
+        }
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8) !important;
+            font-weight: 500;
+            font-size: 0.95rem;
+            margin: 0 15px;
+            transition: all 0.2s;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #ffffff !important;
+            transform: translateY(-2px);
+        }
+        .btn-signin {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 600;
+            padding: 8px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .btn-signin:hover {
+            background-color: #065f46;
+            color: white;
+        }
+        .lang-btn {
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.82rem;
+            font-weight: 700;
+            padding: 5px 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.2s;
+            margin-right: 10px;
+        }
+        .lang-btn:hover { background: rgba(255,255,255,0.22); }
+
+        /* Hero Header */
+        .legal-hero {
+            background: linear-gradient(135deg, #022c22 0%, #064e3b 100%);
+            color: white;
+            padding: 8rem 0 4rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .legal-hero::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(52, 211, 153, 0.15) 0%, transparent 80%);
+            z-index: 1;
+        }
+        .legal-hero .container {
+            position: relative;
+            z-index: 2;
+        }
+        .legal-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+        .legal-subtitle {
+            color: #a7f3d0;
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+
+        /* Content Card */
+        .legal-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+            border: 1px solid rgba(0,0,0,0.05);
+            padding: 3rem;
+            margin-top: -2rem;
+            margin-bottom: 5rem;
+            position: relative;
+            z-index: 10;
+        }
+        .legal-card h2 {
+            font-size: 1.5rem;
+            color: #064e3b;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+            border-bottom: 2px solid #ecfdf5;
+            padding-bottom: 0.5rem;
+        }
+        .legal-card h2:first-of-type {
+            margin-top: 0;
+        }
+        .legal-card p, .legal-card ul {
+            font-size: 0.95rem;
+            line-height: 1.8;
+            color: #334155;
+            margin-bottom: 1.5rem;
+        }
+        .legal-card ul {
+            padding-left: 1.5rem;
+        }
+        .legal-card li {
+            margin-bottom: 0.5rem;
+        }
+        .highlight-box {
+            background-color: #f0fdf4;
+            border-left: 4px solid #10b981;
+            padding: 1.25rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1.5rem 0;
+        }
+
+
+        /* Footer */
+        .footer {
+            background-color: #022c22;
+            color: #e2e8f0;
+            padding: 5rem 0 3rem;
+            border-top: 1px solid rgba(52, 211, 153, 0.1);
+            font-size: 0.9rem;
+        }
+        .footer-heading {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 1.5rem;
+            position: relative;
+            padding-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .footer-heading::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 30px;
+            height: 2px;
+            background-color: #34d399;
+        }
+        .footer-list li {
+            margin-bottom: 0.75rem;
+        }
+        .footer-list a {
+            color: #cbd5e1;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
+        }
+        .footer-list a:hover {
+            color: #34d399;
+            padding-left: 4px;
+        }
+        .footer-contact-info li {
+            color: #cbd5e1;
+            margin-bottom: 0.75rem;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+        }
+        .footer-contact-info i {
+            color: #34d399;
+            width: 20px;
+        }
+        .footer-socials a {
+            color: #cbd5e1;
+            background: rgba(255, 255, 255, 0.05);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+        }
+        .footer-socials a:hover {
+            color: #ffffff;
+            background-color: #047857;
+            border-color: #34d399;
+            transform: translateY(-3px);
+        }
+        .footer-divider {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .footer-copy {
+            color: #a7f3d0;
+            opacity: 0.6;
+            font-size: 0.8rem;
+            letter-spacing: 0.02em;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-custom">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('trang_chu') }}">Giáo Trình AI</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
+                <ul class="navbar-nav gap-3">
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('trang_chu') }}" data-i18n="nav.intro">Giới Thiệu</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('trang_chu') }}#guide-section" data-i18n="nav.guide">Hướng Dẫn</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('san_pham') }}" data-i18n="nav.products">Sản Phẩm</a></li>
+                </ul>
+            </div>
+            <div class="d-none d-lg-block">
+                {% if current_user.is_authenticated %}
+                    <div class="d-flex align-items-center">
+                        <a href="{{ url_for('profile') }}" class="btn d-flex align-items-center me-3" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); padding: 6px 16px; text-decoration: none; transition: all 0.3s;">
+                            {% if current_user.anh_dai_dien %}
+                                {% if current_user.anh_dai_dien.startswith('http') %}
+                                    <img src="{{ current_user.anh_dai_dien }}" alt="Avatar" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;" class="me-2">
+                                {% else %}
+                                    <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.anh_dai_dien) }}" alt="Avatar" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;" class="me-2">
+                                {% endif %}
+                            {% else %}
+                                <div class="avatar-fallback me-2 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; border-radius: 50%; background: #10b981; color: white; font-weight: bold; font-size: 0.8rem;">
+                                    {{ (current_user.ho_ten or current_user.ten_dang_nhap)[0] | upper }}
+                                </div>
+                            {% endif %}
+                            <div class="text-start">
+                                <div style="font-size: 0.65rem; color: rgba(255,255,255,0.6); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    {{ current_user.ho_ten or current_user.ten_dang_nhap }}
+                                </div>
+                                <div style="font-size: 0.9rem; color: white; font-weight: 700; line-height: 1;">
+                                    Tài khoản: 
+                                    {% if current_user.la_admin %}
+                                        ∞
+                                    {% else %}
+                                        {{ current_user.token }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </a>
+                        <button class="lang-btn" onclick="toggleLanguage()" title="Switch Language"><span id="langFlag">🇻🇳</span><span id="langLabel">VI</span></button>
+                        <a href="{{ url_for('logout') }}" class="btn-signin" style="background-color: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.1);" data-i18n="nav.logout">Đăng xuất</a>
+                    </div>
+                {% else %}
+                    <button class="lang-btn" onclick="toggleLanguage()" title="Switch Language"><span id="langFlag">🇻🇳</span><span id="langLabel">VI</span></button>
+                    <a href="{{ url_for('login') }}" class="btn-signin" data-i18n="nav.login">Đăng nhập</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Header -->
+    <header class="legal-hero">
+        <div class="container">
+            <h1 class="legal-title lang-vi">Yêu Cầu Xóa Dữ Liệu</h1>
+            <h1 class="legal-title lang-en d-none">Data Deletion Request</h1>
+            <p class="legal-subtitle lang-vi">Hướng dẫn và chính sách xóa dữ liệu cá nhân khỏi hệ thống</p>
+            <p class="legal-subtitle lang-en d-none">Instructions and policies for removing your personal data from the system</p>
+        </div>
+    </header>
+
+    <!-- Content Card -->
+    <main class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10 col-xl-9">
+                <article class="legal-card">
+                    <!-- VIETNAMESE -->
+                    <div class="lang-vi">
+                        <h2>1. Chính sách xóa dữ liệu cá nhân</h2>
+                        <p>Để đảm bảo tuân thủ nghiêm ngặt các quy định về bảo vệ dữ liệu của Google Play và App Store, <strong>Giáo Trình AI</strong> cam kết cung cấp các phương thức đơn giản, minh bạch để người dùng yêu cầu xóa bỏ hoàn toàn tài khoản và thông tin cá nhân liên quan.</p>
+
+                        <h2>2. Những dữ liệu nào sẽ bị xóa?</h2>
+                        <p>Khi yêu cầu xóa dữ liệu của bạn được chấp thuận và xử lý:</p>
+                        <ul>
+                            <li><strong>Thông tin hồ sơ:</strong> Tên đăng nhập, email, họ tên, ảnh đại diện và liên kết tài khoản Google Sign-In sẽ bị xóa vĩnh viễn khỏi các bảng dữ liệu cơ sở.</li>
+                            <li><strong>Dữ liệu giáo trình:</strong> Tất cả lịch sử biên soạn, dàn ý nháp, tóm tắt chương, và file tài liệu (PDF, Word) lưu trên máy chủ của chúng tôi liên quan đến tài khoản của bạn sẽ bị gỡ bỏ hoàn toàn.</li>
+                            <li><strong>Lịch sử token:</strong> Số dư token còn lại và nhật ký giao dịch nạp tiền sẽ được lưu trữ dưới dạng ẩn danh (anonymized) chỉ để phục vụ báo cáo kế toán thuế mà không liên kết với danh tính cá nhân của bạn.</li>
+                        </ul>
+
+                        <h2>3. Cách thức thực hiện yêu cầu xóa dữ liệu</h2>
+                        <p>Bạn có thể lựa chọn 1 trong 2 hình thức sau để yêu cầu xóa dữ liệu:</p>
+                        
+                        <div class="highlight-box">
+                            <strong>Cách 1: Xóa chủ động trong ứng dụng</strong><br>
+                            - Đăng nhập vào tài khoản của bạn.<br>
+                            - Truy cập vào trang <strong>Lịch sử</strong> để tự xóa các tài liệu biên soạn đã lưu tạm hoặc lưu chính thức.<br>
+                            - Đi tới trang <strong>Hồ sơ cá nhân</strong> và sử dụng tính năng "Xóa tài khoản" (nếu được kích hoạt) để tự động xóa sạch dữ liệu lập tức.
+                        </div>
+
+                        <div class="highlight-box">
+                            <strong>Cách 2: Gửi yêu cầu qua Email hỗ trợ</strong><br>
+                            - Gửi email tới hòm thư hỗ trợ: <a href="mailto:phanvantho082019@gmail.com">phanvantho082019@gmail.com</a> hoặc liên hệ hotline 0327152710.<br>
+                            - Nội dung email ghi rõ: <i>Yêu cầu xóa tài khoản Giáo Trình AI</i>, kèm theo <strong>tên đăng nhập</strong> và <strong>email đã đăng ký</strong> của bạn.<br>
+                            - Sau khi nhận được email xác nhận phản hồi từ bạn, chúng tôi sẽ tiến hành xóa toàn bộ dữ liệu trong cơ sở dữ liệu (SQLite/MongoDB/MySQL) trong vòng <strong>30 ngày</strong>.
+                        </div>
+
+                        <h2>4. Liên hệ xác nhận</h2>
+                        <p>Nếu bạn có bất kỳ thắc mắc nào về quy trình hoặc tiến độ xóa dữ liệu, vui lòng liên lạc với chúng tôi qua thông tin liên hệ:</p>
+                        <ul>
+                            <li>Email: <a href="mailto:phanvantho082019@gmail.com">phanvantho082019@gmail.com</a></li>
+                            <li>Hotline: 0327152710</li>
+                            <li>Địa chỉ: Cần Thơ, Việt Nam</li>
+                        </ul>
+                    </div>
+
+                    <!-- ENGLISH -->
+                    <div class="lang-en d-none">
+                        <h2>1. Personal Data Deletion Policy</h2>
+                        <p>To ensure full compliance with Google Play and Apple App Store data safety requirements, <strong>AI Curriculum</strong> is committed to offering a transparent and simple procedure for users to request permanent erasure of their accounts and associated personal data.</p>
+
+                        <h2>2. What data is erased?</h2>
+                        <p>Upon processing a deletion request, the following records are permanently expunged:</p>
+                        <ul>
+                            <li><strong>Profile Credentials:</strong> Username, email address, full name, profile image, and connected Google Sign-In associations.</li>
+                            <li><strong>Curriculum Output:</strong> Generation history drafts, chapter outlines, index records, and compiled document files stored on our servers under your account.</li>
+                            <li><strong>Token Logs:</strong> Token balances and transaction records are anonymized for system tax compliance without any link to your personal profile.</li>
+                        </ul>
+
+                        <h2>3. How to request data deletion</h2>
+                        <p>You can request data deletion using either of the following methods:</p>
+                        
+                        <div class="highlight-box">
+                            <strong>Method 1: Direct self-service erasure</strong><br>
+                            - Log into your account.<br>
+                            - Go to your <strong>History</strong> page to manually purge compiled curricula.<br>
+                            - Access your <strong>Profile</strong> dashboard to invoke the "Delete Account" function (if active) for instant automated cleanup.
+                        </div>
+
+                        <div class="highlight-box">
+                            <strong>Method 2: Email request</strong><br>
+                            - Send a deletion request to our support email: <a href="mailto:phanvantho082019@gmail.com">phanvantho082019@gmail.com</a> or call 0327152710.<br>
+                            - Email template: Specify <i>Request to Delete AI Curriculum Account</i> along with your registered <strong>username</strong> and <strong>email address</strong>.<br>
+                            - Once confirmed, our engineering team will permanently scrub your records from our servers within <strong>30 days</strong>.
+                        </div>
+
+                        <h2>4. Contact Us</h2>
+                        <p>If you have any questions or concern regarding data retention or deletion timelines, feel free to contact us:</p>
+                        <ul>
+                            <li>Email: <a href="mailto:phanvantho082019@gmail.com">phanvantho082019@gmail.com</a></li>
+                            <li>Hotline: 0327152710</li>
+                            <li>Address: Can Tho, Vietnam</li>
+                        </ul>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row g-5">
+                <!-- Column 1: Brand & Socials -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" style="font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem; color: #34d399;" data-i18n="nav.logo">Giáo Trình AI</h5>
+                    <p class="footer-desc mt-3" data-i18n="footer.desc">
+                        Hệ thống biên soạn giáo trình thông minh bằng trí tuệ nhân tạo, kết hợp nghiên cứu khoa học đa tầng và phương pháp sư phạm hiện đại.
+                    </p>
+                    <div class="footer-socials d-flex gap-3 mt-4">
+                        <a href="https://www.facebook.com" target="_blank" class="social-link" title="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                        <a href="https://www.linkedin.com/login" target="_blank" class="social-link" title="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                        <a href="https://www.youtube.com" target="_blank" class="social-link" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                    </div>
+                </div>
+
+                <!-- Column 2: Explore -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" data-i18n="footer.col_explore">Khám Phá</h5>
+                    <ul class="footer-list list-unstyled">
+                        <li><a href="{{ url_for('trang_chu') }}" data-i18n="footer.home">Trang chủ</a></li>
+                        <li><a href="{{ url_for('san_pham') }}" data-i18n="footer.showcase">Sản phẩm tiêu biểu</a></li>
+                        <li><a href="{{ url_for('trang_chu') }}#guide-section" data-i18n="footer.guide">Hướng dẫn</a></li>
+                        <li><a href="{{ url_for('buy_tokens') }}" data-i18n="footer.pricing">Gói cước</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 3: Legal & Support -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" data-i18n="footer.col_support">Hỗ Trợ & Pháp Lý</h5>
+                    <ul class="footer-list list-unstyled">
+                        <li><a href="{{ url_for('privacy_policy') }}" data-i18n="footer.policy">Chính sách bảo mật</a></li>
+                        <li><a href="{{ url_for('terms_of_service') }}" data-i18n="footer.terms">Điều khoản dịch vụ</a></li>
+                        <li><a href="{{ url_for('data_deletion') }}" data-i18n="footer.data_deletion">Chính sách xóa dữ liệu</a></li>
+                        <li><a href="{{ url_for('support') }}" data-i18n="footer.support_faq">Hỗ trợ & FAQs</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 4: Contact -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" data-i18n="footer.col_contact">Liên Hệ</h5>
+                    <ul class="footer-contact-info list-unstyled">
+                        <li><i class="fa-solid fa-envelope me-2"></i><span data-i18n="footer.email_val">phanvantho082019@gmail.com</span></li>
+                        <li><i class="fa-solid fa-phone me-2"></i><span data-i18n="footer.phone_val">0327152710</span></li>
+                        <li><i class="fa-solid fa-location-dot me-2"></i><span data-i18n="footer.address_val">Cần Thơ, Việt Nam</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <hr class="footer-divider my-4">
+
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+                <div class="footer-copy" data-i18n="footer.copy">
+                    &copy; 2026 GIÁO TRÌNH AI. THE INTELLECTUAL LIGHT.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='i18n.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            function updateVisibility(lang) {
+                if (lang === 'vi') {
+                    document.querySelectorAll('.lang-vi').forEach(el => el.classList.remove('d-none'));
+                    document.querySelectorAll('.lang-en').forEach(el => el.classList.add('d-none'));
+                } else {
+                    document.querySelectorAll('.lang-vi').forEach(el => el.classList.add('d-none'));
+                    document.querySelectorAll('.lang-en').forEach(el => el.classList.remove('d-none'));
+                }
+            }
+            
+            // Initial apply
+            const currentLang = localStorage.getItem('app_lang') || 'vi';
+            updateVisibility(currentLang);
+            
+            // Listen to changes
+            window.addEventListener('languageChanged', (e) => {
+                updateVisibility(e.detail.lang);
+            });
+        });
+    </script>
+</body>
+</html>

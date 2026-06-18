@@ -38,8 +38,14 @@
 
 <!-- Users Table -->
 <div class="table-card" id="users-section">
-    <div class="table-card-header">
-        <h5 data-i18n="admin.users.list_title">Danh sách người dùng</h5>
+    <div class="table-card-header d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+        <h5 data-i18n="admin.users.list_title" class="mb-0">Danh sách người dùng</h5>
+        <div class="search-box-wrapper" style="position: relative; max-width: 300px; width: 100%;">
+            <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-dim); pointer-events: none;">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </span>
+            <input type="text" id="user-search-input" class="form-control" data-i18n="admin.users.search_placeholder" placeholder="Tìm kiếm người dùng..." style="padding-left: 35px; border-radius: var(--radius-sm); font-size: 0.85rem; background: rgba(0,0,0,0.02); border: 1px solid var(--glass-border);">
+        </div>
     </div>
     <div class="table-responsive">
         <table class="table table-hover mb-0">
@@ -98,6 +104,9 @@
                             <i class="fa-solid fa-lock"></i>
                             {% endif %}
                         </button>
+                        <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteUser({{ u.id }}, '{{ u.ten_dang_nhap }}')" title="Xóa tài khoản">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
                         {% endif %}
                     </td>
                 </tr>
@@ -131,6 +140,14 @@
                 <label class="form-label fw-bold" data-i18n="admin.users.edit_token">Số dư Token (Credits)</label>
                 <input type="number" class="form-control" id="edit-token" required style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--text-main);">
             </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold" data-i18n="admin.users.edit_password">Mật khẩu mới (để trống nếu không đổi)</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="edit-mat-khau" placeholder="Nhập mật khẩu mới hoặc bấm tạo ngẫu nhiên" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--text-main); border-top-right-radius: 0; border-bottom-right-radius: 0;">
+                    <button class="btn btn-outline-secondary" type="button" onclick="generateRandomPassword()" style="border-top-left-radius: 0; border-bottom-left-radius: 0; color: var(--text-main); border-color: var(--glass-border); background: rgba(255,255,255,0.1);"><i class="fa-solid fa-key me-1"></i><span data-i18n="admin.users.btn_generate">Tạo ngẫu nhiên</span></button>
+                </div>
+                <small class="text-muted" style="font-size: 0.75rem;" data-i18n="admin.users.password_note">Mật khẩu được mã hóa một chiều. Bạn không thể xem mật khẩu hiện tại nhưng có thể cấp lại mật khẩu mới tại đây.</small>
+            </div>
             <div class="mb-3 form-check">
                 <input type="checkbox" class="form-check-input" id="edit-is-admin">
                 <label class="form-check-label fw-bold" for="edit-is-admin" data-i18n="admin.users.edit_admin_role">Quyền quản trị viên (Admin)</label>
@@ -152,6 +169,7 @@
         document.getElementById('edit-email').value = email;
         document.getElementById('edit-token').value = token;
         document.getElementById('edit-is-admin').checked = laAdmin;
+        document.getElementById('edit-mat-khau').value = '';
         document.getElementById('editUserModal').style.display = 'flex';
     }
 
@@ -167,7 +185,8 @@
             ho_ten: document.getElementById('edit-ho-ten').value,
             email: document.getElementById('edit-email').value,
             token: document.getElementById('edit-token').value,
-            la_admin: document.getElementById('edit-is-admin').checked
+            la_admin: document.getElementById('edit-is-admin').checked,
+            mat_khau: document.getElementById('edit-mat-khau').value
         };
 
         try {
@@ -254,11 +273,101 @@
         }
     }
 
+    function generateRandomPassword() {
+        const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+        let password = "";
+        for (let i = 0; i < 10; i++) {
+            password += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        document.getElementById('edit-mat-khau').value = password;
+    }
+
+    async function deleteUser(userId, username) {
+        const lang = getCurrentLang();
+        const confirmResult = await Swal.fire({
+            title: lang === 'vi' ? 'Xác nhận xóa tài khoản?' : 'Confirm delete account?',
+            text: lang === 'vi' 
+                ? `Bạn có chắc chắn muốn XÓA vĩnh viễn tài khoản của ${username}? Hành động này không thể hoàn tác.` 
+                : `Are you sure you want to permanently DELETE the account of ${username}? This action cannot be undone.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: lang === 'vi' ? 'Xóa tài khoản' : 'Delete',
+            cancelButtonText: lang === 'vi' ? 'Hủy' : 'Cancel'
+        });
+
+        if (confirmResult.isConfirmed) {
+            try {
+                const res = await fetch('/admin/delete_user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: lang === 'vi' ? 'Thành công' : 'Success',
+                        text: data.message,
+                        confirmButtonColor: '#047857'
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: lang === 'vi' ? 'Lỗi' : 'Error',
+                        text: data.error || (lang === 'vi' ? 'Có lỗi xảy ra' : 'An error occurred'),
+                        confirmButtonColor: '#047857'
+                    });
+                }
+            } catch (err) {
+                console.error(err);
+                Swal.fire({
+                    icon: 'error',
+                    title: lang === 'vi' ? 'Lỗi kết nối' : 'Connection Error',
+                    text: lang === 'vi' ? 'Không thể kết nối tới máy chủ' : 'Could not connect to server',
+                    confirmButtonColor: '#047857'
+                });
+            }
+        }
+    }
+
     window.onclick = function(event) {
         const modal = document.getElementById('editUserModal');
         if (event.target == modal) {
             closeEditModal();
         }
     }
+
+    // Client-side search and filter for users table
+    document.getElementById('user-search-input').addEventListener('input', function() {
+        const query = this.value.toLowerCase().trim();
+        const rows = document.querySelectorAll('#users-section tbody tr');
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            const id = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+            const username = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+            const role = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
+            const status = row.querySelector('td:nth-child(4)').textContent.toLowerCase();
+            
+            if (id.includes(query) || username.includes(query) || role.includes(query) || status.includes(query)) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        // Update showing count
+        const countSpan = document.querySelector('#users-section [data-i18n-count]');
+        if (countSpan) {
+            countSpan.setAttribute('data-i18n-count', visibleCount);
+            const lang = typeof getCurrentLang === 'function' ? getCurrentLang() : 'vi';
+            countSpan.textContent = lang === 'vi' ? `Hiển thị ${visibleCount} tài khoản` : `Showing ${visibleCount} accounts`;
+        }
+    });
 </script>
 {% endblock %}

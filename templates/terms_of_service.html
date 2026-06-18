@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title data-i18n="footer.terms">Điều khoản dịch vụ - Giáo Trình AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #047857; /* Emerald 700 */
+            --bg-color: #f8fafc;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --font-main: 'Be Vietnam Pro', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            -webkit-font-smoothing: antialiased;
+            letter-spacing: -0.01em;
+        }
+
+        h1, h2, h3, h4, h5, h6, .navbar-brand, .nav-link, .btn {
+            font-family: var(--font-main);
+            font-weight: 700;
+        }
+
+        /* Navbar */
+        .navbar-custom {
+            background: rgba(2, 44, 34, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 1rem 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+        .navbar-brand {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            color: #34d399 !important;
+            font-size: 1.5rem;
+        }
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8) !important;
+            font-weight: 500;
+            font-size: 0.95rem;
+            margin: 0 15px;
+            transition: all 0.2s;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #ffffff !important;
+            transform: translateY(-2px);
+        }
+        .btn-signin {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 600;
+            padding: 8px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .btn-signin:hover {
+            background-color: #065f46;
+            color: white;
+        }
+        .lang-btn {
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.82rem;
+            font-weight: 700;
+            padding: 5px 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.2s;
+            margin-right: 10px;
+        }
+        .lang-btn:hover { background: rgba(255,255,255,0.22); }
+
+        /* Hero Header */
+        .legal-hero {
+            background: linear-gradient(135deg, #022c22 0%, #064e3b 100%);
+            color: white;
+            padding: 8rem 0 4rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .legal-hero::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(52, 211, 153, 0.15) 0%, transparent 80%);
+            z-index: 1;
+        }
+        .legal-hero .container {
+            position: relative;
+            z-index: 2;
+        }
+        .legal-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+        .legal-subtitle {
+            color: #a7f3d0;
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+
+        /* Content Card */
+        .legal-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+            border: 1px solid rgba(0,0,0,0.05);
+            padding: 3rem;
+            margin-top: -2rem;
+            margin-bottom: 5rem;
+            position: relative;
+            z-index: 10;
+        }
+        .legal-card h2 {
+            font-size: 1.5rem;
+            color: #064e3b;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+            border-bottom: 2px solid #ecfdf5;
+            padding-bottom: 0.5rem;
+        }
+        .legal-card h2:first-of-type {
+            margin-top: 0;
+        }
+        .legal-card p, .legal-card ul {
+            font-size: 0.95rem;
+            line-height: 1.8;
+            color: #334155;
+            margin-bottom: 1.5rem;
+        }
+        .legal-card ul {
+            padding-left: 1.5rem;
+        }
+        .legal-card li {
+            margin-bottom: 0.5rem;
+        }
+        .highlight-box {
+            background-color: #f0fdf4;
+            border-left: 4px solid #10b981;
+            padding: 1.25rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1.5rem 0;
+        }
+
+
+        /* Footer */
+        .footer {
+            background-color: #022c22;
+            color: #e2e8f0;
+            padding: 5rem 0 3rem;
+            border-top: 1px solid rgba(52, 211, 153, 0.1);
+            font-size: 0.9rem;
+        }
+        .footer-heading {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 1.5rem;
+            position: relative;
+            padding-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .footer-heading::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 30px;
+            height: 2px;
+            background-color: #34d399;
+        }
+        .footer-list li {
+            margin-bottom: 0.75rem;
+        }
+        .footer-list a {
+            color: #cbd5e1;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
+        }
+        .footer-list a:hover {
+            color: #34d399;
+            padding-left: 4px;
+        }
+        .footer-contact-info li {
+            color: #cbd5e1;
+            margin-bottom: 0.75rem;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+        }
+        .footer-contact-info i {
+            color: #34d399;
+            width: 20px;
+        }
+        .footer-socials a {
+            color: #cbd5e1;
+            background: rgba(255, 255, 255, 0.05);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+        }
+        .footer-socials a:hover {
+            color: #ffffff;
+            background-color: #047857;
+            border-color: #34d399;
+            transform: translateY(-3px);
+        }
+        .footer-divider {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .footer-copy {
+            color: #a7f3d0;
+            opacity: 0.6;
+            font-size: 0.8rem;
+            letter-spacing: 0.02em;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-custom">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('trang_chu') }}">Giáo Trình AI</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
+                <ul class="navbar-nav gap-3">
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('trang_chu') }}" data-i18n="nav.intro">Giới Thiệu</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('trang_chu') }}#guide-section" data-i18n="nav.guide">Hướng Dẫn</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('san_pham') }}" data-i18n="nav.products">Sản Phẩm</a></li>
+                </ul>
+            </div>
+            <div class="d-none d-lg-block">
+                {% if current_user.is_authenticated %}
+                    <div class="d-flex align-items-center">
+                        <a href="{{ url_for('profile') }}" class="btn d-flex align-items-center me-3" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); padding: 6px 16px; text-decoration: none; transition: all 0.3s;">
+                            {% if current_user.anh_dai_dien %}
+                                {% if current_user.anh_dai_dien.startswith('http') %}
+                                    <img src="{{ current_user.anh_dai_dien }}" alt="Avatar" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;" class="me-2">
+                                {% else %}
+                                    <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.anh_dai_dien) }}" alt="Avatar" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;" class="me-2">
+                                {% endif %}
+                            {% else %}
+                                <div class="avatar-fallback me-2 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; border-radius: 50%; background: #10b981; color: white; font-weight: bold; font-size: 0.8rem;">
+                                    {{ (current_user.ho_ten or current_user.ten_dang_nhap)[0] | upper }}
+                                </div>
+                            {% endif %}
+                            <div class="text-start">
+                                <div style="font-size: 0.65rem; color: rgba(255,255,255,0.6); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    {{ current_user.ho_ten or current_user.ten_dang_nhap }}
+                                </div>
+                                <div style="font-size: 0.9rem; color: white; font-weight: 700; line-height: 1;">
+                                    Tài khoản: 
+                                    {% if current_user.la_admin %}
+                                        ∞
+                                    {% else %}
+                                        {{ current_user.token }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </a>
+                        <button class="lang-btn" onclick="toggleLanguage()" title="Switch Language"><span id="langFlag">🇻🇳</span><span id="langLabel">VI</span></button>
+                        <a href="{{ url_for('logout') }}" class="btn-signin" style="background-color: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.1);" data-i18n="nav.logout">Đăng xuất</a>
+                    </div>
+                {% else %}
+                    <button class="lang-btn" onclick="toggleLanguage()" title="Switch Language"><span id="langFlag">🇻🇳</span><span id="langLabel">VI</span></button>
+                    <a href="{{ url_for('login') }}" class="btn-signin" data-i18n="nav.login">Đăng nhập</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Header -->
+    <header class="legal-hero">
+        <div class="container">
+            <h1 class="legal-title lang-vi">Điều Khoản Dịch Vụ</h1>
+            <h1 class="legal-title lang-en d-none">Terms of Service</h1>
+            <p class="legal-subtitle lang-vi">Các quy định và thỏa thuận sử dụng dịch vụ Giáo Trình AI</p>
+            <p class="legal-subtitle lang-en d-none">Terms, regulations, and agreements for using AI Curriculum services</p>
+        </div>
+    </header>
+
+    <!-- Content Card -->
+    <main class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10 col-xl-9">
+                <article class="legal-card">
+                    <!-- VIETNAMESE -->
+                    <div class="lang-vi">
+                        <h2>1. Chấp thuận điều khoản</h2>
+                        <p>Bằng việc đăng ký tài khoản, đăng nhập hoặc sử dụng bất kỳ phần nào của ứng dụng <strong>Giáo Trình AI</strong>, bạn đồng ý tuân thủ và chịu sự ràng buộc bởi các điều khoản dịch vụ này. Nếu bạn không đồng ý với bất kỳ phần nào trong các điều khoản này, vui lòng ngừng sử dụng dịch vụ ngay lập tức.</p>
+
+                        <h2>2. Đăng ký & Bảo mật tài khoản</h2>
+                        <p>Khi tạo tài khoản trên Giáo Trình AI, bạn có trách nhiệm:</p>
+                        <ul>
+                            <li>Cung cấp thông tin đăng ký chính xác, trung thực và cập nhật mới nhất.</li>
+                            <li>Bảo mật mật khẩu tài khoản và chịu toàn bộ trách nhiệm đối với các hoạt động diễn ra dưới tài khoản của mình.</li>
+                            <li>Thông báo ngay cho quản trị viên qua email <a href="mailto:phanvantho082019@gmail.com">phanvantho082019@gmail.com</a> nếu phát hiện bất kỳ dấu hiệu truy cập trái phép nào.</li>
+                        </ul>
+
+                        <h2>3. Quy tắc ứng xử và Nội dung bị cấm</h2>
+                        <p>Hệ thống hỗ trợ tự do học thuật và sư phạm. Tuy nhiên, bạn đồng ý <strong>không sử dụng</strong> hệ thống để tạo giáo trình hoặc tài liệu liên quan đến:</p>
+                        <ul>
+                            <li>Nội dung bạo lực, khiêu dâm, kích động thù hận, phân biệt chủng tộc hoặc vi phạm pháp luật Việt Nam và quốc tế.</li>
+                            <li>Chủ đề mang tính tuyên truyền thông tin sai lệch, xâm hại an ninh quốc gia, hoặc bôi nhọ cá nhân/tổ chức.</li>
+                            <li>Các hành vi phá hoại hệ thống: Tấn công từ chối dịch vụ (DDoS), đảo ngược mã nguồn, spam token tự động, hoặc thu thập dữ liệu trái phép từ máy chủ.</li>
+                        </ul>
+
+                        <h2>4. Quy định về Token và Giao dịch nạp tiền</h2>
+                        <p>Hệ thống vận hành dựa trên cơ chế trừ Token khi biên soạn giáo trình:</p>
+                        <ul>
+                            <li>Tỷ giá quy đổi mặc định là 1.000 VND = 1 Token (hoặc theo bảng giá hiển thị động trên trang Gói Cước).</li>
+                            <li>Các giao dịch nạp tiền thông qua VNPAY hoặc chuyển khoản VietQR tự động qua SePay là giao dịch mua đứt, không có chính sách hoàn tiền sau khi Token đã được cộng vào tài khoản và sử dụng để chạy AI.</li>
+                            <li>Trong trường hợp xảy ra sự cố lỗi hệ thống nghiêm trọng khiến AI không hoàn tất giáo trình nhưng vẫn trừ token, bạn vui lòng liên hệ admin qua hotline 0327152710 để được hoàn trả lại token bị lỗi.</li>
+                        </ul>
+
+                        <h2>5. Tuyên bố miễn trừ trách nhiệm về kết quả AI</h2>
+                        <div class="highlight-box">
+                            <strong>Lưu ý quan trọng đối với giáo dục:</strong><br>
+                            - Giáo Trình AI sử dụng các API ngôn ngữ lớn tiên tiến kết hợp kỹ thuật RAG. Tuy nhiên, AI có thể sinh ra thông tin không chính xác hoặc lỗi thời (hallucination).<br>
+                            - Hệ thống KHÔNG chịu trách nhiệm pháp lý hoặc học thuật đối với bất kỳ thiệt hại, sai sót kiến thức nào phát sinh do người dùng sử dụng trực tiếp tài liệu do AI biên soạn mà không qua kiểm chứng chuyên môn.
+                        </div>
+
+                        <h2>6. Quyền sở hữu trí tuệ</h2>
+                        <p>Các nội dung giáo trình được tạo ra thuộc quyền sở hữu học thuật của chính người dùng đã nhập chủ đề đó. Bạn được tự do phân phối, in ấn, bán hoặc sử dụng cho mục đích giảng dạy cá nhân và thương mại. Chúng tôi chỉ giữ quyền vận hành mã nguồn hệ thống Giáo Trình AI và các tài liệu mẫu công cộng trên trang Showcase.</p>
+
+                        <h2>7. Chấm dứt dịch vụ</h2>
+                        <p>Chúng tôi bảo lưu quyền đình chỉ hoặc chấm dứt vĩnh viễn tài khoản của bạn mà không cần báo trước nếu bạn vi phạm bất kỳ điều khoản sử dụng nào ở trên, bao gồm việc lạm dụng token hoặc có các hành vi gian lận kỹ thuật.</p>
+
+                        <h2>8. Thay đổi điều khoản</h2>
+                        <p>Chúng tôi có thể cập nhật các Điều khoản Dịch vụ này vào bất kỳ lúc nào. Các thay đổi sẽ có hiệu lực ngay khi được đăng tải lên trang web này. Việc bạn tiếp tục sử dụng ứng dụng đồng nghĩa với việc bạn chấp nhận các điều khoản mới.</p>
+                    </div>
+
+                    <!-- ENGLISH -->
+                    <div class="lang-en d-none">
+                        <h2>1. Agreement to Terms</h2>
+                        <p>By registering, logging in, or using any part of the <strong>AI Curriculum</strong> application, you agree to comply with and be bound by these Terms of Service. If you do not agree, please stop using the service immediately.</p>
+
+                        <h2>2. Registration & Account Security</h2>
+                        <p>When creating an account, you agree to:</p>
+                        <ul>
+                            <li>Provide accurate, truthful, and updated registration details.</li>
+                            <li>Secure your account password and take full responsibility for all activities under your credentials.</li>
+                            <li>Immediately notify the admin at <a href="mailto:phanvantho082019@gmail.com">phanvantho082019@gmail.com</a> if you suspect unauthorized access.</li>
+                        </ul>
+
+                        <h2>3. Prohibited Activities</h2>
+                        <p>You agree <strong>not to use</strong> the system to generate curricula or upload materials relating to:</p>
+                        <ul>
+                            <li>Violence, pornography, hate speech, racial discrimination, or content violating local and international law.</li>
+                            <li>Propagating misinformation, threatening national security, or defaming individuals or entities.</li>
+                            <li>Attacking our infrastructure: DDoS, reverse engineering, token farming, or crawling system pages without permission.</li>
+                        </ul>
+
+                        <h2>4. Token System & Payments</h2>
+                        <p>The system consumes tokens when building curricula:</p>
+                        <ul>
+                            <li>The conversion rate is 1,000 VND = 1 Token (subject to change dynamically on the Pricing Page).</li>
+                            <li>Purchases processed through VNPAY or automatic bank transfer via SePay are final. There is no refund policy after tokens are successfully credited and consumed.</li>
+                            <li>If a severe system error occurs and your tokens are deducted without a successfully compiled curriculum, please contact our hotline 0327152710 to restore the failed tokens.</li>
+                        </ul>
+
+                        <h2>5. AI Content Disclaimer</h2>
+                        <div class="highlight-box">
+                            <strong>Pedagogical Warning:</strong><br>
+                            - AI Curriculum utilizes advanced LLMs and RAG. However, machine learning models can produce inaccurate outputs or structural hallucination.<br>
+                            - The system is NOT liable for any academic errors, misstatements of facts, or damages resulting from using AI-generated documents directly without human validation.
+                        </div>
+
+                        <h2>6. Intellectual Property</h2>
+                        <p>The compiled curriculum drafts belong entirely to the user who initiated the generation. You are free to print, distribute, license, or sell these materials. We only retain the rights to the core codebase of the application and public template materials shown on the Showcase page.</p>
+
+                        <h2>7. Service Termination</h2>
+                        <p>We reserve the right to suspend or block your account immediately without warning if you violate any of the rules listed above, including technical abuse or code exploitation.</p>
+
+                        <h2>8. Changes to Terms</h2>
+                        <p>We may update these terms at any time. Modifications become effective immediately upon posting. Your continued use of the platform represents acceptance of the revised Terms of Service.</p>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row g-5">
+                <!-- Column 1: Brand & Socials -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" style="font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem; color: #34d399;" data-i18n="nav.logo">Giáo Trình AI</h5>
+                    <p class="footer-desc mt-3" data-i18n="footer.desc">
+                        Hệ thống biên soạn giáo trình thông minh bằng trí tuệ nhân tạo, kết hợp nghiên cứu khoa học đa tầng và phương pháp sư phạm hiện đại.
+                    </p>
+                    <div class="footer-socials d-flex gap-3 mt-4">
+                        <a href="https://www.facebook.com" target="_blank" class="social-link" title="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                        <a href="https://www.linkedin.com/login" target="_blank" class="social-link" title="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                        <a href="https://www.youtube.com" target="_blank" class="social-link" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                    </div>
+                </div>
+
+                <!-- Column 2: Explore -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" data-i18n="footer.col_explore">Khám Phá</h5>
+                    <ul class="footer-list list-unstyled">
+                        <li><a href="{{ url_for('trang_chu') }}" data-i18n="footer.home">Trang chủ</a></li>
+                        <li><a href="{{ url_for('san_pham') }}" data-i18n="footer.showcase">Sản phẩm tiêu biểu</a></li>
+                        <li><a href="{{ url_for('trang_chu') }}#guide-section" data-i18n="footer.guide">Hướng dẫn</a></li>
+                        <li><a href="{{ url_for('buy_tokens') }}" data-i18n="footer.pricing">Gói cước</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 3: Legal & Support -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" data-i18n="footer.col_support">Hỗ Trợ & Pháp Lý</h5>
+                    <ul class="footer-list list-unstyled">
+                        <li><a href="{{ url_for('privacy_policy') }}" data-i18n="footer.policy">Chính sách bảo mật</a></li>
+                        <li><a href="{{ url_for('terms_of_service') }}" data-i18n="footer.terms">Điều khoản dịch vụ</a></li>
+                        <li><a href="{{ url_for('data_deletion') }}" data-i18n="footer.data_deletion">Chính sách xóa dữ liệu</a></li>
+                        <li><a href="{{ url_for('support') }}" data-i18n="footer.support_faq">Hỗ trợ & FAQs</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 4: Contact -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" data-i18n="footer.col_contact">Liên Hệ</h5>
+                    <ul class="footer-contact-info list-unstyled">
+                        <li><i class="fa-solid fa-envelope me-2"></i><span data-i18n="footer.email_val">phanvantho082019@gmail.com</span></li>
+                        <li><i class="fa-solid fa-phone me-2"></i><span data-i18n="footer.phone_val">0327152710</span></li>
+                        <li><i class="fa-solid fa-location-dot me-2"></i><span data-i18n="footer.address_val">Cần Thơ, Việt Nam</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <hr class="footer-divider my-4">
+
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+                <div class="footer-copy" data-i18n="footer.copy">
+                    &copy; 2026 GIÁO TRÌNH AI. THE INTELLECTUAL LIGHT.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='i18n.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            function updateVisibility(lang) {
+                if (lang === 'vi') {
+                    document.querySelectorAll('.lang-vi').forEach(el => el.classList.remove('d-none'));
+                    document.querySelectorAll('.lang-en').forEach(el => el.classList.add('d-none'));
+                } else {
+                    document.querySelectorAll('.lang-vi').forEach(el => el.classList.add('d-none'));
+                    document.querySelectorAll('.lang-en').forEach(el => el.classList.remove('d-none'));
+                }
+            }
+            
+            // Initial apply
+            const currentLang = localStorage.getItem('app_lang') || 'vi';
+            updateVisibility(currentLang);
+            
+            // Listen to changes
+            window.addEventListener('languageChanged', (e) => {
+                updateVisibility(e.detail.lang);
+            });
+        });
+    </script>
+</body>
+</html>

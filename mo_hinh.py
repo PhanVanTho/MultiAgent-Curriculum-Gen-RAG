@@ -1,9 +1,22 @@
-from flask_sqlalchemy import SQLAlchemy
+import os
 from flask_login import UserMixin
 from datetime import datetime
-from sqlalchemy.dialects.mysql import INTEGER as mysql_INTEGER, LONGTEXT
 
-db = SQLAlchemy()
+if os.getenv("DB_USE_SQLITE") == "True":
+    db_type = "sqlite"
+else:
+    db_type = os.getenv("DB_TYPE", "mysql").lower()
+
+if db_type == "mongodb":
+    from mongosql_compat import MongoSQLAlchemy
+    db = MongoSQLAlchemy()
+    LONGTEXT = "LONGTEXT"
+    mysql_INTEGER = db.Integer
+else:
+    from flask_sqlalchemy import SQLAlchemy
+    db = SQLAlchemy()
+    from sqlalchemy.dialects.mysql import LONGTEXT
+    from sqlalchemy.dialects.mysql import INTEGER as mysql_INTEGER
 
 class NguoiDung(UserMixin, db.Model):
     __tablename__ = 'nguoi_dung'
@@ -17,6 +30,7 @@ class NguoiDung(UserMixin, db.Model):
     ho_ten = db.Column(db.String(255), nullable=True)
     anh_dai_dien = db.Column(db.String(500), nullable=True)
     token = db.Column(db.Integer, default=10)
+    ngay_tao = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Quan hệ với bảng lịch sử
     lich_su = db.relationship('LichSuGiaoTrinh', backref='nguoi_dung', lazy=True)
@@ -83,4 +97,22 @@ class GoiCuoc(db.Model):
     so_token = db.Column(db.Integer, nullable=False)
     mo_ta = db.Column(db.String(500), nullable=True)
     kich_hoat = db.Column(db.Boolean, default=True, nullable=False)
+
+class CauHinhHeThong(db.Model):
+    __tablename__ = 'cau_hinh_he_thong'
+    id = db.Column(db.Integer, primary_key=True)
+    khoa = db.Column(db.String(100), unique=True, nullable=False)
+    gia_tri = db.Column(db.Text, nullable=True)
+    mo_ta = db.Column(db.String(255), nullable=True)
+    ngay_cap_nhat = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class LichSuChatbot(db.Model):
+    __tablename__ = 'lich_su_chatbot'
+    id = db.Column(db.Integer, primary_key=True)
+    nguoi_dung_id = db.Column(db.Integer().with_variant(mysql_INTEGER(unsigned=True), "mysql"), db.ForeignKey('nguoi_dung.id', ondelete='CASCADE'), nullable=False)
+    role = db.Column(db.String(20), nullable=False) # 'user' or 'assistant'
+    content = db.Column(db.Text, nullable=False)
+    ngay_tao = db.Column(db.DateTime, default=datetime.utcnow)
+
+
 
