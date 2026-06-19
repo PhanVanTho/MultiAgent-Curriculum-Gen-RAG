@@ -33,9 +33,12 @@ class CauHinhMeta(type):
             from mo_hinh import CauHinhHeThong
             item = CauHinhHeThong.query.filter_by(khoa=khoa).first()
             if item and item.gia_tri:
-                decrypted = giai_ma_key(item.gia_tri)
-                if decrypted:
-                    return decrypted
+                api_keys_to_encrypt = ["OPENAI_API_KEY", "GEMINI_API_KEYS", "SEPAY_API_KEY", "VNPAY_HASH_SECRET"]
+                if khoa in api_keys_to_encrypt:
+                    decrypted = giai_ma_key(item.gia_tri)
+                    if decrypted:
+                        return decrypted
+                return item.gia_tri
         except Exception:
             pass
         return None
@@ -77,6 +80,96 @@ class CauHinhMeta(type):
     @VNPAY_HASH_SECRET.setter
     def VNPAY_HASH_SECRET(cls, val):
         cls._VNPAY_HASH_SECRET = val
+
+    @property
+    def VNPAY_TMN_CODE(cls):
+        val = cls.lay_tu_csdl("VNPAY_TMN_CODE")
+        return val if val is not None else cls._VNPAY_TMN_CODE
+
+    @VNPAY_TMN_CODE.setter
+    def VNPAY_TMN_CODE(cls, val):
+        cls._VNPAY_TMN_CODE = val
+
+    @property
+    def VNPAY_PAYMENT_URL(cls):
+        val = cls.lay_tu_csdl("VNPAY_PAYMENT_URL")
+        return val if val is not None else cls._VNPAY_PAYMENT_URL
+
+    @VNPAY_PAYMENT_URL.setter
+    def VNPAY_PAYMENT_URL(cls, val):
+        cls._VNPAY_PAYMENT_URL = val
+
+    @property
+    def VNPAY_RETURN_URL(cls):
+        val = cls.lay_tu_csdl("VNPAY_RETURN_URL")
+        return val if val is not None else cls._VNPAY_RETURN_URL
+
+    @VNPAY_RETURN_URL.setter
+    def VNPAY_RETURN_URL(cls, val):
+        cls._VNPAY_RETURN_URL = val
+
+    @property
+    def PAYMENT_VNPAY_ACTIVE(cls):
+        val = cls.lay_tu_csdl("PAYMENT_VNPAY_ACTIVE")
+        if val is not None:
+            return val == "True"
+        return cls._PAYMENT_VNPAY_ACTIVE
+
+    @PAYMENT_VNPAY_ACTIVE.setter
+    def PAYMENT_VNPAY_ACTIVE(cls, val):
+        cls._PAYMENT_VNPAY_ACTIVE = val
+
+    @property
+    def PAYMENT_SEPAY_ACTIVE(cls):
+        val = cls.lay_tu_csdl("PAYMENT_SEPAY_ACTIVE")
+        if val is not None:
+            return val == "True"
+        return cls._PAYMENT_SEPAY_ACTIVE
+
+    @PAYMENT_SEPAY_ACTIVE.setter
+    def PAYMENT_SEPAY_ACTIVE(cls, val):
+        cls._PAYMENT_SEPAY_ACTIVE = val
+
+    @property
+    def SEPAY_ACCOUNT_NUMBER(cls):
+        val = cls.lay_tu_csdl("SEPAY_ACCOUNT_NUMBER")
+        return val if val is not None else cls._SEPAY_ACCOUNT_NUMBER
+
+    @SEPAY_ACCOUNT_NUMBER.setter
+    def SEPAY_ACCOUNT_NUMBER(cls, val):
+        cls._SEPAY_ACCOUNT_NUMBER = val
+
+    @property
+    def SEPAY_BANK_BRAND(cls):
+        val = cls.lay_tu_csdl("SEPAY_BANK_BRAND")
+        return val if val is not None else cls._SEPAY_BANK_BRAND
+
+    @SEPAY_BANK_BRAND.setter
+    def SEPAY_BANK_BRAND(cls, val):
+        cls._SEPAY_BANK_BRAND = val
+
+    @property
+    def SEPAY_WEB_NAME(cls):
+        val = cls.lay_tu_csdl("SEPAY_WEB_NAME")
+        return val if val is not None else cls._SEPAY_WEB_NAME
+
+    @SEPAY_WEB_NAME.setter
+    def SEPAY_WEB_NAME(cls, val):
+        cls._SEPAY_WEB_NAME = val
+
+    @property
+    def SEPAY_XOR_KEY(cls):
+        val = cls.lay_tu_csdl("SEPAY_XOR_KEY")
+        if val is not None:
+            try:
+                return int(val, 16) if "0x" in str(val).lower() else int(val)
+            except Exception:
+                pass
+        return cls._SEPAY_XOR_KEY
+
+    @SEPAY_XOR_KEY.setter
+    def SEPAY_XOR_KEY(cls, val):
+        cls._SEPAY_XOR_KEY = val
 
 class CauHinh(metaclass=CauHinhMeta):
     # Flask
@@ -190,21 +283,21 @@ class CauHinh(metaclass=CauHinhMeta):
     EKRE_MAX_CHUNKS_PER_SOURCE = 3  # Tối đa 3 chunks từ cùng 1 nguồn
 
     # VNPAY Config
-    VNPAY_TMN_CODE = os.getenv("VNPAY_TMN_CODE", "V2ZFH4ZT")
+    _VNPAY_TMN_CODE = os.getenv("VNPAY_TMN_CODE", "V2ZFH4ZT")
     _VNPAY_HASH_SECRET = os.getenv("VNPAY_HASH_SECRET", "V830F79D7834Q4M5F9VCZY5XFCWEWWUA")
-    VNPAY_PAYMENT_URL = os.getenv("VNPAY_PAYMENT_URL", "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html")
-    VNPAY_RETURN_URL = os.getenv("VNPAY_RETURN_URL", "http://localhost:5000/payment/callback")
+    _VNPAY_PAYMENT_URL = os.getenv("VNPAY_PAYMENT_URL", "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html")
+    _VNPAY_RETURN_URL = os.getenv("VNPAY_RETURN_URL", "http://localhost:5000/payment/callback")
 
     # SePay Config
     _SEPAY_API_KEY = os.getenv("SEPAY_API_KEY", "")
-    SEPAY_ACCOUNT_NUMBER = os.getenv("SEPAY_ACCOUNT_NUMBER", "0327152710")
-    SEPAY_BANK_BRAND = os.getenv("SEPAY_BANK_BRAND", "MBBank")
-    SEPAY_WEB_NAME = os.getenv("SEPAY_WEB_NAME", "GTAI")
-    SEPAY_XOR_KEY = int(os.getenv("SEPAY_XOR_KEY", "0x5EAFB"), 16) if os.getenv("SEPAY_XOR_KEY") else 0x5EAFB
+    _SEPAY_ACCOUNT_NUMBER = os.getenv("SEPAY_ACCOUNT_NUMBER", "0327152710")
+    _SEPAY_BANK_BRAND = os.getenv("SEPAY_BANK_BRAND", "MBBank")
+    _SEPAY_WEB_NAME = os.getenv("SEPAY_WEB_NAME", "GTAI")
+    _SEPAY_XOR_KEY = int(os.getenv("SEPAY_XOR_KEY", "0x5EAFB"), 16) if os.getenv("SEPAY_XOR_KEY") else 0x5EAFB
 
     # Toggle payments active status
-    PAYMENT_VNPAY_ACTIVE = os.getenv("PAYMENT_VNPAY_ACTIVE", "True") == "True"
-    PAYMENT_SEPAY_ACTIVE = os.getenv("PAYMENT_SEPAY_ACTIVE", "True") == "True"
+    _PAYMENT_VNPAY_ACTIVE = os.getenv("PAYMENT_VNPAY_ACTIVE", "True") == "True"
+    _PAYMENT_SEPAY_ACTIVE = os.getenv("PAYMENT_SEPAY_ACTIVE", "True") == "True"
 
     # Phí token của các chế độ biên soạn
     PHI_TOKEN_AUTO = int(os.getenv("PHI_TOKEN_AUTO", "1"))
