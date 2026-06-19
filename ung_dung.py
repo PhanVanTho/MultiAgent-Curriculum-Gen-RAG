@@ -281,6 +281,11 @@ from dich_vu.xuat_tai_lieu.xuat_docx import xuat_docx
 from dich_vu.xuat_tai_lieu.xuat_pdf import xuat_pdf
 from dich_vu.kiem_tra_cau_truc_json import clean_title_numbering, fallback_raw_facts
 
+def xoa_emoji_va_4byte_unicode(text: str) -> str:
+    if not text:
+        return text
+    return "".join(c for c in text if ord(c) <= 0xffff)
+
 # --- LOGGING ---
 logging.basicConfig(
     level=logging.INFO,
@@ -551,8 +556,8 @@ def _link_guest_curriculum(user):
                 
                 ls = LichSuGiaoTrinh(
                     nguoi_dung_id=user.id,
-                    chu_de=thong_tin["tieu_de"],
-                    noi_dung_html=noi_dung_html,
+                    chu_de=xoa_emoji_va_4byte_unicode(thong_tin["tieu_de"]),
+                    noi_dung_html=xoa_emoji_va_4byte_unicode(noi_dung_html),
                     duong_dan_file=path_pdf,
                     da_xuat_file=True,
                     do_dai_ky_tu=tong_ky_tu
@@ -946,23 +951,6 @@ def auth_google():
         "redirect": redirect_url
     })
 
-@app.route("/debug-db")
-def debug_db():
-    from mo_hinh import LichSuGiaoTrinh
-    items = LichSuGiaoTrinh.query.all()
-    res = []
-    for x in items:
-        res.append({
-            "id": x.id,
-            "nguoi_dung_id": x.nguoi_dung_id,
-            "chu_de": x.chu_de,
-            "duong_dan_file": x.duong_dan_file,
-            "do_dai_ky_tu": x.do_dai_ky_tu,
-            "ngay_tao": str(x.ngay_tao),
-            "da_xuat_file": x.da_xuat_file,
-            "ma_cv": x.ma_cv
-        })
-    return jsonify(res)
 
 @app.route("/lich-su")
 @login_required
@@ -3986,8 +3974,8 @@ Trả về ONLY JSON: {{"topics": ["topic1", "topic2", "topic3", "topic4"]}}"""}
                         
                         history_entry = LichSuGiaoTrinh(
                             nguoi_dung_id=user_id, 
-                            chu_de=tieu_de, 
-                            noi_dung_html=noi_dung_html, 
+                            chu_de=xoa_emoji_va_4byte_unicode(tieu_de), 
+                            noi_dung_html=xoa_emoji_va_4byte_unicode(noi_dung_html), 
                             duong_dan_file=p_pdf, 
                             da_xuat_file=True,
                             do_dai_ky_tu=tong_ky_tu
