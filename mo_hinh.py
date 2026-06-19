@@ -109,7 +109,7 @@ class CauHinhHeThong(db.Model):
 class LichSuChatbot(db.Model):
     __tablename__ = 'lich_su_chatbot'
     id = db.Column(db.Integer, primary_key=True)
-    nguoi_dung_id = db.Column(db.Integer().with_variant(mysql_INTEGER(unsigned=True), "mysql"), db.ForeignKey('nguoi_dung.id', ondelete='CASCADE'), nullable=False)
+    nguoi_dung_id = db.Column(db.Integer, db.ForeignKey('nguoi_dung.id', ondelete='CASCADE'), nullable=False)
     role = db.Column(db.String(20), nullable=False) # 'user' or 'assistant'
     content = db.Column(db.Text, nullable=False)
     ngay_tao = db.Column(db.DateTime, default=datetime.utcnow)
