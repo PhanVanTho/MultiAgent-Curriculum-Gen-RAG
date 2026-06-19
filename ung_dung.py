@@ -987,6 +987,7 @@ def lich_su():
             
     # Sắp xếp theo thời gian mới nhất lên đầu
     items.sort(key=lambda x: x["ngay_tao"], reverse=True)
+    logger.info(f"[LICH_SU_DEBUG] User {current_user.id} - Items: {[{'id': x.get('id'), 'ma_cv': x.get('ma_cv'), 'chu_de': x.get('chu_de'), 'trang_thai': x.get('trang_thai'), 'loai': x.get('loai')} for x in items]}")
     return render_template("history.html", history=items)
 
 @app.route("/api/chat", methods=["POST"])
