@@ -946,6 +946,24 @@ def auth_google():
         "redirect": redirect_url
     })
 
+@app.route("/debug-db")
+def debug_db():
+    from mo_hinh import LichSuGiaoTrinh
+    items = LichSuGiaoTrinh.query.all()
+    res = []
+    for x in items:
+        res.append({
+            "id": x.id,
+            "nguoi_dung_id": x.nguoi_dung_id,
+            "chu_de": x.chu_de,
+            "duong_dan_file": x.duong_dan_file,
+            "do_dai_ky_tu": x.do_dai_ky_tu,
+            "ngay_tao": str(x.ngay_tao),
+            "da_xuat_file": x.da_xuat_file,
+            "ma_cv": x.ma_cv
+        })
+    return jsonify(res)
+
 @app.route("/lich-su")
 @login_required
 def lich_su():
