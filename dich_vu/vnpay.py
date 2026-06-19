@@ -6,9 +6,9 @@ from datetime import datetime
 class VNPay:
     # Force server reload: updated local VNPAY logo asset
     def __init__(self, tmn_code: str, hash_secret: str, payment_url: str):
-        self.tmn_code = tmn_code
-        self.hash_secret = hash_secret
-        self.payment_url = payment_url
+        self.tmn_code = tmn_code.strip() if tmn_code else ""
+        self.hash_secret = hash_secret.strip() if hash_secret else ""
+        self.payment_url = payment_url.strip() if payment_url else ""
 
     def create_payment_url(self, txn_ref: str, amount: int, order_info: str, return_url: str, ip_addr: str) -> str:
         """Tạo đường dẫn chuyển hướng thanh toán VNPAY."""
@@ -22,6 +22,9 @@ class VNPay:
             # If it's a general IPv6 or invalid format, we default to a standard public IP
             if ":" in ip_addr:
                 ip_addr = "118.70.194.200"
+
+        if return_url:
+            return_url = return_url.strip()
 
         params = {
             "vnp_Version": "2.1.0",
