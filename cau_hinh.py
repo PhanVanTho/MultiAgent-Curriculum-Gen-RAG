@@ -193,7 +193,7 @@ class CauHinh(metaclass=CauHinhMeta):
     VNPAY_TMN_CODE = os.getenv("VNPAY_TMN_CODE", "V2ZFH4ZT")
     _VNPAY_HASH_SECRET = os.getenv("VNPAY_HASH_SECRET", "V830F79D7834Q4M5F9VCZY5XFCWEWWUA")
     VNPAY_PAYMENT_URL = os.getenv("VNPAY_PAYMENT_URL", "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html")
-    VNPAY_RETURN_URL = os.getenv("VNPAY_RETURN_URL", "http://127.0.0.1:5000/payment/callback")
+    VNPAY_RETURN_URL = os.getenv("VNPAY_RETURN_URL", "http://localhost:5000/payment/callback")
 
     # SePay Config
     _SEPAY_API_KEY = os.getenv("SEPAY_API_KEY", "")

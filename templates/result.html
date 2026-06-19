@@ -325,38 +325,83 @@
                 <i class="fa-solid fa-book-open me-2"></i>
                 <span data-i18n="nav.logo">Giáo Trình AI</span>
             </a>
-            <div class="d-flex align-items-center gap-3">
-                <button class="lang-btn" onclick="toggleLanguage()" title="Switch Language" style="margin-right: 0;">
-                    <span id="langFlag">🇻🇳</span><span id="langLabel">VI</span>
-                </button>
-                {% if current_user.is_authenticated and current_user.ten_dang_nhap is defined %}
-                <a href="{{ url_for('profile') }}" class="btn d-flex align-items-center" style="background: var(--bg-surface-1); border-radius: 10px; border: 1px solid var(--glass-border); padding: 4px 12px; text-decoration: none;">
-                    {% if current_user.anh_dai_dien %}
-                        {% if current_user.anh_dai_dien.startswith('http') %}
-                            <img src="{{ current_user.anh_dai_dien }}" alt="Avatar" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;" class="me-2">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#resultNavbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse justify-content-end" id="resultNavbar">
+                <!-- Desktop layout (lg and up) -->
+                <div class="d-none d-lg-flex align-items-center gap-3 w-100 justify-content-end mt-3 mt-lg-0">
+                    <button class="lang-btn" onclick="toggleLanguage()" title="Switch Language" style="margin-right: 0;">
+                        <span id="langFlag">🇻🇳</span><span id="langLabel">VI</span>
+                    </button>
+                    {% if current_user.is_authenticated and current_user.ten_dang_nhap is defined %}
+                    <a href="{{ url_for('profile') }}" class="btn d-flex align-items-center" style="background: var(--bg-surface-1); border-radius: 10px; border: 1px solid var(--glass-border); padding: 4px 12px; text-decoration: none;">
+                        {% if current_user.anh_dai_dien %}
+                            {% if current_user.anh_dai_dien.startswith('http') %}
+                                <img src="{{ current_user.anh_dai_dien }}" alt="Avatar" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;" class="me-2">
+                            {% else %}
+                                <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.anh_dai_dien) }}" alt="Avatar" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;" class="me-2">
+                            {% endif %}
                         {% else %}
-                            <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.anh_dai_dien) }}" alt="Avatar" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;" class="me-2">
+                            <div class="avatar-fallback me-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; border-radius: 50%; background: var(--primary, #10b981); color: white; font-weight: bold; font-size: 0.75rem;">
+                                 {{ (current_user.ho_ten or current_user.ten_dang_nhap)[0] | upper }}
+                            </div>
                         {% endif %}
-                    {% else %}
-                        <div class="avatar-fallback me-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; border-radius: 50%; background: var(--primary, #10b981); color: white; font-weight: bold; font-size: 0.75rem;">
-                             {{ (current_user.ho_ten or current_user.ten_dang_nhap)[0] | upper }}
+                        <div class="text-start">
+                            <div style="font-size: 0.6rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Token</div>
+                            <div style="font-size: 0.9rem; color: var(--text-primary); font-weight: 700; line-height: 1;">{{ current_user.token }}</div>
                         </div>
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1" style="border-radius: 10px; padding: 6px 16px;">
+                        <i class="fa-solid fa-right-to-bracket"></i>
+                        <span data-i18n="nav.login">Đăng nhập</span>
+                    </a>
                     {% endif %}
-                    <div class="text-start">
-                        <div style="font-size: 0.6rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Token</div>
-                        <div style="font-size: 0.9rem; color: var(--text-primary); font-weight: 700; line-height: 1;">{{ current_user.token }}</div>
-                    </div>
-                </a>
-                {% else %}
-                <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1" style="border-radius: 10px; padding: 6px 16px;">
-                    <i class="fa-solid fa-right-to-bracket"></i>
-                    <span data-i18n="nav.login">Đăng nhập</span>
-                </a>
-                {% endif %}
-                <span class="badge bg-primary d-none d-md-inline-block" style="font-size:0.72rem;">{{ thong_tin.tieu_de }}</span>
-                <a href="{{ url_for('trang_tao_giao_trinh') }}" class="btn btn-primary btn-sm">
-                    <i class="fa-solid fa-plus me-1"></i><span data-i18n="history.create_btn">Tạo mới</span>
-                </a>
+                    <span class="badge bg-primary d-none d-md-inline-block" style="font-size:0.72rem;">{{ thong_tin.tieu_de }}</span>
+                    <a href="{{ url_for('trang_tao_giao_trinh') }}" class="btn btn-primary btn-sm">
+                        <i class="fa-solid fa-plus me-1"></i><span data-i18n="history.create_btn">Tạo mới</span>
+                    </a>
+                </div>
+                
+                <!-- Mobile/Tablet layout (less than lg) -->
+                <div class="d-lg-none d-flex flex-column align-items-center gap-3 w-100 mt-3 pt-3 border-top border-light border-opacity-10">
+                    <span class="badge bg-primary w-100 py-2 text-wrap" style="font-size:0.78rem; max-width: 280px;">{{ thong_tin.tieu_de }}</span>
+                    
+                    {% if current_user.is_authenticated and current_user.ten_dang_nhap is defined %}
+                    <a href="{{ url_for('profile') }}" class="btn d-flex align-items-center justify-content-center px-4 py-2" style="background: var(--bg-surface-1); border-radius: 12px; border: 1px solid var(--glass-border); text-decoration: none; color: var(--text-primary); width: 100%; max-width: 280px;">
+                        {% if current_user.anh_dai_dien %}
+                            {% if current_user.anh_dai_dien.startswith('http') %}
+                                <img src="{{ current_user.anh_dai_dien }}" alt="Avatar" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;" class="me-2">
+                            {% else %}
+                                <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.anh_dai_dien) }}" alt="Avatar" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;" class="me-2">
+                            {% endif %}
+                        {% else %}
+                            <div class="avatar-fallback me-2 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; border-radius: 50%; background: var(--primary, #10b981); color: white; font-weight: bold; font-size: 0.8rem;">
+                                {{ (current_user.ho_ten or current_user.ten_dang_nhap)[0] | upper }}
+                            </div>
+                        {% endif %}
+                        <div class="text-start">
+                            <div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Token</div>
+                            <div style="font-size: 0.9rem; color: var(--text-primary); font-weight: 700; line-height: 1;">{{ current_user.token }}</div>
+                        </div>
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-primary w-100 py-2" style="border-radius: 10px; max-width: 280px; justify-content: center; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-right-to-bracket"></i>
+                        <span data-i18n="nav.login">Đăng nhập</span>
+                    </a>
+                    {% endif %}
+                    
+                    <a href="{{ url_for('trang_tao_giao_trinh') }}" class="btn btn-primary w-100 py-2" style="max-width: 280px;">
+                        <i class="fa-solid fa-plus me-1"></i><span data-i18n="history.create_btn">Tạo mới</span>
+                    </a>
+                    
+                    <button class="lang-btn w-100 justify-content-center py-2" onclick="toggleLanguage()" title="Switch Language" style="margin: 0; max-width: 280px;">
+                        <span id="langFlag">🇻🇳</span><span id="langLabel" style="margin-left: 5px;">VI</span>
+                    </button>
+                </div>
             </div>
         </div>
     </nav>

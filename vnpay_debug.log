@@ -1,0 +1,12 @@
+
+=== VNPAY REQUEST DATA ===
+Hash Secret: V830F79D7834Q4M5F9VCZY5XFCWEWWUA
+Hash Data Raw String: vnp_Amount=2500000&vnp_Command=pay&vnp_CreateDate=20260619222354&vnp_CurrCode=VND&vnp_IpAddr=118.70.194.200&vnp_Locale=vn&vnp_OrderInfo=Nap%2010%20token%20cho%20tai%20khoan%20admin&vnp_OrderType=billpayment&vnp_ReturnUrl=http%3A%2F%2F127.0.0.1%3A5000%2Fpayment%2Fcallback&vnp_TmnCode=V2ZFH4ZT&vnp_TxnRef=b30f8e8b20260619222352&vnp_Version=2.1.0
+Secure Hash: 04FCA6E50D056B0D863D644E24F3D0CF69E3C965FF181C60D237A834D57F26DFB2B0EB79E5DC80E43AB75C6B3AB0E08DD2070E6C0575C159750B4E8A30C10A6C
+===========================
+
+=== VNPAY REQUEST DATA ===
+Hash Secret: V830F79D7834Q4M5F9VCZY5XFCWEWWUA
+Hash Data Raw String: vnp_Amount=2500000&vnp_Command=pay&vnp_CreateDate=20260619222658&vnp_CurrCode=VND&vnp_IpAddr=118.70.194.200&vnp_Locale=vn&vnp_OrderInfo=Nap%2010%20token%20cho%20tai%20khoan%20admin&vnp_OrderType=billpayment&vnp_ReturnUrl=http%3A%2F%2Flocalhost%3A5000%2Fpayment%2Fcallback&vnp_TmnCode=V2ZFH4ZT&vnp_TxnRef=3dec1eef20260619222658&vnp_Version=2.1.0
+Secure Hash: FA1D50C8C807E2C4948796EF211F21FCE0A959A0C09396036817BB811AA2CA9BAD6FF01A662B705E44A48E0A24544CFF4E984C9405CB54A64C6B7D54401BDAC1
+===========================

@@ -44,6 +44,25 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             transition: all 0.3s ease;
         }
+        /* Customize navbar toggler on mobile */
+        .navbar-custom .navbar-toggler {
+            border-color: rgba(255, 255, 255, 0.25);
+            padding: 6px 10px;
+            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.08);
+            transition: all 0.2s ease-in-out;
+        }
+        .navbar-custom .navbar-toggler:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+        .navbar-custom .navbar-toggler:focus {
+            box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.3);
+            border-color: #34d399;
+        }
+        .navbar-custom .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255, 255, 255, 0.95)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
         .navbar-brand {
             font-family: 'Space Grotesk', sans-serif;
             font-weight: 700;
@@ -409,6 +428,49 @@
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('trang_chu') }}#guide-section" data-i18n="nav.guide">Hướng Dẫn</a></li>
                     <li class="nav-item"><a class="nav-link {% if request.endpoint == 'san_pham' %}active{% endif %}" href="{{ url_for('san_pham') }}" data-i18n="nav.products">Sản Phẩm</a></li>
                 </ul>
+                
+                <!-- Mobile Session controls (visible on mobile only) -->
+                <div class="d-lg-none mt-3 pt-3 border-top border-light border-opacity-10 w-100 text-center">
+                    {% if current_user.is_authenticated %}
+                        <div class="d-flex flex-column align-items-center gap-3">
+                            <a href="{{ url_for('profile') }}" class="btn d-flex align-items-center justify-content-center px-4 py-2" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); text-decoration: none; color: white; width: 100%; max-width: 280px;">
+                                {% if current_user.anh_dai_dien %}
+                                    {% if current_user.anh_dai_dien.startswith('http') %}
+                                        <img src="{{ current_user.anh_dai_dien }}" alt="Avatar" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;" class="me-2">
+                                    {% else %}
+                                        <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.anh_dai_dien) }}" alt="Avatar" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;" class="me-2">
+                                    {% endif %}
+                                {% else %}
+                                    <div class="avatar-fallback me-2 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; border-radius: 50%; background: #10b981; color: white; font-weight: bold; font-size: 0.8rem;">
+                                        {{ (current_user.ho_ten or current_user.ten_dang_nhap)[0] | upper }}
+                                    </div>
+                                {% endif %}
+                                <div class="text-start">
+                                    <div style="font-size: 0.65rem; color: rgba(255,255,255,0.6); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                                        {{ current_user.ho_ten or current_user.ten_dang_nhap }}
+                                    </div>
+                                    <div style="font-size: 0.9rem; color: white; font-weight: 700; line-height: 1;">
+                                        Tài khoản: 
+                                        {% if current_user.la_admin %}
+                                            ∞
+                                        {% else %}
+                                            {{ current_user.token }}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </a>
+                            <div class="d-flex align-items-center justify-content-center gap-3 w-100">
+                                <button class="lang-btn" onclick="toggleLanguage()" title="Switch Language" style="margin: 0;"><span id="langFlag">🇻🇳</span><span id="langLabel">VI</span></button>
+                                <a href="{{ url_for('logout') }}" class="btn-signin py-2" style="background-color: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; text-decoration: none;" data-i18n="nav.logout">Đăng xuất</a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="d-flex align-items-center justify-content-center gap-3 w-100">
+                            <button class="lang-btn" onclick="toggleLanguage()" title="Switch Language" style="margin: 0;"><span id="langFlag">🇻🇳</span><span id="langLabel">VI</span></button>
+                            <a href="{{ url_for('login') }}" class="btn-signin py-2" style="border-radius: 6px; text-decoration: none;" data-i18n="nav.login">Đăng nhập</a>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
             <div class="d-none d-lg-block">
                 {% if current_user.is_authenticated %}

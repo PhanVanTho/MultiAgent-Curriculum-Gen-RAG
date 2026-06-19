@@ -41,8 +41,8 @@ class VNPay:
         # Sắp xếp các tham số theo bảng chữ cái A-Z
         sorted_params = sorted(params.items())
         
-        # Xây dựng chuỗi hash_data (urlencode với quote_plus mặc định để spaces thành +)
-        hash_data = urllib.parse.urlencode(sorted_params)
+        # Xây dựng chuỗi hash_data (sử dụng urllib.parse.quote để spaces thành %20, chuẩn VNPay 2.1.0)
+        hash_data = urllib.parse.urlencode(sorted_params, quote_via=urllib.parse.quote)
         
         # Tính toán HMAC-SHA512 chữ ký số bảo mật
         secure_hash = hmac.new(
@@ -69,17 +69,17 @@ class VNPay:
         if not secure_hash:
             return False
             
-        # Lọc ra các tham số bắt đầu bằng vnp_ và không chứa trường hash
+        # Lọc ra các tham số bắt đầu bằng vnp_ và không chứa trường hash, bỏ qua các giá trị rỗng
         hash_params = {
             k: v for k, v in response_params.items()
-            if k.startswith("vnp_") and k not in ("vnp_SecureHash", "vnp_SecureHashType")
+            if k.startswith("vnp_") and k not in ("vnp_SecureHash", "vnp_SecureHashType") and v != ""
         }
         
         # Sắp xếp các tham số theo thứ tự bảng chữ cái
         sorted_params = sorted(hash_params.items())
         
-        # Xây dựng chuỗi hash_data để đối soát (mặc định urlencode)
-        hash_data = urllib.parse.urlencode(sorted_params)
+        # Xây dựng chuỗi hash_data để đối soát (sử dụng quote_via=urllib.parse.quote để spaces thành %20, chuẩn VNPay 2.1.0)
+        hash_data = urllib.parse.urlencode(sorted_params, quote_via=urllib.parse.quote)
         
         # Tính toán chữ ký kiểm tra
         computed_hash = hmac.new(

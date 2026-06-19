@@ -2078,7 +2078,22 @@ def payment_callback():
 def payment_success():
     ma_gd = request.args.get("ma_gd")
     from mo_hinh import GiaoDichNapToken
-    gd = GiaoDichNapToken.query.filter_by(ma_giao_dich=ma_gd, nguoi_dung_id=current_user.id).first()
+    gd = None
+    if ma_gd:
+        gd = GiaoDichNapToken.query.filter_by(ma_giao_dich=ma_gd, nguoi_dung_id=current_user.id).first()
+    
+    if not gd:
+        # Fallback: lấy giao dịch thành công mới nhất của người dùng
+        gd = GiaoDichNapToken.query.filter_by(
+            nguoi_dung_id=current_user.id,
+            trang_thai="thanh_cong"
+        ).order_by(GiaoDichNapToken.id.desc()).first()
+        
+    if not gd:
+        # Nếu không có giao dịch nào, chuyển hướng về trang cá nhân để tránh lỗi 500
+        flash("Không tìm thấy thông tin giao dịch.", "warning")
+        return redirect(url_for("profile"))
+        
     return render_template("payment_success.html", giao_dich=gd)
 
 @app.route("/payment/failed")

@@ -161,7 +161,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'completed') {
-                        window.location.href = "{{ url_for('payment_success') }}";
+                        window.location.href = "{{ url_for('payment_success') }}?ma_gd={{ giao_dich.ma_giao_dich }}";
                     }
                 })
                 .catch(error => console.error("Error polling payment status:", error));
