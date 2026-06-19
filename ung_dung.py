@@ -1128,8 +1128,12 @@ def san_pham():
                         chuong = len(book['chapters'])
                     refs = data.get('references', [])
                     trich_dan = len(refs)
-                    if 'grounding' in data and 'q_score' in data['grounding']:
-                        chinh_xac = data['grounding']['q_score'] * 100
+                    if 'grounding' in data:
+                        g_data = data['grounding']
+                        if 'q_score' in g_data:
+                            chinh_xac = g_data['q_score'] * 100
+                        elif 'overall' in g_data and 'ratio' in g_data['overall']:
+                            chinh_xac = g_data['overall']['ratio']
         
         if chuong == 0: chuong = max(3, int(item.do_dai_ky_tu / 5000))
         if trich_dan == 0: trich_dan = max(10, int(item.do_dai_ky_tu / 2000))
