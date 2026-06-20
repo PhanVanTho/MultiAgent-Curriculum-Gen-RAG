@@ -1421,7 +1421,7 @@ def admin_update_settings():
                 
                 # Check for masked keys
                 if key in ["OPENAI_API_KEY", "VNPAY_HASH_SECRET", "SEPAY_API_KEY"]:
-                    if "..." in new_val or "*" in new_val:
+                    if "..." in new_val or "*" in new_val or new_val.startswith("gAAAAA"):
                         # Keep original key
                         continue
                 elif key == "GEMINI_API_KEYS":
