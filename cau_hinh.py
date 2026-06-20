@@ -21,25 +21,45 @@ def ma_hoa_key(raw_text: str) -> str:
 def giai_ma_key(cipher_text: str) -> str:
     if not cipher_text:
         return ""
-    if not cipher_text.startswith("gAAAAA"):
-        return cipher_text
-    try:
-        f = Fernet(get_fernet_key())
-        return f.decrypt(cipher_text.encode("utf-8")).decode("utf-8")
-    except Exception:
-        # Fallback 1: Thử giải mã bằng dev-secret-key-123
+    
+    current_val = cipher_text
+    # Hỗ trợ giải mã đệ quy để tự động khôi phục nếu khóa bị mã hóa nhiều lần
+    for _ in range(5):
+        if not current_val.startswith("gAAAAA"):
+            return current_val
+            
+        decrypted = ""
+        # 1. Thử bằng FLASK_SECRET_KEY hiện tại
         try:
-            key_32 = hashlib.sha256(b"dev-secret-key-123").digest()
-            f = Fernet(base64.urlsafe_b64encode(key_32))
-            return f.decrypt(cipher_text.encode("utf-8")).decode("utf-8")
+            f = Fernet(get_fernet_key())
+            decrypted = f.decrypt(current_val.encode("utf-8")).decode("utf-8")
         except Exception:
-            # Fallback 2: Thử giải mã bằng dev-secret-key mặc định
+            pass
+            
+        if not decrypted:
+            # 2. Thử bằng dev-secret-key-123
+            try:
+                key_32 = hashlib.sha256(b"dev-secret-key-123").digest()
+                f = Fernet(base64.urlsafe_b64encode(key_32))
+                decrypted = f.decrypt(current_val.encode("utf-8")).decode("utf-8")
+            except Exception:
+                pass
+                
+        if not decrypted:
+            # 3. Thử bằng dev-secret-key mặc định
             try:
                 key_32 = hashlib.sha256(b"dev-secret-key").digest()
                 f = Fernet(base64.urlsafe_b64encode(key_32))
-                return f.decrypt(cipher_text.encode("utf-8")).decode("utf-8")
+                decrypted = f.decrypt(current_val.encode("utf-8")).decode("utf-8")
             except Exception:
-                return ""
+                pass
+                
+        if decrypted:
+            current_val = decrypted
+        else:
+            break
+            
+    return current_val if not current_val.startswith("gAAAAA") else ""
 
 class CauHinhMeta(type):
     def lay_tu_csdl(cls, khoa):
