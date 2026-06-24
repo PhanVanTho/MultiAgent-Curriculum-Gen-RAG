@@ -52,7 +52,7 @@ const TRANSLATIONS = {
   'showcase.empty':     { vi: 'Chưa có sản phẩm nào được xuất bản.', en: 'No products published yet.' },
   'showcase.product_default_desc': { vi: 'Giáo trình được hệ thống Giáo Trình AI tổng hợp tự động với nội dung chi tiết, cập nhật và trình bày chuẩn học thuật.', en: 'Curriculum automatically compiled by the AI Curriculum system with detailed, updated content and scholarly presentation.' },
   'showcase.chapters_label': { vi: 'Chương', en: 'Chapters' },
-  'showcase.accuracy_label': { vi: 'Chính xác', en: 'Accuracy' },
+  'showcase.accuracy_label': { vi: 'Tỉ lệ trích dẫn', en: 'Citation Rate' },
   'showcase.citations_label': { vi: 'Trích dẫn', en: 'Citations' },
   'showcase.view_curriculum': { vi: 'Xem giáo trình', en: 'View Curriculum' },
   'showcase.download_pdf': { vi: 'Tải Bản PDF', en: 'Download PDF' },
