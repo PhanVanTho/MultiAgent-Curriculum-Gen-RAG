@@ -1606,6 +1606,51 @@ def admin_settings():
         current_section="settings"
     )
 
+@app.route("/admin/debug_sepay")
+@login_required
+@admin_required
+def admin_debug_sepay():
+    try:
+        from mo_hinh import CauHinhHeThong
+        from cau_hinh import giai_ma_key
+        import os
+        import requests
+        
+        item = CauHinhHeThong.query.filter_by(khoa="SEPAY_API_KEY").first()
+        raw_db_val = item.gia_tri if item else None
+        
+        flask_secret = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
+        decrypted_val = giai_ma_key(raw_db_val) if raw_db_val else ""
+        
+        api_res = None
+        if decrypted_val:
+            headers = {
+                "Authorization": f"Bearer {decrypted_val}",
+                "Content-Type": "application/json"
+            }
+            params = {"account_number": CauHinh.SEPAY_ACCOUNT_NUMBER, "limit": 1}
+            try:
+                r = requests.get("https://my.sepay.vn/userapi/transactions/list", headers=headers, params=params, timeout=5)
+                api_res = {"status": r.status_code, "text": r.text[:200]}
+            except Exception as e:
+                api_res = {"error": str(e)}
+        else:
+            api_res = "No key to test"
+            
+        return jsonify({
+            "has_item": item is not None,
+            "raw_db_val_length": len(raw_db_val) if raw_db_val else 0,
+            "raw_db_val_starts_with_gAAAAA": raw_db_val.startswith("gAAAAA") if raw_db_val else False,
+            "flask_secret_configured": os.getenv("FLASK_SECRET_KEY") is not None,
+            "flask_secret_value": flask_secret[:3] + "..." if flask_secret else "None",
+            "decrypted_val_length": len(decrypted_val),
+            "decrypted_val_starts_with": decrypted_val[:6] if decrypted_val else "",
+            "sepay_api_test": api_res
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+
 @app.route("/admin/add_user", methods=["POST"])
 @login_required
 @admin_required
