@@ -686,12 +686,49 @@
             event.preventDefault();
             const currentLang = localStorage.getItem('app_lang') || 'vi';
             
-            const msg = currentLang === 'vi' 
-                ? "Cảm ơn bạn! Yêu cầu hỗ trợ của bạn đã được gửi thành công. Chúng tôi sẽ phản hồi lại bạn sớm nhất qua email." 
-                : "Thank you! Your support ticket has been submitted successfully. We will get back to you shortly via email.";
-                
-            alert(msg);
-            document.getElementById('supportForm').reset();
+            const name = document.getElementById('contactName').value;
+            const email = document.getElementById('contactEmail').value;
+            const subject = document.getElementById('contactSubject').value;
+            const message = document.getElementById('contactMessage').value;
+            
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = currentLang === 'vi' ? 'Đang gửi...' : 'Sending...';
+            
+            fetch("{{ url_for('support') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    name: name,
+                    email: email,
+                    subject: subject,
+                    message: message
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const msg = currentLang === 'vi' 
+                        ? "Cảm ơn bạn! Yêu cầu hỗ trợ của bạn đã được gửi thành công. Chúng tôi sẽ phản hồi lại bạn sớm nhất qua email." 
+                        : "Thank you! Your support ticket has been submitted successfully. We will get back to you shortly via email.";
+                    alert(msg);
+                    document.getElementById('supportForm').reset();
+                } else {
+                    alert(currentLang === 'vi' ? "Lỗi: " + data.message : "Error: " + data.message);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert(currentLang === 'vi' ? "Đã xảy ra lỗi kết nối." : "A connection error occurred.");
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            });
         }
     </script>
 </body>
