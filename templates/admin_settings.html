@@ -141,6 +141,35 @@
                 <div class="form-text" data-i18n="admin.settings.phi_token_creative_desc">Phí token khi chạy chế độ Sáng tạo nội dung (mặc định: 3)</div>
             </div>
 
+            <div class="col-12">
+                <h6 class="border-bottom pb-2 mb-3 mt-4 text-primary"><i class="fa-solid fa-address-book me-2"></i><span data-i18n="admin.settings.contact_info_section">Cấu hình thông tin liên hệ ở Footer</span></h6>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Email liên hệ (Footer Email)</label>
+                <input type="email" class="form-control" id="CONTACT_EMAIL" value="{{ cau_hinh.CONTACT_EMAIL or 'phanvantho082019@gmail.com' }}">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Số điện thoại (Footer Phone)</label>
+                <input type="text" class="form-control" id="CONTACT_PHONE" value="{{ cau_hinh.CONTACT_PHONE or '0327152710' }}">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Địa chỉ - Tiếng Việt (Footer Address VI)</label>
+                <input type="text" class="form-control" id="CONTACT_ADDRESS_VI" value="{{ cau_hinh.CONTACT_ADDRESS_VI or 'Cần Thơ, Việt Nam' }}">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Địa chỉ - Tiếng Anh (Footer Address EN)</label>
+                <input type="text" class="form-control" id="CONTACT_ADDRESS_EN" value="{{ cau_hinh.CONTACT_ADDRESS_EN or 'Can Tho, Vietnam' }}">
+            </div>
+
+            <div class="col-12">
+                <h6 class="border-bottom pb-2 mb-3 mt-4 text-primary"><i class="fa-solid fa-envelope-open-text me-2"></i><span>Email nhận thông báo hệ thống</span></h6>
+            </div>
+            <div class="col-md-12">
+                <label class="form-label fw-bold">Email nhận yêu cầu xóa tài khoản</label>
+                <input type="email" class="form-control" id="ADMIN_NOTIFICATION_EMAIL" value="{{ cau_hinh.ADMIN_NOTIFICATION_EMAIL or 'phanvantho082019@gmail.com' }}">
+                <div class="form-text">Các yêu cầu xóa tài khoản từ người dùng sẽ được gửi trực tiếp đến địa chỉ email này.</div>
+            </div>
+
             <div class="col-12 text-end mt-4">
                 <button type="submit" class="btn btn-primary" id="btn-save-settings">
                     <i class="fa-solid fa-floppy-disk me-2"></i><span data-i18n="admin.settings.save_btn">Lưu Cài đặt</span>
@@ -184,7 +213,12 @@
             SEPAY_XOR_KEY: document.getElementById('SEPAY_XOR_KEY').value,
             PHI_TOKEN_AUTO: document.getElementById('PHI_TOKEN_AUTO').value,
             PHI_TOKEN_EXPERT: document.getElementById('PHI_TOKEN_EXPERT').value,
-            PHI_TOKEN_CREATIVE: document.getElementById('PHI_TOKEN_CREATIVE').value
+            PHI_TOKEN_CREATIVE: document.getElementById('PHI_TOKEN_CREATIVE').value,
+            CONTACT_EMAIL: document.getElementById('CONTACT_EMAIL').value,
+            CONTACT_PHONE: document.getElementById('CONTACT_PHONE').value,
+            CONTACT_ADDRESS_VI: document.getElementById('CONTACT_ADDRESS_VI').value,
+            CONTACT_ADDRESS_EN: document.getElementById('CONTACT_ADDRESS_EN').value,
+            ADMIN_NOTIFICATION_EMAIL: document.getElementById('ADMIN_NOTIFICATION_EMAIL').value
         };
 
         try {

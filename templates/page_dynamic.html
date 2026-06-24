@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ page.tieu_de_vi }} - Giáo Trình AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #047857; /* Emerald 700 */
+            --bg-color: #f8fafc;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --font-main: 'Be Vietnam Pro', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            -webkit-font-smoothing: antialiased;
+            letter-spacing: -0.01em;
+        }
+
+        h1, h2, h3, h4, h5, h6, .navbar-brand, .nav-link, .btn {
+            font-family: var(--font-main);
+            font-weight: 700;
+        }
+
+        /* Navbar */
+        .navbar-custom {
+            background: rgba(2, 44, 34, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 1rem 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+        .navbar-brand {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            color: #34d399 !important;
+            font-size: 1.5rem;
+        }
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8) !important;
+            font-weight: 500;
+            font-size: 0.95rem;
+            margin: 0 15px;
+            transition: all 0.2s;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #ffffff !important;
+            transform: translateY(-2px);
+        }
+        .btn-signin {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 600;
+            padding: 8px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .btn-signin:hover {
+            background-color: #065f46;
+            color: white;
+        }
+        .lang-btn {
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.82rem;
+            font-weight: 700;
+            padding: 5px 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.2s;
+            margin-right: 10px;
+        }
+        .lang-btn:hover { background: rgba(255,255,255,0.22); }
+
+        /* Hero Header */
+        .legal-hero {
+            background: linear-gradient(135deg, #022c22 0%, #064e3b 100%);
+            color: white;
+            padding: 8rem 0 4rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .legal-hero::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(52, 211, 153, 0.15) 0%, transparent 80%);
+            z-index: 1;
+        }
+        .legal-hero .container {
+            position: relative;
+            z-index: 2;
+        }
+        .legal-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+        .legal-subtitle {
+            color: #a7f3d0;
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+
+        /* Content Card */
+        .legal-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+            border: 1px solid rgba(0,0,0,0.05);
+            padding: 3rem;
+            margin-top: -2rem;
+            margin-bottom: 5rem;
+            position: relative;
+            z-index: 10;
+        }
+        .legal-card h2 {
+            font-size: 1.5rem;
+            color: #064e3b;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+            border-bottom: 2px solid #ecfdf5;
+            padding-bottom: 0.5rem;
+        }
+        .legal-card h2:first-of-type {
+            margin-top: 0;
+        }
+        .legal-card p, .legal-card li {
+            font-size: 1rem;
+            line-height: 1.7;
+            color: #334155;
+        }
+        .legal-card ul {
+            padding-left: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        .legal-card li {
+            margin-bottom: 0.5rem;
+        }
+        .highlight-box {
+            background-color: #f0fdf4;
+            border-left: 4px solid #34d399;
+            padding: 1.25rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1.5rem 0;
+            font-size: 0.95rem;
+        }
+
+        /* Footer */
+        .footer {
+            background-color: #0f172a;
+            color: #94a3b8;
+            padding: 5rem 0 2rem;
+            font-size: 0.9rem;
+            border-top: 1px solid #1e293b;
+        }
+        .footer-heading {
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .footer-desc {
+            line-height: 1.6;
+        }
+        .footer-socials .social-link {
+            width: 36px;
+            height: 36px;
+            background-color: #1e293b;
+            color: #94a3b8;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .footer-socials .social-link:hover {
+            background-color: var(--primary);
+            color: white;
+            transform: translateY(-3px);
+        }
+        .footer-list li {
+            margin-bottom: 0.75rem;
+        }
+        .footer-list a {
+            color: #94a3b8;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .footer-list a:hover {
+            color: white;
+        }
+        .footer-contact-info li {
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+        }
+        .footer-divider {
+            border-color: #1e293b;
+        }
+        .footer-copy {
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('trang_chu') }}">
+                <i class="fa-solid fa-graduation-cap"></i>
+                <span data-i18n="nav.logo">Giáo Trình AI</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-lg-center">
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('trang_chu') }}" data-i18n="nav.intro">Giới Thiệu</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('trang_chu') }}#guide-section" data-i18n="nav.guide">Hướng Dẫn</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('san_pham') }}" data-i18n="nav.products">Sản Phẩm</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('buy_tokens') }}" data-i18n="nav.pricing">Bảng Giá</a></li>
+                    {% if current_user.is_authenticated %}
+                        {% if current_user.la_admin %}
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_dashboard') }}" data-i18n="admin.brand">Quản trị</a></li>
+                        {% endif %}
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('lich_su') }}" data-i18n="nav.history">Lịch Sử</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('profile') }}" data-i18n="nav.account">Tài khoản</a></li>
+                        <li class="nav-item ms-lg-2">
+                            <a href="{{ url_for('trang_tao_giao_trinh') }}" class="btn btn-signin" data-i18n="nav.create">Tạo giáo trình</a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item ms-lg-2">
+                            <a href="{{ url_for('login') }}" class="btn btn-signin" data-i18n="nav.login">Đăng nhập</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Header -->
+    <header class="legal-hero">
+        <div class="container">
+            <h1 class="legal-title lang-vi">{{ page.tieu_de_vi }}</h1>
+            <h1 class="legal-title lang-en d-none">{{ page.tieu_de_en }}</h1>
+            <p class="legal-subtitle lang-vi">{{ page.mo_ta_vi }}</p>
+            <p class="legal-subtitle lang-en d-none">{{ page.mo_ta_en }}</p>
+        </div>
+    </header>
+
+    <!-- Content Card -->
+    <main class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10 col-xl-9">
+                <article class="legal-card">
+                    <!-- VIETNAMESE -->
+                    <div class="lang-vi">
+                        {{ page.noi_dung_vi|safe }}
+                    </div>
+
+                    <!-- ENGLISH -->
+                    <div class="lang-en d-none">
+                        {{ page.noi_dung_en|safe }}
+                    </div>
+                </article>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row g-5">
+                <!-- Column 1: Brand & Socials -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" style="font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem; color: #34d399;" data-i18n="nav.logo">Giáo Trình AI</h5>
+                    <p class="footer-desc mt-3" data-i18n="footer.desc">
+                        Hệ thống biên soạn giáo trình thông minh bằng trí tuệ nhân tạo, kết hợp nghiên cứu khoa học đa tầng và phương pháp sư phạm hiện đại.
+                    </p>
+                    <div class="footer-socials d-flex gap-3 mt-4">
+                        <a href="https://www.facebook.com" target="_blank" class="social-link" title="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                        <a href="https://www.linkedin.com/login" target="_blank" class="social-link" title="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                        <a href="https://www.youtube.com" target="_blank" class="social-link" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                    </div>
+                </div>
+
+                <!-- Column 2: Explore -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" data-i18n="footer.col_explore">Khám Phá</h5>
+                    <ul class="footer-list list-unstyled">
+                        <li><a href="{{ url_for('trang_chu') }}" data-i18n="footer.home">Trang chủ</a></li>
+                        <li><a href="{{ url_for('san_pham') }}" data-i18n="footer.showcase">Sản phẩm tiêu biểu</a></li>
+                        <li><a href="{{ url_for('trang_chu') }}#guide-section" data-i18n="footer.guide">Hướng dẫn</a></li>
+                        <li><a href="{{ url_for('buy_tokens') }}" data-i18n="footer.pricing">Gói cước</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 3: Legal & Support -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" data-i18n="footer.col_support">Hỗ Trợ & Pháp Lý</h5>
+                    <ul class="footer-list list-unstyled">
+                        <li><a href="{{ url_for('privacy_policy') }}" data-i18n="footer.policy">Chính sách bảo mật</a></li>
+                        <li><a href="{{ url_for('terms_of_service') }}" data-i18n="footer.terms">Điều khoản dịch vụ</a></li>
+                        <li><a href="{{ url_for('ai_terms') }}" data-i18n="footer.ai_terms">Điều khoản AI</a></li>
+                        <li><a href="{{ url_for('data_deletion') }}" data-i18n="footer.data_deletion">Chính sách xóa dữ liệu</a></li>
+                        <li><a href="{{ url_for('support') }}" data-i18n="footer.support_faq">Hỗ trợ & FAQs</a></li>
+                        <li><a href="{{ url_for('xoa_tai_khoan') }}" data-i18n="footer.xoa_tai_khoan">Yêu cầu xóa tài khoản</a></li>
+                    </ul>
+                </div>
+
+
+                <!-- Column 4: Contact -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="footer-heading" data-i18n="footer.col_contact">Liên Hệ</h5>
+                    <ul class="footer-contact-info list-unstyled">
+                        <li><i class="fa-solid fa-envelope me-2"></i><span data-i18n="footer.email_val">phanvantho082019@gmail.com</span></li>
+                        <li><i class="fa-solid fa-phone me-2"></i><span data-i18n="footer.phone_val">0327152710</span></li>
+                        <li><i class="fa-solid fa-location-dot me-2"></i><span data-i18n="footer.address_val">Cần Thơ, Việt Nam</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <hr class="footer-divider my-4">
+
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+                <div class="footer-copy" data-i18n="footer.copy">
+                    &copy; 2026 GIÁO TRÌNH AI. THE INTELLECTUAL LIGHT.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='i18n.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            function updateVisibility(lang) {
+                if (lang === 'vi') {
+                    document.querySelectorAll('.lang-vi').forEach(el => el.classList.remove('d-none'));
+                    document.querySelectorAll('.lang-en').forEach(el => el.classList.add('d-none'));
+                } else {
+                    document.querySelectorAll('.lang-vi').forEach(el => el.classList.add('d-none'));
+                    document.querySelectorAll('.lang-en').forEach(el => el.classList.remove('d-none'));
+                }
+            }
+            
+            // Initial apply
+            const currentLang = localStorage.getItem('app_lang') || 'vi';
+            updateVisibility(currentLang);
+            
+            // Listen to changes
+            window.addEventListener('languageChanged', (e) => {
+                updateVisibility(e.detail.lang);
+            });
+        });
+    </script>
+</body>
+</html>

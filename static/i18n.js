@@ -322,8 +322,10 @@ const TRANSLATIONS = {
   /* ===== FOOTER ===== */
   'footer.policy':           { vi: 'Chính sách bảo mật', en: 'Privacy Policy' },
   'footer.terms':            { vi: 'Điều khoản dịch vụ', en: 'Terms of Service' },
+  'footer.ai_terms':         { vi: 'Điều khoản AI', en: 'AI Terms' },
   'footer.data_deletion':    { vi: 'Chính sách xóa dữ liệu', en: 'Data Deletion Policy' },
   'footer.support_faq':      { vi: 'Hỗ trợ & FAQs', en: 'Support & FAQs' },
+  'footer.xoa_tai_khoan':    { vi: 'Yêu cầu xóa tài khoản', en: 'Request Account Deletion' },
   'footer.tagline':          { vi: 'Hệ thống biên soạn giáo trình tự động', en: 'Automated Curriculum Compilation System' },
   'footer.desc':             { vi: 'Hệ thống biên soạn giáo trình thông minh bằng trí tuệ nhân tạo, kết hợp nghiên cứu khoa học đa tầng và phương pháp sư phạm hiện đại.', en: 'Intelligent curriculum compilation system powered by AI, combining multi-layer scientific research and modern pedagogy.' },
   'footer.col_explore':      { vi: 'Khám Phá', en: 'Explore' },
@@ -338,6 +340,24 @@ const TRANSLATIONS = {
   'footer.email_val':        { vi: 'phanvantho082019@gmail.com', en: 'phanvantho082019@gmail.com' },
   'footer.phone_val':        { vi: '0327152710', en: '0327152710' },
   'footer.address_val':      { vi: 'Cần Thơ, Việt Nam', en: 'Can Tho, Vietnam' },
+
+  /* ===== DELETE ACCOUNT REQUEST PAGE ===== */
+  'delete_account.title':            { vi: 'Yêu cầu xóa tài khoản', en: 'Account Deletion Request' },
+  'delete_account.desc':             { vi: 'Vui lòng cung cấp thông tin tài khoản của bạn. Yêu cầu của bạn sẽ được gửi tới Ban quản trị hệ thống để xử lý.', en: 'Please provide your account details. Your request will be sent to the System Administrator for processing.' },
+  'delete_account.username':         { vi: 'Tên đăng nhập', en: 'Username' },
+  'delete_account.email':            { vi: 'Email đăng ký', en: 'Registered Email' },
+  'delete_account.reason':           { vi: 'Lý do yêu cầu xóa', en: 'Reason for deletion' },
+  'delete_account.reason_select':    { vi: '--- Chọn lý do ---', en: '--- Select a reason ---' },
+  'delete_account.reason_1':         { vi: 'Không còn nhu cầu sử dụng', en: 'No longer needed' },
+  'delete_account.reason_2':         { vi: 'Lý do bảo mật dữ liệu', en: 'Data privacy concerns' },
+  'delete_account.reason_3':         { vi: 'Gặp sự cố kỹ thuật', en: 'Technical issues' },
+  'delete_account.reason_4':         { vi: 'Lý do khác', en: 'Other' },
+  'delete_account.notes':            { vi: 'Chi tiết yêu cầu / Ghi chú thêm', en: 'Detailed Request / Additional Notes' },
+  'delete_account.notes_placeholder': { vi: 'Nhập thông tin chi tiết hoặc lý do cụ thể (nếu có)...', en: 'Enter detailed information or specific reason (if any)...' },
+  'delete_account.submit':           { vi: 'Gửi yêu cầu xóa tài khoản', en: 'Submit Deletion Request' },
+  'delete_account.back_home':        { vi: 'Quay lại Trang chủ', en: 'Back to Home' },
+  'delete_account.alert_warn':       { vi: 'Hành động này không thể hoàn tác sau khi được Admin phê duyệt. Vui lòng cân nhắc kỹ.', en: 'This action cannot be undone once approved by the Admin. Please consider carefully.' },
+
 
   /* ===== APP CONFIG PAGE ===== */
   'app.title':            { vi: 'Thiết lập giáo trình', en: 'Curriculum Setup' },
@@ -408,6 +428,8 @@ const TRANSLATIONS = {
 
   /* ===== FOOTER ===== */
   'footer.copy':        { vi: '© 2026 GIÁO TRÌNH AI. THE INTELLECTUAL LIGHT.', en: '© 2026 AI CURRICULUM. THE INTELLECTUAL LIGHT.' },
+  'footer.ai_terms':    { vi: 'Điều khoản AI', en: 'AI Terms' },
+
 
   /* ===== AUTH / LOGIN / REGISTER / FORGOT / RESET ===== */
   'login.page_title':      { vi: 'Đăng nhập - Giáo Trình AI', en: 'Sign In - AI Curriculum' },
@@ -490,6 +512,8 @@ const TRANSLATIONS = {
   'admin.packages':             { vi: 'Gói cước', en: 'Pricing Packages' },
   'admin.curriculums':          { vi: 'Giáo trình', en: 'Curriculums' },
   'admin.settings':             { vi: 'Cài đặt', en: 'Settings' },
+  'admin.pages':                { vi: 'Quản lý trang', en: 'Manage Pages' },
+
   'admin.create':               { vi: 'Tạo giáo trình', en: 'Create Curriculum' },
 
   'admin.overview.title':       { vi: 'Tổng quan hệ thống', en: 'System Overview' },
@@ -639,6 +663,14 @@ function applyLanguage(lang) {
   const langFlag  = document.getElementById('langFlag');
   if (langLabel) langLabel.textContent = lang === 'vi' ? 'VI' : 'EN';
   if (langFlag)  langFlag.textContent  = lang === 'vi' ? '🇻🇳' : '🇬🇧';
+
+  const langLabelMobile = document.getElementById('langLabelMobile');
+  const langFlagMobile  = document.getElementById('langFlagMobile');
+  if (langLabelMobile) langLabelMobile.textContent = lang === 'vi' ? 'VI' : 'EN';
+  if (langFlagMobile)  langFlagMobile.textContent  = lang === 'vi' ? '🇻🇳' : '🇬🇧';
+
+  document.querySelectorAll('.lang-label').forEach(el => el.textContent = lang === 'vi' ? 'VI' : 'EN');
+  document.querySelectorAll('.lang-flag').forEach(el => el.textContent = lang === 'vi' ? '🇻🇳' : '🇬🇧');
 
   /* Dispatch event for page-specific translations */
   window.dispatchEvent(new CustomEvent('languageChanged', { detail: { lang: lang } }));

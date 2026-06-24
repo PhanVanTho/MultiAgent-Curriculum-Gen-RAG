@@ -209,6 +209,51 @@ class CauHinhMeta(type):
     def SEPAY_XOR_KEY(cls, val):
         cls._SEPAY_XOR_KEY = val
 
+    @property
+    def CONTACT_EMAIL(cls):
+        val = cls.lay_tu_csdl("CONTACT_EMAIL")
+        return val if val is not None else cls._CONTACT_EMAIL
+
+    @CONTACT_EMAIL.setter
+    def CONTACT_EMAIL(cls, val):
+        cls._CONTACT_EMAIL = val
+
+    @property
+    def CONTACT_PHONE(cls):
+        val = cls.lay_tu_csdl("CONTACT_PHONE")
+        return val if val is not None else cls._CONTACT_PHONE
+
+    @CONTACT_PHONE.setter
+    def CONTACT_PHONE(cls, val):
+        cls._CONTACT_PHONE = val
+
+    @property
+    def CONTACT_ADDRESS_VI(cls):
+        val = cls.lay_tu_csdl("CONTACT_ADDRESS_VI")
+        return val if val is not None else cls._CONTACT_ADDRESS_VI
+
+    @CONTACT_ADDRESS_VI.setter
+    def CONTACT_ADDRESS_VI(cls, val):
+        cls._CONTACT_ADDRESS_VI = val
+
+    @property
+    def CONTACT_ADDRESS_EN(cls):
+        val = cls.lay_tu_csdl("CONTACT_ADDRESS_EN")
+        return val if val is not None else cls._CONTACT_ADDRESS_EN
+
+    @CONTACT_ADDRESS_EN.setter
+    def CONTACT_ADDRESS_EN(cls, val):
+        cls._CONTACT_ADDRESS_EN = val
+
+    @property
+    def ADMIN_NOTIFICATION_EMAIL(cls):
+        val = cls.lay_tu_csdl("ADMIN_NOTIFICATION_EMAIL")
+        return val if val is not None else cls._ADMIN_NOTIFICATION_EMAIL
+
+    @ADMIN_NOTIFICATION_EMAIL.setter
+    def ADMIN_NOTIFICATION_EMAIL(cls, val):
+        cls._ADMIN_NOTIFICATION_EMAIL = val
+
 class CauHinh(metaclass=CauHinhMeta):
     # Flask
     KHOA_BI_MAT = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
@@ -341,3 +386,13 @@ class CauHinh(metaclass=CauHinhMeta):
     PHI_TOKEN_AUTO = int(os.getenv("PHI_TOKEN_AUTO", "1"))
     PHI_TOKEN_EXPERT = int(os.getenv("PHI_TOKEN_EXPERT", "2"))
     PHI_TOKEN_CREATIVE = int(os.getenv("PHI_TOKEN_CREATIVE", "3"))
+
+    # Contact Info (Fallback)
+    _CONTACT_EMAIL = os.getenv("CONTACT_EMAIL", "phanvantho082019@gmail.com")
+    _CONTACT_PHONE = os.getenv("CONTACT_PHONE", "0327152710")
+    _CONTACT_ADDRESS_VI = os.getenv("CONTACT_ADDRESS_VI", "Cần Thơ, Việt Nam")
+    _CONTACT_ADDRESS_EN = os.getenv("CONTACT_ADDRESS_EN", "Can Tho, Vietnam")
+
+    # Admin Notifications
+    _ADMIN_NOTIFICATION_EMAIL = os.getenv("ADMIN_NOTIFICATION_EMAIL", "phanvantho082019@gmail.com")
+

@@ -2,6 +2,7 @@ import hashlib
 import hmac
 import urllib.parse
 from datetime import datetime
+import pytz
 
 class VNPay:
     # Force server reload: updated local VNPAY logo asset
@@ -38,14 +39,14 @@ class VNPay:
             "vnp_Locale": "vn",
             "vnp_ReturnUrl": return_url,
             "vnp_IpAddr": ip_addr,
-            "vnp_CreateDate": datetime.now().strftime("%Y%m%d%H%M%S")
+            "vnp_CreateDate": datetime.now(pytz.timezone('Asia/Ho_Chi_Minh')).strftime("%Y%m%d%H%M%S")
         }
         
         # Sắp xếp các tham số theo bảng chữ cái A-Z
         sorted_params = sorted(params.items())
         
-        # Xây dựng chuỗi hash_data (sử dụng urllib.parse.quote để spaces thành %20, chuẩn VNPay 2.1.0)
-        hash_data = urllib.parse.urlencode(sorted_params, quote_via=urllib.parse.quote)
+        # Xây dựng chuỗi hash_data (urlencode mặc định dùng quote_plus để spaces thành +)
+        hash_data = urllib.parse.urlencode(sorted_params)
         
         # Tính toán HMAC-SHA512 chữ ký số bảo mật
         secure_hash = hmac.new(
@@ -81,8 +82,8 @@ class VNPay:
         # Sắp xếp các tham số theo thứ tự bảng chữ cái
         sorted_params = sorted(hash_params.items())
         
-        # Xây dựng chuỗi hash_data để đối soát (sử dụng quote_via=urllib.parse.quote để spaces thành %20, chuẩn VNPay 2.1.0)
-        hash_data = urllib.parse.urlencode(sorted_params, quote_via=urllib.parse.quote)
+        # Xây dựng chuỗi hash_data để đối soát (urlencode mặc định dùng quote_plus)
+        hash_data = urllib.parse.urlencode(sorted_params)
         
         # Tính toán chữ ký kiểm tra
         computed_hash = hmac.new(

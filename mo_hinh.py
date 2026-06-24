@@ -109,10 +109,19 @@ class CauHinhHeThong(db.Model):
 class LichSuChatbot(db.Model):
     __tablename__ = 'lich_su_chatbot'
     id = db.Column(db.Integer, primary_key=True)
-    nguoi_dung_id = db.Column(db.Integer, db.ForeignKey('nguoi_dung.id', ondelete='CASCADE'), nullable=False)
+    nguoi_dung_id = db.Column(db.Integer, db.ForeignKey('nguoi_dung.id'), nullable=False)
     role = db.Column(db.String(20), nullable=False) # 'user' or 'assistant'
     content = db.Column(db.Text, nullable=False)
     ngay_tao = db.Column(db.DateTime, default=datetime.utcnow)
 
-
-
+class TrangThongTin(db.Model):
+    __tablename__ = 'trang_thong_tin'
+    id = db.Column(db.Integer, primary_key=True)
+    ma_trang = db.Column(db.String(100), unique=True, nullable=False) # 'privacy-policy', 'terms-of-service', 'data-deletion', 'ai-terms'
+    tieu_de_vi = db.Column(db.String(255), nullable=False)
+    tieu_de_en = db.Column(db.String(255), nullable=False)
+    mo_ta_vi = db.Column(db.String(500), nullable=True)
+    mo_ta_en = db.Column(db.String(500), nullable=True)
+    noi_dung_vi = db.Column(db.Text().with_variant(LONGTEXT, "mysql"))
+    noi_dung_en = db.Column(db.Text().with_variant(LONGTEXT, "mysql"))
+    ngay_cap_nhat = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

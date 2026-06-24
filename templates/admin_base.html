@@ -363,6 +363,9 @@
                 <a href="{{ url_for('admin_curriculums') }}" class="{% if current_section == 'curriculums' %}active{% endif %}">
                     <i class="fa-solid fa-book"></i> <span data-i18n="admin.curriculums">Giáo trình</span>
                 </a>
+                <a href="{{ url_for('admin_pages') }}" class="{% if current_section == 'pages' %}active{% endif %}">
+                    <i class="fa-solid fa-file-lines"></i> <span data-i18n="admin.pages">Quản lý trang</span>
+                </a>
                 <a href="{{ url_for('admin_settings') }}" class="{% if current_section == 'settings' %}active{% endif %}">
                     <i class="fa-solid fa-gear"></i> <span data-i18n="admin.settings">Cài đặt</span>
                 </a>

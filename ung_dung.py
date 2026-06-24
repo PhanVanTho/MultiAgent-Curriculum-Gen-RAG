@@ -256,7 +256,7 @@ if os.getenv("GTAI_SUBPROCESS") == "True":
     if os.getenv("GTAI_OVERRIDE_PORT"):
         os.environ["PORT"] = os.getenv("GTAI_OVERRIDE_PORT")
 from cau_hinh import CauHinh
-from mo_hinh import db, NguoiDung, LichSuGiaoTrinh, XacThucOTP, GoiCuoc
+from mo_hinh import db, NguoiDung, LichSuGiaoTrinh, XacThucOTP, GoiCuoc, TrangThongTin
 
 # --- SERVICE IMPORTS (V23.2 GLOBAL STABILIZATION) ---
 from dich_vu.vector_search import tim_kiem_vector, tao_vector_db, tim_kiem_vector_with_llm_rerank
@@ -377,14 +377,171 @@ def seed_system_config():
                     db.session.add(item)
             db.session.commit()
             logger.info("Đồng bộ cấu hình lần đầu thành công.")
+        
+        # Đồng bộ riêng các khoá cấu hình thông tin liên hệ mới nếu chưa có trong DB
+        contact_keys = {
+            "CONTACT_EMAIL": "phanvantho082019@gmail.com",
+            "CONTACT_PHONE": "0327152710",
+            "CONTACT_ADDRESS_VI": "Cần Thơ, Việt Nam",
+            "CONTACT_ADDRESS_EN": "Can Tho, Vietnam",
+            "ADMIN_NOTIFICATION_EMAIL": "phanvantho082019@gmail.com"
+        }
+        for k, default_val in contact_keys.items():
+            if not CauHinhHeThong.query.filter_by(khoa=k).first():
+                val = os.getenv(k, default_val)
+                item = CauHinhHeThong(khoa=k, gia_tri=str(val))
+                db.session.add(item)
+        db.session.commit()
     except Exception as e:
         logger.error(f"Lỗi đồng bộ cấu hình từ .env vào CSDL: {e}")
+
+
+def seed_trang_thong_tin():
+    try:
+        from mo_hinh import TrangThongTin
+        if TrangThongTin.query.count() == 0:
+            logger.info("Seeding default pages into TrangThongTin...")
+            
+            def extract_lang_content(file_path):
+                if not os.path.exists(file_path):
+                    return "", ""
+                with open(file_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                
+                vi_start_marker = '<div class="lang-vi">'
+                vi_end_marker = '<!-- ENGLISH -->'
+                
+                en_start_marker = '<div class="lang-en d-none">'
+                en_end_marker = '</article>'
+                
+                vi_html = ""
+                en_html = ""
+                
+                vi_idx_start = content.find(vi_start_marker)
+                if vi_idx_start != -1:
+                    vi_idx_start += len(vi_start_marker)
+                    vi_idx_end = content.find(vi_end_marker, vi_idx_start)
+                    if vi_idx_end != -1:
+                        vi_raw = content[vi_idx_start:vi_idx_end].strip()
+                        if vi_raw.endswith('</div>'):
+                            vi_raw = vi_raw[:-6].strip()
+                        vi_html = vi_raw
+
+                en_idx_start = content.find(en_start_marker)
+                if en_idx_start != -1:
+                    en_idx_start += len(en_start_marker)
+                    en_idx_end = content.find(en_end_marker, en_idx_start)
+                    if en_idx_end != -1:
+                        en_raw = content[en_idx_start:en_idx_end].strip()
+                        if en_raw.endswith('</div>'):
+                            en_raw = en_raw[:-6].strip()
+                        en_html = en_raw
+                        
+                return vi_html, en_html
+
+            ai_vi_default = """<h2>1. Sở hữu trí tuệ đối với Giáo trình</h2>
+<p>Hệ thống <strong>Giáo Trình AI</strong> biên soạn nội dung dựa trên các thuật toán học sâu và cơ sở dữ liệu mở. Bản quyền đối với cấu trúc giáo trình và nội dung biên soạn sau khi được xuất bản thuộc về người dùng đã yêu cầu biên soạn. Người dùng có toàn quyền sử dụng, in ấn, giảng dạy và thương mại hóa sản phẩm giáo trình của mình.</p>
+
+<h2>2. Trách nhiệm về mặt chuyên môn</h2>
+<p>Nội dung do AI tạo ra chỉ mang tính chất tham khảo học thuật. Hệ thống không chịu trách nhiệm pháp lý đối với bất kỳ sai sót kiến thức, lỗi logic, hoặc hậu quả phát sinh từ việc áp dụng trực tiếp các kiến thức trong giáo trình vào thực tế giảng dạy mà không qua kiểm duyệt chuyên môn bởi giảng viên hoặc chuyên gia có thẩm quyền.</p>
+
+<h2>3. Nghiêm cấm các hành vi lạm dụng</h2>
+<p>Người dùng không được phép:</p>
+<ul>
+    <li>Sử dụng hệ thống để biên soạn các nội dung vi phạm pháp luật, kích động bạo lực, hoặc vi phạm bản quyền sở hữu trí tuệ của bên thứ ba.</li>
+    <li>Tấn công hoặc can thiệp vào hạ tầng máy chủ của Giáo Trình AI bằng các công cụ tự động hoặc bot độc hại.</li>
+    <li>Lợi dụng các lỗ hổng hệ thống để trục lợi token hoặc can thiệp vào tài khoản của người dùng khác.</li>
+</ul>"""
+
+            ai_en_default = """<h2>1. Intellectual Property Rights</h2>
+<p>The <strong>AI Curriculum</strong> compiles content based on deep learning models and open databases. The ownership of the compiled curriculum and outline, once generated and downloaded, belongs entirely to the requesting user. Users retain full rights to use, print, teach, and commercialize their generated curriculum materials.</p>
+
+<h2>2. Disclaimer of Professional Liability</h2>
+<p>AI-generated content is intended solely for academic reference and drafting assistance. The system and its developers assume no legal responsibility or liability for any errors, logical inconsistencies, or negative consequences arising from using the generated content in actual teaching environments without prior expert human review.</p>
+
+<h2>3. Prohibited Activities & Abuse</h2>
+<p>Users are strictly prohibited from:</p>
+<ul>
+    <li>Using the system to generate unlawful, hateful, violent, or copyright-infringing content.</li>
+    <li>Attacking or interfering with the system infrastructure of AI Curriculum via automated tools or scrapers.</li>
+    <li>Exploiting system vulnerabilities for token manipulation or unauthorized access to other user accounts.</li>
+</ul>"""
+
+            pages_data = [
+                {
+                    "ma_trang": "privacy-policy",
+                    "tieu_de_vi": "Chính Sách Bảo Mật",
+                    "tieu_de_en": "Privacy Policy",
+                    "mo_ta_vi": "Cách chúng tôi bảo vệ và xử lý thông tin cá nhân của bạn",
+                    "mo_ta_en": "How we collect, use, and safeguard your personal information",
+                    "file_name": "templates/privacy_policy.html"
+                },
+                {
+                    "ma_trang": "terms-of-service",
+                    "tieu_de_vi": "Điều Khoản Dịch Vụ",
+                    "tieu_de_en": "Terms of Service",
+                    "mo_ta_vi": "Quy định và điều kiện sử dụng hệ thống Giáo Trình AI",
+                    "mo_ta_en": "Terms and conditions for utilizing the AI Curriculum system",
+                    "file_name": "templates/terms_of_service.html"
+                },
+                {
+                    "ma_trang": "data-deletion",
+                    "tieu_de_vi": "Yêu Cầu Xóa Dữ Liệu",
+                    "tieu_de_en": "Data Deletion Request",
+                    "mo_ta_vi": "Hướng dẫn và chính sách xóa dữ liệu cá nhân khỏi hệ thống",
+                    "mo_ta_en": "Instructions and policies for removing your personal data from the system",
+                    "file_name": "templates/data_deletion.html"
+                },
+                {
+                    "ma_trang": "ai-terms",
+                    "tieu_de_vi": "Điều khoản AI & Sở hữu trí tuệ",
+                    "tieu_de_en": "AI Terms & Intellectual Property",
+                    "mo_ta_vi": "Quy định về việc sử dụng nội dung do AI tạo ra và trách nhiệm pháp lý",
+                    "mo_ta_en": "Regulations on AI-generated content usage and legal liabilities",
+                    "file_name": None
+                }
+            ]
+            
+            for p in pages_data:
+                vi_html, en_html = "", ""
+                if p["file_name"]:
+                    try:
+                        vi_html, en_html = extract_lang_content(p["file_name"])
+                    except Exception as ex:
+                        logger.error(f"Error reading file {p['file_name']}: {ex}")
+                
+                if not vi_html:
+                    if p["ma_trang"] == "ai-terms":
+                        vi_html = ai_vi_default
+                    else:
+                        vi_html = f"<p>Nội dung đang được cập nhật cho {p['tieu_de_vi']}.</p>"
+                if not en_html:
+                    if p["ma_trang"] == "ai-terms":
+                        en_html = ai_en_default
+                    else:
+                        en_html = f"<p>Content is being updated for {p['tieu_de_en']}.</p>"
+                
+                page_obj = TrangThongTin(
+                    ma_trang=p["ma_trang"],
+                    tieu_de_vi=p["tieu_de_vi"],
+                    tieu_de_en=p["tieu_de_en"],
+                    mo_ta_vi=p["mo_ta_vi"],
+                    mo_ta_en=p["mo_ta_en"],
+                    noi_dung_vi=vi_html,
+                    noi_dung_en=en_html
+                )
+                db.session.add(page_obj)
+            db.session.commit()
+            logger.info("Successfully seeded default pages into TrangThongTin.")
+    except Exception as e:
+        logger.error(f"Error seeding TrangThongTin: {e}")
 
 def seed_admin():
     from mo_hinh import db_type
     if db_type == "mongodb":
         with app.app_context():
             db.create_all()
+            seed_trang_thong_tin()
             admin = NguoiDung.query.filter_by(ten_dang_nhap="admin").first()
             if not admin:
                 hashed_pw = generate_password_hash("admin123")
@@ -479,6 +636,7 @@ def seed_admin():
             db.session.rollback()
 
         db.create_all()
+        seed_trang_thong_tin()
         admin = NguoiDung.query.filter_by(ten_dang_nhap="admin").first()
         if not admin:
             hashed_pw = generate_password_hash("admin123")
@@ -1219,18 +1377,99 @@ def trang_chu():
 
 @app.get("/privacy-policy")
 def privacy_policy():
-    return render_template("privacy_policy.html")
+    page = TrangThongTin.query.filter_by(ma_trang='privacy-policy').first()
+    if not page:
+        return render_template("privacy_policy.html")
+    return render_template("page_dynamic.html", page=page)
 
 @app.get("/terms-of-service")
 def terms_of_service():
-    return render_template("terms_of_service.html")
+    page = TrangThongTin.query.filter_by(ma_trang='terms-of-service').first()
+    if not page:
+        return render_template("terms_of_service.html")
+    return render_template("page_dynamic.html", page=page)
 
 @app.get("/data-deletion")
 def data_deletion():
-    return render_template("data_deletion.html")
+    page = TrangThongTin.query.filter_by(ma_trang='data-deletion').first()
+    if not page:
+        return render_template("data_deletion.html")
+    return render_template("page_dynamic.html", page=page)
 
-@app.get("/support")
+@app.get("/ai-terms")
+def ai_terms():
+    page = TrangThongTin.query.filter_by(ma_trang='ai-terms').first()
+    if not page:
+        return "Trang không tồn tại", 404
+    return render_template("page_dynamic.html", page=page)
+
+@app.route("/xoa-tai-khoan", methods=["GET", "POST"])
+def xoa_tai_khoan():
+    if request.method == "POST":
+        username = (request.form.get("username") or "").strip()
+        email = (request.form.get("email") or "").strip()
+        reason = (request.form.get("reason") or "").strip()
+        notes = (request.form.get("notes") or "").strip()
+        
+        if not username or not email:
+            flash("Vui lòng điền đầy đủ tên đăng nhập và email.", "danger")
+            return render_template("request_delete_account.html")
+            
+        account_info = {
+            "username": username,
+            "email": email,
+            "reason": reason,
+            "notes": notes
+        }
+        
+        from dich_vu.email_service import gui_email_xoa_tai_khoan
+        from cau_hinh import CauHinh
+        
+        admin_email = CauHinh.ADMIN_NOTIFICATION_EMAIL or "phanvantho082019@gmail.com"
+        success, message = gui_email_xoa_tai_khoan(admin_email, account_info)
+        
+        if success:
+            flash(message, "success")
+        else:
+            flash(message, "warning")
+            
+        return render_template("request_delete_account.html")
+        
+    return render_template("request_delete_account.html")
+
+@app.route("/support", methods=["GET", "POST"])
 def support():
+    if request.method == "POST":
+        data = request.get_json() or {}
+        name = (data.get("name") or "").strip()
+        email = (data.get("email") or "").strip()
+        subject = (data.get("subject") or "").strip()
+        message = (data.get("message") or "").strip()
+        
+        if not name or not email or not subject or not message:
+            return jsonify({
+                "success": False, 
+                "message": "Vui lòng điền đầy đủ thông tin yêu cầu hỗ trợ."
+            }), 400
+            
+        ticket_info = {
+            "name": name,
+            "email": email,
+            "subject": subject,
+            "message": message
+        }
+        
+        from dich_vu.email_service import gui_email_support_ticket
+        from cau_hinh import CauHinh
+        
+        admin_email = CauHinh.ADMIN_NOTIFICATION_EMAIL or "phanvantho082019@gmail.com"
+        success, response_msg = gui_email_support_ticket(admin_email, ticket_info)
+        
+        return jsonify({
+            "success": success,
+            "message": response_msg
+        })
+        
     return render_template("support.html")
 
 @app.get("/tao-giao-trinh")
@@ -1403,7 +1642,9 @@ def admin_update_settings():
         "PAYMENT_VNPAY_ACTIVE", "PAYMENT_SEPAY_ACTIVE",
         "VNPAY_TMN_CODE", "VNPAY_HASH_SECRET", "VNPAY_PAYMENT_URL", "VNPAY_RETURN_URL",
         "SEPAY_API_KEY", "SEPAY_ACCOUNT_NUMBER", "SEPAY_BANK_BRAND", "SEPAY_WEB_NAME", "SEPAY_XOR_KEY",
-        "PHI_TOKEN_AUTO", "PHI_TOKEN_EXPERT", "PHI_TOKEN_CREATIVE"
+        "PHI_TOKEN_AUTO", "PHI_TOKEN_EXPERT", "PHI_TOKEN_CREATIVE",
+        "CONTACT_EMAIL", "CONTACT_PHONE", "CONTACT_ADDRESS_VI", "CONTACT_ADDRESS_EN",
+        "ADMIN_NOTIFICATION_EMAIL"
     ]
     
     def mask_key(key):
@@ -1479,6 +1720,47 @@ def admin_update_settings():
         logger.error(f"Lỗi cập nhật settings: {e}")
         return jsonify({"success": False, "error": str(e)})
 
+@app.route("/static/i18n.js")
+def custom_i18n_js():
+    from cau_hinh import CauHinh
+    import os
+    from flask import Response
+    
+    js_path = os.path.join(app.static_folder, "i18n.js")
+    try:
+        with open(js_path, "r", encoding="utf-8") as f:
+            content = f.read()
+    except Exception as e:
+        logger.error(f"Lỗi đọc i18n.js: {e}")
+        content = "const TRANSLATIONS = {};"
+    
+    email = CauHinh.CONTACT_EMAIL or "phanvantho082019@gmail.com"
+    phone = CauHinh.CONTACT_PHONE or "0327152710"
+    addr_vi = CauHinh.CONTACT_ADDRESS_VI or "Cần Thơ, Việt Nam"
+    addr_en = CauHinh.CONTACT_ADDRESS_EN or "Can Tho, Vietnam"
+    
+    email_js = email.replace("'", "\\'").replace('"', '\\"')
+    phone_js = phone.replace("'", "\\'").replace('"', '\\"')
+    addr_vi_js = addr_vi.replace("'", "\\'").replace('"', '\\"')
+    addr_en_js = addr_en.replace("'", "\\'").replace('"', '\\"')
+    
+    override_js = f"""
+// Dynamic custom configuration override
+if (typeof TRANSLATIONS !== 'undefined') {{
+  TRANSLATIONS['footer.email_val'] = {{ vi: '{email_js}', en: '{email_js}' }};
+  TRANSLATIONS['footer.phone_val'] = {{ vi: '{phone_js}', en: '{phone_js}' }};
+  TRANSLATIONS['footer.address_val'] = {{ vi: '{addr_vi_js}', en: '{addr_en_js}' }};
+}}
+"""
+    
+    full_content = content + "\n" + override_js
+    
+    response = Response(full_content, mimetype="application/javascript")
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
 # --- ADMIN BLOCK USER & DYNAMIC PACKAGES ---
 @app.route("/admin/toggle_block_user", methods=["POST"])
 @login_required
@@ -1522,6 +1804,49 @@ def admin_delete_user():
     db.session.commit()
     
     return jsonify({"success": True, "message": f"Đã xóa tài khoản thành viên {user.ten_dang_nhap}!"})
+
+@app.route("/admin/pages", methods=["GET"])
+@login_required
+@admin_required
+def admin_pages():
+    pages = TrangThongTin.query.all()
+    return render_template("admin_pages.html", pages=pages, current_section="pages")
+
+@app.route("/admin/pages/save", methods=["POST"])
+@login_required
+@admin_required
+def admin_save_page():
+    try:
+        page_id = request.form.get("id")
+        tieu_de_vi = request.form.get("tieu_de_vi")
+        tieu_de_en = request.form.get("tieu_de_en")
+        mo_ta_vi = request.form.get("mo_ta_vi", "")
+        mo_ta_en = request.form.get("mo_ta_en", "")
+        noi_dung_vi = request.form.get("noi_dung_vi", "")
+        noi_dung_en = request.form.get("noi_dung_en", "")
+        
+        if not page_id:
+            flash("Thiếu ID trang.", "danger")
+            return redirect(url_for("admin_pages"))
+            
+        page = db.session.get(TrangThongTin, int(page_id))
+        if page:
+            page.tieu_de_vi = tieu_de_vi
+            page.tieu_de_en = tieu_de_en
+            page.mo_ta_vi = mo_ta_vi
+            page.mo_ta_en = mo_ta_en
+            page.noi_dung_vi = noi_dung_vi
+            page.noi_dung_en = noi_dung_en
+            db.session.commit()
+            flash(f"Cập nhật trang '{tieu_de_vi}' thành công.", "success")
+        else:
+            flash("Không tìm thấy trang.", "danger")
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Lỗi lưu trang: {e}")
+        flash(f"Lỗi: {str(e)}", "danger")
+        
+    return redirect(url_for("admin_pages"))
 
 @app.route("/admin/packages", methods=["GET"])
 @login_required

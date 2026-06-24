@@ -1,0 +1,157 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}Quản lý Trang Thông Tin{% endblock %}
+
+{% block header_title %}Quản lý các Trang Thông Tin{% endblock %}
+{% block header_subtitle %}Chỉnh sửa tiêu đề, mô tả và nội dung các trang pháp lý, hỗ trợ và Điều khoản AI của hệ thống.{% endblock %}
+
+{% block content %}
+<!-- Pages List Table -->
+<div class="table-card" id="pages-section" style="margin-top: 1.5rem;">
+    <div class="table-card-header d-flex justify-content-between align-items-center">
+        <h5><i class="fa-solid fa-file-lines me-2" style="color: var(--primary);"></i>Danh sách trang thông tin</h5>
+        <span class="badge bg-primary" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Hỗ trợ đa ngôn ngữ (VI/EN)</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th style="width: 180px;">Mã trang</th>
+                    <th>Tiêu đề (Tiếng Việt)</th>
+                    <th>Tiêu đề (Tiếng Anh)</th>
+                    <th>Mô tả / Phụ đề</th>
+                    <th style="width: 180px;">Cập nhật cuối</th>
+                    <th style="width: 100px;">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for page in pages %}
+                <tr>
+                    <td>
+                        <span class="badge bg-secondary" style="font-family: monospace; font-size: 0.85rem;">{{ page.ma_trang }}</span>
+                    </td>
+                    <td><strong>{{ page.tieu_de_vi }}</strong></td>
+                    <td><strong class="text-muted">{{ page.tieu_de_en }}</strong></td>
+                    <td>
+                        <span class="small text-muted" title="VI: {{ page.mo_ta_vi or 'Không có' }}&#10;EN: {{ page.mo_ta_en or 'Không có' }}">
+                            {{ page.mo_ta_vi or 'Không có' }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="small text-muted">
+                            {{ page.ngay_cap_nhat.strftime('%d/%m/%Y %H:%M') if page.ngay_cap_nhat else 'Chưa cập nhật' }}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" 
+                                onclick="openEditPageModal('{{ page.id }}', '{{ page.ma_trang }}', '{{ page.tieu_de_vi|escape }}', '{{ page.tieu_de_en|escape }}', '{{ (page.mo_ta_vi or "")|escape }}', '{{ (page.mo_ta_en or "")|escape }}')"
+                                title="Chỉnh sửa">
+                            <i class="fa-solid fa-pen-to-square"></i> Sửa
+                        </button>
+                        <!-- Keep hidden textareas for holding long HTML content safely to retrieve via JS -->
+                        <textarea id="html-vi-{{ page.id }}" style="display:none;">{{ page.noi_dung_vi }}</textarea>
+                        <textarea id="html-en-{{ page.id }}" style="display:none;">{{ page.noi_dung_en }}</textarea>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not pages %}
+                <tr>
+                    <td colspan="6" class="text-center py-4 text-muted">
+                        <i class="fa-solid fa-circle-info me-2 fs-5"></i>Không tìm thấy dữ liệu trang thông tin. Vui lòng khởi động lại server để seeding.
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    <div style="padding: 0.75rem 1.5rem; border-top: 1px solid var(--glass-border);">
+        <span style="font-size: 0.78rem; color: var(--text-dim);">Tổng cộng: {{ pages|length }} trang</span>
+    </div>
+</div>
+
+<!-- Edit Page Modal -->
+<div id="editPageModal" class="modal-backdrop-custom" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center; padding: 1.5rem;">
+    <div class="modal-content-custom" style="background: #1e293b; border: 1px solid var(--glass-border); border-radius: 16px; width: 100%; max-width: 900px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);">
+        <div class="modal-header-custom" style="display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.08);">
+            <h5 style="color: white; font-weight: bold; margin: 0;"><i class="fa-solid fa-pen-to-square me-2 text-primary"></i>Chỉnh sửa trang: <span id="modal-page-code-label" style="font-family: monospace; color: #34d399;"></span></h5>
+            <button type="button" class="btn-close-custom" onclick="closeEditPageModal()" style="background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
+        </div>
+        <form id="edit-page-form" action="{{ url_for('admin_save_page') }}" method="POST" style="padding: 1.5rem;">
+            <input type="hidden" id="edit-page-id" name="id">
+            
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold" style="color: #cbd5e1;">Tiêu đề (Tiếng Việt)</label>
+                    <input type="text" class="form-control" id="edit-page-tieu-de-vi" name="tieu_de_vi" required style="background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 8px;">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold" style="color: #cbd5e1;">Tiêu đề (Tiếng Anh)</label>
+                    <input type="text" class="form-control" id="edit-page-tieu-de-en" name="tieu_de_en" required style="background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 8px;">
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold" style="color: #cbd5e1;">Mô tả / Phụ đề (Tiếng Việt)</label>
+                    <input type="text" class="form-control" id="edit-page-mo-ta-vi" name="mo_ta_vi" style="background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 8px;">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold" style="color: #cbd5e1;">Mô tả / Phụ đề (Tiếng Anh)</label>
+                    <input type="text" class="form-control" id="edit-page-mo-ta-en" name="mo_ta_en" style="background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 8px;">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold" style="color: #cbd5e1;">Nội dung HTML (Tiếng Việt)</label>
+                <div class="text-muted small mb-1"><i class="fa-solid fa-code me-1"></i>Chỉnh sửa trực tiếp HTML. Bạn có thể sử dụng các thẻ <code>&lt;h2&gt;</code>, <code>&lt;p&gt;</code>, <code>&lt;ul&gt;</code>, <code>&lt;li&gt;</code>, <code>&lt;strong&gt;</code>, v.v.</div>
+                <textarea class="form-control" id="edit-page-noi-dung-vi" name="noi_dung_vi" rows="8" style="background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.1); color: #34d399; font-family: monospace; font-size: 0.9rem; line-height: 1.5; border-radius: 8px; resize: vertical;"></textarea>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-bold" style="color: #cbd5e1;">Nội dung HTML (Tiếng Anh)</label>
+                <div class="text-muted small mb-1"><i class="fa-solid fa-code me-1"></i>Chỉnh sửa trực tiếp HTML tiếng Anh tương ứng.</div>
+                <textarea class="form-control" id="edit-page-noi-dung-en" name="noi_dung_en" rows="8" style="background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.1); color: #34d399; font-family: monospace; font-size: 0.9rem; line-height: 1.5; border-radius: 8px; resize: vertical;"></textarea>
+            </div>
+
+            <div class="text-end" style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1.25rem;">
+                <button type="button" class="btn btn-outline-secondary me-2" onclick="closeEditPageModal()" style="border-radius: 8px;">Hủy</button>
+                <button type="submit" class="btn btn-success" style="border-radius: 8px; padding-left: 1.5rem; padding-right: 1.5rem;"><i class="fa-solid fa-floppy-disk me-1"></i> Lưu thay đổi</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function openEditPageModal(id, maTrang, tieuDeVi, tieuDeEn, moTaVi, moTaEn) {
+        document.getElementById('edit-page-id').value = id;
+        document.getElementById('modal-page-code-label').innerText = maTrang;
+        document.getElementById('edit-page-tieu-de-vi').value = tieuDeVi;
+        document.getElementById('edit-page-tieu-de-en').value = tieuDeEn;
+        document.getElementById('edit-page-mo-ta-vi').value = moTaVi;
+        document.getElementById('edit-page-mo-ta-en').value = moTaEn;
+        
+        // Fetch raw HTML contents from the hidden textareas
+        const contentVi = document.getElementById(`html-vi-${id}`).value;
+        const contentEn = document.getElementById(`html-en-${id}`).value;
+        
+        document.getElementById('edit-page-noi-dung-vi').value = contentVi;
+        document.getElementById('edit-page-noi-dung-en').value = contentEn;
+        
+        document.getElementById('editPageModal').style.display = 'flex';
+    }
+
+    function closeEditPageModal() {
+        document.getElementById('editPageModal').style.display = 'none';
+    }
+
+    // Close modal when clicking outside content area
+    window.onclick = function(event) {
+        const modal = document.getElementById('editPageModal');
+        if (event.target == modal) {
+            closeEditPageModal();
+        }
+    }
+</script>
+{% endblock %}
