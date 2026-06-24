@@ -50,7 +50,7 @@ def check_sepay_transactions(payment_id: int, expected_amount: int) -> bool:
     history = get_last_transactions()
     
     for tx in history:
-        content = tx.get('content', '')
+        content = tx.get('transaction_content') or tx.get('content') or ''
         amount = float(tx.get('amount_in', 0))
         
         # Bóc tách mã HEX từ nội dung chuyển khoản
