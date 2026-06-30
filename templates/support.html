@@ -43,24 +43,11 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             transition: all 0.3s ease;
         }
-        /* Customize navbar toggler on mobile */
         .navbar-custom .navbar-toggler {
-            border-color: rgba(255, 255, 255, 0.25);
-            padding: 6px 10px;
-            border-radius: 8px;
-            background-color: rgba(255, 255, 255, 0.08);
-            transition: all 0.2s ease-in-out;
-        }
-        .navbar-custom .navbar-toggler:hover {
-            background-color: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.4);
-        }
-        .navbar-custom .navbar-toggler:focus {
-            box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.3);
-            border-color: #34d399;
+            border-color: rgba(255, 255, 255, 0.5);
         }
         .navbar-custom .navbar-toggler-icon {
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255, 255, 255, 0.95)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.95%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
         }
         .navbar-brand {
             font-family: 'Space Grotesk', sans-serif;
@@ -342,7 +329,7 @@
 <body>
 
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-custom">
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('trang_chu') }}">Giáo Trình AI</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -355,45 +342,47 @@
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('san_pham') }}" data-i18n="nav.products">Sản Phẩm</a></li>
                 </ul>
                 
-                <!-- Mobile Session controls (visible on mobile only) -->
-                <div class="d-lg-none mt-3 pt-3 border-top border-light border-opacity-10 w-100 text-center">
+                <!-- Mobile Actions (d-lg-none) -->
+                <div class="d-lg-none mt-3 pt-3 border-top w-100">
                     {% if current_user.is_authenticated %}
-                        <div class="d-flex flex-column align-items-center gap-3">
-                            <a href="{{ url_for('profile') }}" class="btn d-flex align-items-center justify-content-center px-4 py-2" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); text-decoration: none; color: white; width: 100%; max-width: 280px;">
-                                {% if current_user.anh_dai_dien %}
-                                    {% if current_user.anh_dai_dien.startswith('http') %}
-                                        <img src="{{ current_user.anh_dai_dien }}" alt="Avatar" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;" class="me-2">
-                                    {% else %}
-                                        <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.anh_dai_dien) }}" alt="Avatar" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;" class="me-2">
-                                    {% endif %}
-                                {% else %}
-                                    <div class="avatar-fallback me-2 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; border-radius: 50%; background: #10b981; color: white; font-weight: bold; font-size: 0.8rem;">
-                                        {{ (current_user.ho_ten or current_user.ten_dang_nhap)[0] | upper }}
-                                    </div>
-                                {% endif %}
-                                <div class="text-start">
-                                    <div style="font-size: 0.65rem; color: rgba(255,255,255,0.6); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
-                                        {{ current_user.ho_ten or current_user.ten_dang_nhap }}
-                                    </div>
-                                    <div style="font-size: 0.9rem; color: white; font-weight: 700; line-height: 1;">
-                                        Tài khoản: 
-                                        {% if current_user.la_admin %}
-                                            ∞
+                        <div class="d-flex flex-column gap-2 align-items-stretch">
+                            <a href="{{ url_for('profile') }}" class="btn d-flex align-items-center justify-content-between p-2" style="background: rgba(255,255,255,0.1); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); text-decoration: none; transition: all 0.3s; color: white;">
+                                <div class="d-flex align-items-center">
+                                    {% if current_user.anh_dai_dien %}
+                                        {% if current_user.anh_dai_dien.startswith('http') %}
+                                            <img src="{{ current_user.anh_dai_dien }}" alt="Avatar" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;" class="me-2">
                                         {% else %}
-                                            {{ current_user.token }}
+                                            <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.anh_dai_dien) }}" alt="Avatar" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;" class="me-2">
                                         {% endif %}
+                                    {% else %}
+                                        <div class="avatar-fallback me-2 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; border-radius: 50%; background: #10b981; color: white; font-weight: bold; font-size: 0.8rem;">
+                                            {{ (current_user.ho_ten or current_user.ten_dang_nhap)[0] | upper }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="text-start">
+                                        <div style="font-size: 0.65rem; color: rgba(255,255,255,0.6); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                                            {{ current_user.ho_ten or current_user.ten_dang_nhap }}
+                                        </div>
+                                        <div style="font-size: 0.9rem; color: white; font-weight: 700; line-height: 1;">
+                                            Tài khoản: 
+                                            {% if current_user.la_admin %}
+                                                ∞
+                                            {% else %}
+                                                {{ current_user.token }}
+                                            {% endif %}
+                                        </div>
                                     </div>
                                 </div>
                             </a>
-                            <div class="d-flex align-items-center justify-content-center gap-3 w-100">
-                                <button class="lang-btn" onclick="toggleLanguage()" title="Switch Language" style="margin: 0;"><span id="langFlag">🇻🇳</span><span id="langLabel">VI</span></button>
-                                <a href="{{ url_for('logout') }}" class="btn-signin py-2" style="background-color: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; text-decoration: none;" data-i18n="nav.logout">Đăng xuất</a>
+                            <div class="d-flex gap-2">
+                                <button class="lang-btn flex-fill justify-content-center py-2" onclick="toggleLanguage()" title="Switch Language"><span class="lang-flag" id="langFlagMobile">🇻🇳</span><span class="lang-label" id="langLabelMobile">VI</span></button>
+                                <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm flex-fill d-flex align-items-center justify-content-center py-2" style="border-radius: 20px; font-weight: 600;" data-i18n="nav.logout">Đăng xuất</a>
                             </div>
                         </div>
                     {% else %}
-                        <div class="d-flex align-items-center justify-content-center gap-3 w-100">
-                            <button class="lang-btn" onclick="toggleLanguage()" title="Switch Language" style="margin: 0;"><span id="langFlag">🇻🇳</span><span id="langLabel">VI</span></button>
-                            <a href="{{ url_for('login') }}" class="btn-signin py-2" style="border-radius: 6px; text-decoration: none;" data-i18n="nav.login">Đăng nhập</a>
+                        <div class="d-flex gap-2">
+                            <button class="lang-btn flex-fill justify-content-center py-2" onclick="toggleLanguage()" title="Switch Language"><span class="lang-flag" id="langFlagMobile">🇻🇳</span><span class="lang-label" id="langLabelMobile">VI</span></button>
+                            <a href="{{ url_for('login') }}" class="btn-signin flex-fill text-center py-2" data-i18n="nav.login">Đăng nhập</a>
                         </div>
                     {% endif %}
                 </div>
@@ -634,6 +623,7 @@
                     </ul>
                 </div>
 
+
                 <!-- Column 4: Contact -->
                 <div class="col-lg-3 col-md-6">
                     <h5 class="footer-heading" data-i18n="footer.col_contact">Liên Hệ</h5>
@@ -682,54 +672,52 @@
             });
         });
 
-        function handleSupportSubmit(event) {
+        async function handleSupportSubmit(event) {
             event.preventDefault();
             const currentLang = localStorage.getItem('app_lang') || 'vi';
             
-            const name = document.getElementById('contactName').value;
-            const email = document.getElementById('contactEmail').value;
-            const subject = document.getElementById('contactSubject').value;
-            const message = document.getElementById('contactMessage').value;
-            
-            const submitBtn = event.target.querySelector('button[type="submit"]');
-            const originalBtnText = submitBtn.innerHTML;
-            
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = currentLang === 'vi' ? 'Đang gửi...' : 'Sending...';
-            
-            fetch("{{ url_for('support') }}", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    name: name,
-                    email: email,
-                    subject: subject,
-                    message: message
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
+            const btn = event.target.querySelector('button[type="submit"]');
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = currentLang === 'vi' 
+                ? '<i class="fa-solid fa-spinner fa-spin me-2"></i>Đang gửi...' 
+                : '<i class="fa-solid fa-spinner fa-spin me-2"></i>Sending...';
+
+            const payload = {
+                name: document.getElementById('contactName').value,
+                email: document.getElementById('contactEmail').value,
+                subject: document.getElementById('contactSubject').value,
+                message: document.getElementById('contactMessage').value
+            };
+
+            try {
+                const response = await fetch('/support', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                
+                if (result.success) {
                     const msg = currentLang === 'vi' 
                         ? "Cảm ơn bạn! Yêu cầu hỗ trợ của bạn đã được gửi thành công. Chúng tôi sẽ phản hồi lại bạn sớm nhất qua email." 
                         : "Thank you! Your support ticket has been submitted successfully. We will get back to you shortly via email.";
                     alert(msg);
                     document.getElementById('supportForm').reset();
                 } else {
-                    alert(currentLang === 'vi' ? "Lỗi: " + data.message : "Error: " + data.message);
+                    alert(result.message || (currentLang === 'vi' ? "Có lỗi xảy ra, vui lòng thử lại." : "An error occurred, please try again."));
                 }
-            })
-            .catch(err => {
+            } catch (err) {
                 console.error(err);
-                alert(currentLang === 'vi' ? "Đã xảy ra lỗi kết nối." : "A connection error occurred.");
-            })
-            .finally(() => {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalBtnText;
-            });
+                alert(currentLang === 'vi' ? "Không thể kết nối đến máy chủ." : "Could not connect to the server.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            }
         }
+
     </script>
 </body>
 </html>
