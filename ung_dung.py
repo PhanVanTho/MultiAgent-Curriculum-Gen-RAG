@@ -3361,7 +3361,8 @@ def process_chapter_supervisor(ctx, idx, chap_info, ai_writer_func, giam_sat_fun
         if getattr(ctx, "custom_section_words", 0) and ctx.custom_section_words >= 600:
             batch_size = 1  # Bắt buộc viết từng mục đơn lẻ để tối ưu độ dài và tránh giới hạn token đầu ra của LLM
         else:
-            batch_size = DYNAMIC_BATCH_SIZE.get(ctx.quy_mo, 3)
+            dynamic_batch_size_map = {"can_ban": 3, "tieu_chuan": 2, "chuyen_sau": 1}
+            batch_size = dynamic_batch_size_map.get(ctx.quy_mo, 3)
         section_batches = [sections[i:i + batch_size] for i in range(0, len(sections), batch_size)]
         
         final_chapter_data = []
