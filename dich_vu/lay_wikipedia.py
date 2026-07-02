@@ -38,6 +38,14 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 logger = logging.getLogger(__name__)
 
 # --- UTILS ---
+def dem_so_tu_word(text: str) -> int:
+    """
+    Đếm số từ theo nguyên lý của Microsoft Word (tách bằng khoảng trắng).
+    """
+    if not text:
+        return 0
+    return len(text.split())
+
 def dich_tai_lieu_en_sang_vi(text: str, api_key_openai: str) -> str:
     if not text or not api_key_openai:
         return text
@@ -195,7 +203,8 @@ def _apply_adaptive_yield_gate(
     complexity: str,
     fetch_title_func,
     ai_titles: list,
-    truth_seed: dict = None
+    truth_seed: dict = None,
+    chapter_hints: list = None
 ) -> tuple:
     """
     EKRE V26.2.1 - Adaptive Yield Gate với Safe Degradation.
@@ -222,6 +231,15 @@ def _apply_adaptive_yield_gate(
     current_sim_threshold = get_similarity_floor(complexity)
     current_quality       = float(quality_std)
     quality_floor         = float(CauHinh.EKRE_QUALITY_RESCUE)
+
+    if chapter_hints:
+        # Nới lỏng các ngưỡng để tránh bỏ sót các tài liệu khớp với custom chapters
+        target_min = max(5, target_min // 2)
+        min_sim_floor = min(0.15, min_sim_floor)
+        min_avg_sim = min(0.15, min_avg_sim)
+        min_quality = min(1.0, min_quality)
+        current_sim_threshold = min(0.20, current_sim_threshold)
+        logger.info(f"[ADAPTIVE] Custom Chapter Mode: Loosened gate parameters (min_sim_floor={min_sim_floor}, min_avg_sim={min_avg_sim})")
 
     analytics = {
         "relaxation_attempts": 0,
@@ -1090,7 +1108,7 @@ def is_title_relevant(truth_seed: dict, title: str, query: str = "", search_topi
     return False
 
 # --- ADAPTIVE KNOWLEDGE RETRIEVAL ENGINE (EKRE-V27 DIAMOND) ---
-def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_chuan", api_key_openai: str = None, original_topic: str = None, chapter_hints: list = None, ngon_ngu: str = "vi", search_model: str = None):
+def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_chuan", api_key_openai: str = None, original_topic: str = None, chapter_hints: list = None, ngon_ngu: str = "vi", search_model: str = None, custom_section_words: int = None, check_cancel=None):
     from .vector_search import hybrid_semantic_filter, deduplicate_by_embedding, ensure_topic_diversity, coverage_aware_ranking
     from .lam_sach_van_ban import chia_doan, lam_sach_trang
     
@@ -1176,6 +1194,7 @@ def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_c
     }
 
     logger.info(f"[EKRE-V27] Starting Diamond Discovery: {search_topic} (framed as: {topic}, lang: {primary_lang})")
+    if check_cancel: check_cancel()
     
     # --- STAGE 1: Exact Match & Truth Seed Anchoring ---
     exact_titles = tim_kiem_tieu_de(primary_lang, search_topic, gioi_han=1)
@@ -1191,31 +1210,82 @@ def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_c
     stats_lock = threading.Lock()
     
     if content and not hard_rule_filter(main_entity, content):
-        all_raw_docs.append({
-            "title": main_entity, 
-            "text": content, 
-            "intro": intro,
-            "url": url, 
-            "lang": primary_lang, 
-            "subtopic": "Core Entity", 
-            "id": str(uuid.uuid4())[:8],
-            "is_core": True,
-            "categories": truth_seed.get("categories", [])
-        })
-        seen_titles.add(main_entity.lower())
-        if links: all_internal_links.extend(links)
+        # Skip core entity page content if chapter_hints is active to restrict database context to custom chapters
+        if not chapter_hints:
+            all_raw_docs.append({
+                "title": main_entity, 
+                "text": content, 
+                "intro": intro,
+                "url": url, 
+                "lang": primary_lang, 
+                "subtopic": "Core Entity", 
+                "id": str(uuid.uuid4())[:8],
+                "is_core": True,
+                "categories": truth_seed.get("categories", [])
+            })
+            seen_titles.add(main_entity.lower())
+            if links: all_internal_links.extend(links)
+        else:
+            # Do NOT add to seen_titles since we skipped retrieving its content.
+            # This allows subsequent searches in Stage 2 to retrieve it if relevant to custom chapters.
+            if links: all_internal_links.extend(links)
         
     # --- STAGE 2: Semantic Expansion (Guided) ---
     if chapter_hints and isinstance(chapter_hints, list) and len(chapter_hints) > 0:
-        # V37.2: Custom chapters → Tìm kiếm trực tiếp theo tên chương (skip AI Planner)
+        # V37.2: Custom chapters → ONLY search custom chapter names (skip main topic and general AI expansion)
         ai_titles = []
-        ai_titles.append({"title": search_topic, "lang": primary_lang, "reason": f"Main topic: {search_topic}"})
+        
+        # Batch translate all Vietnamese chapter hints to English to save API time
+        translated_map = {}
+        if primary_lang == "vi" and api_key_openai:
+            try:
+                from openai import OpenAI
+                _client = OpenAI(api_key=api_key_openai, max_retries=0)
+                translation_prompt = (
+                    f"You are an academic translator. Translate the following list of Vietnamese curriculum section/chapter titles to English for Wikipedia search.\n"
+                    f"Use the context of the main textbook topic: '{search_topic}' to ensure translations are relevant and accurate.\n\n"
+                    f"Format the output strictly as a JSON object where the key is the original Vietnamese title and the value is the English translation. Return ONLY raw JSON, do not wrap in markdown:\n"
+                    f"{json.dumps(chapter_hints, ensure_ascii=False)}"
+                )
+                _resp = _client.chat.completions.create(
+                    model=search_model or CauHinh.SEARCH_MODEL,
+                    messages=[{"role": "user", "content": translation_prompt}],
+                    temperature=0.0,
+                    response_format={"type": "json_object"},
+                    timeout=10.0
+                )
+                translated_map = json.loads(_resp.choices[0].message.content)
+                logger.info(f"[EKRE-Translate] Batch translation success. Translated {len(translated_map)} titles.")
+            except Exception as te:
+                logger.warning(f"[EKRE-Translate] Batch translation failed: {te}. Falling back to sequential translation.")
+
         for ch_name in chapter_hints:
             ch_name = ch_name.strip()
             if ch_name:
                 ai_titles.append({"title": ch_name, "lang": primary_lang, "reason": f"Custom chapter: {ch_name}"})
-                ai_titles.append({"title": f"{search_topic} {ch_name}", "lang": primary_lang, "reason": f"Topic+Chapter: {ch_name}"})
-        logger.info(f"[EKRE-V37] Custom mode: Using main topic '{search_topic}' and {len(chapter_hints)} chapter names as search queries (lang={primary_lang}).")
+                # V45: Dịch sang tiếng Anh để tìm kiếm chéo trên Wikipedia tiếng Anh nhằm tối ưu kết quả
+                if primary_lang == "vi" and api_key_openai:
+                    en_ch_name = translated_map.get(ch_name)
+                    if en_ch_name and len(en_ch_name) > 2 and en_ch_name.lower() != ch_name.lower():
+                        ai_titles.append({"title": en_ch_name, "lang": "en", "reason": f"Custom chapter (EN translation): {en_ch_name}"})
+                    elif not translated_map:
+                        # Fallback to sequential if batch failed
+                        try:
+                            from openai import OpenAI
+                            _client = OpenAI(api_key=api_key_openai, max_retries=0)
+                            _resp = _client.chat.completions.create(
+                                model=search_model or CauHinh.SEARCH_MODEL,
+                                messages=[{"role": "user", "content": f"Translate this short Vietnamese curriculum section title to English for Wikipedia search. Use the context of the main textbook topic: '{search_topic}' to ensure the translation is relevant and accurate. Return ONLY the English translation, nothing else:\n\n{ch_name}"}],
+                                temperature=0.0,
+                                max_tokens=50,
+                                timeout=5.0
+                            )
+                            en_ch_name = _resp.choices[0].message.content.strip().strip('"').strip("'")
+                            if en_ch_name and len(en_ch_name) > 2 and en_ch_name.lower() != ch_name.lower():
+                                ai_titles.append({"title": en_ch_name, "lang": "en", "reason": f"Custom chapter (EN translation): {en_ch_name}"})
+                        except Exception as te:
+                            logger.warning(f"[EKRE-Translate] Failed to translate query '{ch_name}': {te}")
+        logger.info(f"[EKRE-V37] Custom mode: Using {len(ai_titles)} queries derived from custom chapters (lang={primary_lang}).")
     else:
         # Auto mode: Dùng AI Planner/Searcher/Critic bình thường
         ai_titles = multi_agent_identify_wiki_titles(search_topic, quy_mo, api_key_openai, truth_seed=truth_seed, ngon_ngu=ngon_ngu, search_model=search_model)
@@ -1228,6 +1298,7 @@ def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_c
     xray["expanded_queries"] = [q["title"] for q in ai_titles]
     
     def fetch_title(item, sr_limit=5):
+        if check_cancel: check_cancel()
         time.sleep(random.uniform(0.2, 0.8)) # Chống Wikipedia API Rate Limit
         query = item["title"]; lang = item["lang"]
         actual_titles = tim_kiem_tieu_de(lang, query, gioi_han=sr_limit) 
@@ -1235,8 +1306,13 @@ def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_c
             logger.warning(f"[DEBUG-FETCH] tim_kiem_tieu_de returned empty for query: '{query}'")
             return None
         
+        # Calculate target words to fetch for this query to guarantee sufficient content (4x target)
+        target_words_limit = (custom_section_words or 400) * 4
+        accumulated_words = 0
+        
         docs = []
         for t in actual_titles:
+            if check_cancel: check_cancel()
             lower_t = t.lower()
             with stats_lock:
                 xray["stats"]["retrieved"] += 1 
@@ -1246,7 +1322,12 @@ def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_c
                     continue
                     
                 # V27: Title-Level Hard Filter
-                if not is_title_relevant(truth_seed, t, query=query, search_topic=search_topic):
+                # Bypass relevance check if query is a custom chapter to prevent filtering out valid custom topics
+                is_custom_query = False
+                if chapter_hints:
+                    is_custom_query = True
+                
+                if not is_custom_query and not is_title_relevant(truth_seed, t, query=query, search_topic=search_topic):
                     xray["rejection_reasons"]["low_relevance"] += 1
                     logger.warning(f"[DEBUG-FETCH] '{t}' rejected: Low Relevance (query={query})")
                     continue
@@ -1288,15 +1369,22 @@ def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_c
                 "subtopic": item.get("reason", "Main"), 
                 "id": str(uuid.uuid4())[:8]
             })
-            # V21.7: Removed old retrieved increment here to avoid triple-counting
-            # (Now moved to top of loop)
+            
+            # Dynamic Early Stopping check based on word count
+            accumulated_words += dem_so_tu_word(content)
+            if chapter_hints and accumulated_words >= target_words_limit and len(docs) >= 3:
+                logger.info(f"[EKRE-V37] Early stopping for query '{query}': accumulated {accumulated_words} words (target {target_words_limit}).")
+                break
+                
         return docs if docs else None
 
     if ai_titles:
         # V29 Hybrid: Deterministic Backbone — thu thập tất cả trước, trim sau
         # Loại bỏ race condition: thứ tự kết quả theo thứ tự AI titles, không theo thread speed
-        sr_initial = 10 if quy_mo == "chuyen_sau" else 5
-        with ThreadPoolExecutor(max_workers=2) as executor:
+        sr_initial = 12 if chapter_hints else (10 if quy_mo == "chuyen_sau" else 5)
+        num_workers = 4 if chapter_hints else 2
+        if check_cancel: check_cancel()
+        with ThreadPoolExecutor(max_workers=num_workers) as executor:
             results = list(executor.map(lambda x: fetch_title(x, sr_limit=sr_initial), ai_titles))
         for i, r in enumerate(results):
             if r: all_raw_docs.extend(r)
@@ -1319,6 +1407,7 @@ def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_c
     
     # V44: Nếu primary_lang đã là EN, skip cross-lingual trigger (đã crawl EN rồi)
     enable_en = (primary_lang != "en") and (coverage_low or is_global_topic or (best_en_alias is not None)) and (best_en_alias is not None)
+    # Allow cross-lingual progressive retrieval even with chapter_hints to maximize coverage
     
     if enable_en:
         logger.info(f"[CROSS-LINGUAL] Triggering EN Retrieval for '{best_en_alias}' (Coverage Low: {coverage_low}, Global: {is_global_topic})")
@@ -1374,7 +1463,8 @@ def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_c
         complexity=complexity,
         fetch_title_func=fetch_title,
         ai_titles=ai_titles,
-        truth_seed=truth_seed
+        truth_seed=truth_seed,
+        chapter_hints=chapter_hints
     )
     xray["adaptive"] = adaptive_analytics
 
@@ -1398,12 +1488,27 @@ def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_c
             critic_aliases = [entity] + critic_aliases
     
     def _run_critic(doc):
+        if check_cancel: check_cancel()
+        # Auto-approve if from custom chapter query to prevent main topic relevance filter from dropping it
+        is_from_custom_chapter = False
+        if chapter_hints:
+            subtopic = doc.get("subtopic", "")
+            if "Custom chapter" in subtopic:
+                is_from_custom_chapter = True
+                
+        if is_from_custom_chapter:
+            doc["critic_approved"] = True
+            doc["critic_reason"] = "Approved automatically as it belongs to a custom chapter query."
+            doc["critic_score"] = 1.0
+            return doc
+            
         res = gemini_critic_agent(search_topic, doc.get("title", ""), doc.get("text", ""), api_keys_list, aliases=critic_aliases)
         doc["critic_approved"] = res.get("is_approved", False)
         doc["critic_reason"] = res.get("reason", "")
         doc["critic_score"] = res.get("confidence_score", 0)
         return doc
         
+    if check_cancel: check_cancel()
     with ThreadPoolExecutor(max_workers=2) as executor:  # V2: Giảm từ 5→2 để tránh đốt daily quota Gemini
         evaluated_candidates = list(executor.map(_run_critic, top_candidates))
         
@@ -1429,6 +1534,7 @@ def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_c
     needs_spider_by_score = current_score < target_score
     needs_spider_by_docs = unique_doc_count < min_docs_required
     
+    # Post-filter spidering activation conditions
     if needs_spider_by_score or needs_spider_by_docs:
         reason = []
         if needs_spider_by_score: reason.append(f"Score={current_score:.1f}<{target_score}")
@@ -1441,7 +1547,8 @@ def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_c
         spider_queries = []
         if selected_links:
             logger.info(f"[MULTI-AGENT] 🕸️ Agent 4 selected {len(selected_links)} internal links for deep spidering.")
-            spider_queries = [{"title": link, "lang": primary_lang, "reason": "Spidering Expansion"} for link in selected_links]
+            reason_str = "Custom chapter: Spidering Expansion" if chapter_hints else "Spidering Expansion"
+            spider_queries = [{"title": link, "lang": primary_lang, "reason": reason_str} for link in selected_links]
         else:
             logger.warning(f"[MULTI-AGENT] 🕸️ Agent 4 could not find valuable links. Falling back to Gemini Expansion...")
             from dich_vu.gemini_da_buoc import generate_related_topics_gemini
@@ -1449,15 +1556,17 @@ def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_c
             if extra_topics:
                 extra_titles = multi_agent_identify_wiki_titles(f"{search_topic}: {', '.join(extra_topics)}", quy_mo, api_key_openai, is_expansion=True, search_model=search_model)
                 spider_queries = []
+                reason_str = "Custom chapter: Gemini Expansion" if chapter_hints else "Gemini Expansion"
                 for t in extra_titles:
                     if isinstance(t, dict):
                         t_copy = dict(t)
-                        t_copy["reason"] = "Gemini Expansion"
+                        t_copy["reason"] = reason_str
                         spider_queries.append(t_copy)
                     else:
-                        spider_queries.append({"title": t, "lang": "vi", "reason": "Gemini Expansion"})
+                        spider_queries.append({"title": t, "lang": "vi", "reason": reason_str})
 
         if spider_queries:
+            if check_cancel: check_cancel()
             with ThreadPoolExecutor(max_workers=3) as executor:
                 exp_results = list(executor.map(lambda x: fetch_title(x, sr_limit=2), spider_queries))
             
@@ -1472,6 +1581,7 @@ def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_c
                 
                 if new_scored:
                     logger.info(f"[MULTI-AGENT] Sending {len(new_scored)} spider candidates to Critic...")
+                    if check_cancel: check_cancel()
                     with ThreadPoolExecutor(max_workers=2) as executor: # V2: Giảm từ 5→2 để tránh đốt daily quota
                         eval_new = list(executor.map(_run_critic, new_scored))
                     
@@ -1495,12 +1605,13 @@ def ekre_discovery_engine(topic: str, api_keys_list: list, quy_mo: str = "tieu_c
         f"Yield:{len(hardened)} | QualityDropped:{dropped_count}"
     )
 
-    if unique_topics_count < 5 and quy_mo == "chuyen_sau":
+    if unique_topics_count < 5 and quy_mo == "chuyen_sau" and not chapter_hints:
         logger.warning(f"[EKRE-V26.2] Critical Low Diversity ({unique_topics_count} < 5). Triggering final niche expansion...")
         extra_titles = multi_agent_identify_wiki_titles(
             f"{search_topic} (các khía cạnh chuyên sâu và cơ chế cốt lõi)", "can_ban", api_key_openai, is_expansion=True, search_model=search_model
         )
         niche_floor = CauHinh.EKRE_MIN_SIM_FLOOR  # Nới lỏng tối đa cho niche expansion
+        if check_cancel: check_cancel()
         with ThreadPoolExecutor(max_workers=3) as executor:
             for r in executor.map(fetch_title, extra_titles):
                 if r:

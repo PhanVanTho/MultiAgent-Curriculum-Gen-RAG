@@ -142,12 +142,16 @@ def run_cli_pipeline(chu_de: str, quy_mo: str, ngon_ngu: str, dau_ra: str):
 
     # ── Step 0: Safety Classification ──
     progress.update(5, "Kiểm tra an toàn chủ đề...")
-    from dich_vu.safety_router import classify_topic, reframe_topic, generate_safe_title
+    from dich_vu.safety_router import classify_topic, reframe_topic, generate_safe_title, get_block_message
     safety_res = classify_topic(chu_de, CauHinh.OPENAI_API_KEY)
     safety_class = safety_res.get("classification", "SAFE")
 
-    if safety_class == "BLOCK":
-        print(f"\n  ❌ CHỦ ĐỀ BỊ CHẶN: {safety_res.get('reason')}")
+    if safety_class in ["BLOCK", "BLOCK_LANG"]:
+        block_msg = get_block_message(safety_res)
+        error_text = block_msg["message"] if block_msg else safety_res.get("reason")
+        if block_msg and block_msg.get("suggestion"):
+            error_text += f"\n\n{block_msg['suggestion']}"
+        print(f"\n  ❌ CHỦ ĐỀ BỊ CHẶN:\n{error_text}")
         sys.exit(1)
 
     ekre_query = chu_de
@@ -439,7 +443,7 @@ def run_cli_pipeline(chu_de: str, quy_mo: str, ngon_ngu: str, dau_ra: str):
 
     # ── Step 4: Citation Processing ──
     progress.update(88, "Hậu xử lý trích dẫn...")
-    all_original_passages = {str(p['id']): p for p in passages_db}
+    all_original_passages = {str(p['id']): p for p in ctx.passages_db}
     url_to_new_id = {}
     ordered_refs = []
 

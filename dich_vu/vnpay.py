@@ -2,14 +2,13 @@ import hashlib
 import hmac
 import urllib.parse
 from datetime import datetime
-import pytz
 
 class VNPay:
     # Force server reload: updated local VNPAY logo asset
     def __init__(self, tmn_code: str, hash_secret: str, payment_url: str):
-        self.tmn_code = tmn_code.strip() if tmn_code else ""
-        self.hash_secret = hash_secret.strip() if hash_secret else ""
-        self.payment_url = payment_url.strip() if payment_url else ""
+        self.tmn_code = tmn_code
+        self.hash_secret = hash_secret
+        self.payment_url = payment_url
 
     def create_payment_url(self, txn_ref: str, amount: int, order_info: str, return_url: str, ip_addr: str) -> str:
         """Tạo đường dẫn chuyển hướng thanh toán VNPAY."""
@@ -24,9 +23,6 @@ class VNPay:
             if ":" in ip_addr:
                 ip_addr = "118.70.194.200"
 
-        if return_url:
-            return_url = return_url.strip()
-
         params = {
             "vnp_Version": "2.1.0",
             "vnp_Command": "pay",
@@ -39,13 +35,13 @@ class VNPay:
             "vnp_Locale": "vn",
             "vnp_ReturnUrl": return_url,
             "vnp_IpAddr": ip_addr,
-            "vnp_CreateDate": datetime.now(pytz.timezone('Asia/Ho_Chi_Minh')).strftime("%Y%m%d%H%M%S")
+            "vnp_CreateDate": datetime.now().strftime("%Y%m%d%H%M%S")
         }
         
         # Sắp xếp các tham số theo bảng chữ cái A-Z
         sorted_params = sorted(params.items())
         
-        # Xây dựng chuỗi hash_data (urlencode mặc định dùng quote_plus để spaces thành +)
+        # Xây dựng chuỗi hash_data (urlencode với quote_plus mặc định để spaces thành +)
         hash_data = urllib.parse.urlencode(sorted_params)
         
         # Tính toán HMAC-SHA512 chữ ký số bảo mật
@@ -73,16 +69,16 @@ class VNPay:
         if not secure_hash:
             return False
             
-        # Lọc ra các tham số bắt đầu bằng vnp_ và không chứa trường hash, bỏ qua các giá trị rỗng
+        # Lọc ra các tham số bắt đầu bằng vnp_ và không chứa trường hash
         hash_params = {
             k: v for k, v in response_params.items()
-            if k.startswith("vnp_") and k not in ("vnp_SecureHash", "vnp_SecureHashType") and v != ""
+            if k.startswith("vnp_") and k not in ("vnp_SecureHash", "vnp_SecureHashType")
         }
         
         # Sắp xếp các tham số theo thứ tự bảng chữ cái
         sorted_params = sorted(hash_params.items())
         
-        # Xây dựng chuỗi hash_data để đối soát (urlencode mặc định dùng quote_plus)
+        # Xây dựng chuỗi hash_data để đối soát (mặc định urlencode)
         hash_data = urllib.parse.urlencode(sorted_params)
         
         # Tính toán chữ ký kiểm tra

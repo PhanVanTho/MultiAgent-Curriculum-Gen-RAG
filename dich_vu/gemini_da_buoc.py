@@ -704,16 +704,25 @@ def viet_noi_dung_muc_gemini(
         facts_text += f"[{p_id}] {p_text}\n"
         fact_ids.append(p_id)
 
+    custom_chapter_constraint = ""
+    if kwargs.get("danh_sach_chuong") or kwargs.get("is_custom_chapter"):
+        custom_chapter_constraint = (
+            f"\nCRITICAL REQUIREMENT: The content you generate MUST strictly focus on and align with the specific scope of the custom Chapter: \"{chapter_title}\" and Section: \"{section_title}\". "
+            f"Do NOT drift into general or unrelated aspects of the overall textbook topic \"{chu_de}\" that are outside this chapter's theme. "
+            "Every concept, mechanism, and explanation MUST directly support and relate to this specific chapter title.\n"
+        )
+
     prompt = f"""You are a university professor writing ONE SECTION for "{chu_de}".
 Chapter: "{chapter_title}"
 Section: "{section_title}"
+{custom_chapter_constraint}
 
 RESCUE MISSION: OpenAI failed to format this section. You must produce a clean, structured JSON response.
 
 STRICT RULES:
-1. CITATIONS: You MUST include [ID] tags for every factual claim.
+1. CITATIONS: You MUST include [ID] tags for every factual claim. Explanatory sentences MUST also end with the [ID] of the fact they explain.
 2. NO TITLES: Do not include the Chapter or Section title in the content.
-3. CONTENT ONLY: Start directly with the narrative.
+3. CONTENT ONLY: Start directly with the narrative. Do NOT add any numbering prefixes to Level-3 headers if you generate them.
 4. JSON: Return ONLY valid JSON in the format below.
 
 {facts_text}

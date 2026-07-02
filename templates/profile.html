@@ -492,33 +492,6 @@
             opacity: 1;
         }
 
-        /* Sidebar close button for mobile */
-        .sidebar-close-btn {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background: rgba(0, 0, 0, 0.05);
-            border: none;
-            border-radius: 50%;
-            width: 36px;
-            height: 36px;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-dark);
-            cursor: pointer;
-            z-index: 1010;
-            transition: all 0.2s;
-        }
-        .sidebar-close-btn:hover {
-            background: rgba(0, 0, 0, 0.1);
-        }
-        @media (max-width: 991.98px) {
-            .sidebar-close-btn {
-                display: flex !important;
-            }
-        }
-
         /* Mobile responsive layout adjustment */
         @media (max-width: 991.98px) {
             .sidebar {
@@ -598,10 +571,6 @@
 <body>
     <!-- Sidebar -->
     <aside class="sidebar">
-        <!-- Close button for mobile -->
-        <button type="button" class="sidebar-close-btn d-lg-none" id="sidebar-close" aria-label="Close menu">
-            <i class="fa-solid fa-xmark"></i>
-        </button>
         <a href="/" class="brand-logo">
             <i class="fa-solid fa-bolt"></i>
             <span>Giáo Trình AI</span>
@@ -958,29 +927,21 @@
         // Sidebar toggle logic for mobile
         document.addEventListener('DOMContentLoaded', function() {
             const toggleBtn = document.getElementById('sidebar-toggle');
-            const closeBtn = document.getElementById('sidebar-close');
             const sidebar = document.querySelector('.sidebar');
-            if (sidebar) {
+            if (toggleBtn && sidebar) {
                 const backdrop = document.createElement('div');
                 backdrop.className = 'sidebar-backdrop';
                 document.body.appendChild(backdrop);
 
-                if (toggleBtn) {
-                    toggleBtn.addEventListener('click', function() {
-                        sidebar.classList.add('show');
-                        backdrop.classList.add('show');
-                    });
-                }
+                toggleBtn.addEventListener('click', function() {
+                    sidebar.classList.toggle('show');
+                    backdrop.classList.toggle('show');
+                });
 
-                const closeSidebar = function() {
+                backdrop.addEventListener('click', function() {
                     sidebar.classList.remove('show');
                     backdrop.classList.remove('show');
-                };
-
-                if (closeBtn) {
-                    closeBtn.addEventListener('click', closeSidebar);
-                }
-                backdrop.addEventListener('click', closeSidebar);
+                });
             }
         });
     </script>

@@ -36,7 +36,7 @@
                     <td style="color: var(--text-dim); font-size:0.82rem;">#{{ item.id }}</td>
                     <td><strong>{{ item.nguoi_dung.ten_dang_nhap if item.nguoi_dung else item.nguoi_dung_id }}</strong></td>
                     <td style="color: var(--primary);">{{ item.chu_de }}</td>
-                    <td style="color: var(--text-muted); font-size:0.82rem;">{{ item.ngay_tao.strftime('%b %d, %Y') if item.ngay_tao else '—' }}</td>
+                    <td style="color: var(--text-muted); font-size:0.82rem;">{{ (item.ngay_tao|gmt7).strftime('%b %d, %Y') if item.ngay_tao else '—' }}</td>
                     <td>
                         {% if item.ma_cv %}
                         <span class="badge bg-success" data-i18n="admin.curriculums.status_available">Có sẵn</span>

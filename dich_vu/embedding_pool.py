@@ -92,6 +92,7 @@ class EmbeddingPool:
         
         # Dead tracking (OpenAI)
         self.openai_dead = False
+        self.openai_dead_time = 0.0
         
         logger.info(f"[EmbeddingPool] Initialized with OpenAI as Primary, Gemini as Fallback ({len(self.keys)} keys)")
 
@@ -133,6 +134,14 @@ class EmbeddingPool:
 
         return None  # Timeout hoàn toàn
 
+    def reset_pool_status(self):
+        """Đặt lại trạng thái hoạt động của tất cả các nhà cung cấp (OpenAI & Gemini) cho Job mới."""
+        self.openai_dead = False
+        self.openai_dead_time = 0.0
+        self.gemini_dead = False
+        self.dead_keys.clear()
+        logger.info("[EmbeddingPool] Resetted all API keys status for a new job.")
+
     def embed_content(self, texts: list, model_name: str = "models/text-embedding-004", max_retries: int = None, primary_provider: str = "openai"):
         """
         V41.2: Hỗ trợ linh hoạt chuyển đổi PRIMARY provider (openai hoặc gemini).
@@ -143,7 +152,12 @@ class EmbeddingPool:
 
         def call_openai():
             if getattr(self, "openai_dead", False): 
-                return None
+                # Cooldown 10 phút (600 giây) để tự động khôi phục OpenAI
+                if time.time() - getattr(self, "openai_dead_time", 0) > 600:
+                    logger.info("[EmbeddingPool] Cooldown passed. Reactivating OpenAI primary key.")
+                    self.openai_dead = False
+                else:
+                    return None
             try:
                 from openai import OpenAI
                 o_client = OpenAI(api_key=CauHinh.OPENAI_API_KEY)
@@ -159,6 +173,7 @@ class EmbeddingPool:
                 if "quota" in err_str or "insufficient_quota" in err_str or "429" in err_str:
                     logger.error("[EmbeddingPool] OpenAI is out of quota/rate-limited. Marking as DEAD.")
                     self.openai_dead = True
+                    self.openai_dead_time = time.time()
                 return None
 
         def call_gemini():

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 def chon_top_doan(passages, query: str, top_k: int = 120):
     """
@@ -10,12 +11,6 @@ def chon_top_doan(passages, query: str, top_k: int = 120):
         return []
     if top_k <= 0:
         return passages
-
-    try:
-        from sklearn.feature_extraction.text import TfidfVectorizer
-    except ImportError:
-        # Fallback nếu không có sklearn
-        return passages[:top_k]
 
     texts = [p.get("text", "") for p in passages]
     # vectorize

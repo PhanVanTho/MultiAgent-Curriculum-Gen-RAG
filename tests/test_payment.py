@@ -238,5 +238,95 @@ class TestPaymentAndSubscriptions(unittest.TestCase):
         db.session.refresh(self.user)
         self.assertEqual(self.user.token, 510)
 
+    @patch("dich_vu.email_service.gui_email_thanh_toan_thanh_cong")
+    def test_sepay_webhook(self, mock_send_email):
+        # Create a transaction
+        txn = GiaoDichNapToken(
+            ma_giao_dich="sepay_webhook_txn",
+            nguoi_dung_id=self.user.id,
+            so_tien=50000,
+            so_token=500,
+            phuong_thuc="SEPAY",
+            trang_thai="cho_thanh_toan",
+            goi_cuoc_id=self.package.id
+        )
+        db.session.add(txn)
+        db.session.commit()
+        
+        # Test 1: Unauthorized webhook
+        from cau_hinh import CauHinh
+        old_sepay_key = CauHinh.SEPAY_API_KEY
+        CauHinh.SEPAY_API_KEY = "test_key"
+        
+        resp = self.client.post("/api/payment/sepay/webhook", json={
+            "content": f"{CauHinh.SEPAY_WEB_NAME}NAPTOKEN{encode_payment_id(txn.id)}",
+            "amountIn": 50000
+        }, headers={"Authorization": "Bearer invalid_key"})
+        self.assertEqual(resp.status_code, 401)
+        
+        # Test 2: Authorized success
+        resp_success = self.client.post("/api/payment/sepay/webhook", json={
+            "content": f"{CauHinh.SEPAY_WEB_NAME}NAPTOKEN{encode_payment_id(txn.id)}",
+            "amountIn": 50000
+        }, headers={"Authorization": "Bearer test_key"})
+        self.assertEqual(resp_success.status_code, 200)
+        self.assertEqual(resp_success.get_json()["status"], "success")
+        
+        db.session.refresh(txn)
+        self.assertEqual(txn.trang_thai, "thanh_cong")
+        
+        db.session.refresh(self.user)
+        self.assertEqual(self.user.token, 510)
+        
+        # Verify email is called
+        mock_send_email.assert_called_once()
+        
+        # Restore key
+        CauHinh.SEPAY_API_KEY = old_sepay_key
+
+    @patch("dich_vu.vnpay.VNPay.verify_payment")
+    @patch("dich_vu.email_service.gui_email_thanh_toan_thanh_cong")
+    def test_vnpay_ipn(self, mock_send_email, mock_verify):
+        # Create a transaction
+        txn = GiaoDichNapToken(
+            ma_giao_dich="vnpay_ipn_txn",
+            nguoi_dung_id=self.user.id,
+            so_tien=50000,
+            so_token=500,
+            phuong_thuc="VNPAY",
+            trang_thai="cho_thanh_toan",
+            goi_cuoc_id=self.package.id
+        )
+        db.session.add(txn)
+        db.session.commit()
+        
+        # 1. Invalid signature
+        mock_verify.return_value = False
+        resp = self.client.get("/payment/vnpay_ipn", query_string={
+            "vnp_TxnRef": "vnpay_ipn_txn",
+            "vnp_ResponseCode": "00",
+            "vnp_Amount": "5000000"
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.get_json()["RspCode"], "97")
+        
+        # 2. Valid and success
+        mock_verify.return_value = True
+        resp_success = self.client.get("/payment/vnpay_ipn", query_string={
+            "vnp_TxnRef": "vnpay_ipn_txn",
+            "vnp_ResponseCode": "00",
+            "vnp_Amount": "5000000"
+        })
+        self.assertEqual(resp_success.status_code, 200)
+        self.assertEqual(resp_success.get_json()["RspCode"], "00")
+        
+        db.session.refresh(txn)
+        self.assertEqual(txn.trang_thai, "thanh_cong")
+        
+        db.session.refresh(self.user)
+        self.assertEqual(self.user.token, 510)
+        mock_send_email.assert_called_once()
+
 if __name__ == "__main__":
     unittest.main()
+

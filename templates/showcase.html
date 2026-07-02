@@ -550,7 +550,7 @@
                                                 <td class="ps-3 text-muted" style="font-size: 0.85rem;">#{{ item.id }}</td>
                                                 <td><strong style="color: var(--text-dark); font-size: 0.95rem;">{{ item.chu_de }}</strong></td>
                                                 <td><span class="badge bg-secondary" style="font-weight: 500;">{{ item.nguoi_dung.ten_dang_nhap if item.nguoi_dung else "Hệ thống" }}</span></td>
-                                                <td class="small text-muted">{{ item.ngay_tao.strftime('%d/%m/%Y %H:%M') if item.ngay_tao else "Không rõ" }}</td>
+                                                <td class="small text-muted">{{ (item.ngay_tao|gmt7).strftime('%d/%m/%Y %H:%M') if item.ngay_tao else "Không rõ" }}</td>
                                                 <td class="text-center">
                                                     <div class="form-check form-switch d-inline-block">
                                                         <input class="form-check-input" type="checkbox" role="switch" style="cursor: pointer;"

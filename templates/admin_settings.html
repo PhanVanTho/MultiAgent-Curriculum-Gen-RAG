@@ -39,6 +39,12 @@
             </div>
             
             <div class="col-12">
+                <label class="form-label fw-bold">Google Client ID (Google Login OAuth)</label>
+                <input type="text" class="form-control" id="GOOGLE_CLIENT_ID" value="{{ cau_hinh.GOOGLE_CLIENT_ID or '' }}" placeholder="apps.googleusercontent.com">
+                <div class="form-text">Dùng cho đăng nhập bằng Google. Đổi xong cần lưu lại cấu hình.</div>
+            </div>
+            
+            <div class="col-12">
                 <h6 class="border-bottom pb-2 mb-3 mt-4 text-primary"><i class="fa-solid fa-network-wired me-2"></i><span data-i18n="admin.settings.task_assignments">Cấu hình Phân vai trò Model (Task Assignments)</span></h6>
             </div>
             
@@ -162,6 +168,20 @@
             </div>
 
             <div class="col-12">
+                <h6 class="border-bottom pb-2 mb-3 mt-4 text-primary"><i class="fa-solid fa-sliders me-2"></i><span>Cấu hình giới hạn người dùng</span></h6>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Số lượng chương tối đa (Max Chapters)</label>
+                <input type="number" class="form-control" id="MAC_DINH_SO_CHUONG_MAX" value="{{ cau_hinh.MAC_DINH_SO_CHUONG_MAX or 15 }}" min="1">
+                <div class="form-text">Số chương tối đa người dùng có thể chọn (mặc định: 15).</div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Độ dài mục tối đa - Từ (Max Section Words)</label>
+                <input type="number" class="form-control" id="MAC_DINH_SO_TU_MAX" value="{{ cau_hinh.MAC_DINH_SO_TU_MAX or 1000 }}" min="100">
+                <div class="form-text">Số lượng từ tối đa của một mục để người dùng tùy chỉnh trên thanh kéo (mặc định: 1000 từ).</div>
+            </div>
+
+            <div class="col-12">
                 <h6 class="border-bottom pb-2 mb-3 mt-4 text-primary"><i class="fa-solid fa-envelope-open-text me-2"></i><span>Email nhận thông báo hệ thống</span></h6>
             </div>
             <div class="col-md-12">
@@ -218,7 +238,10 @@
             CONTACT_PHONE: document.getElementById('CONTACT_PHONE').value,
             CONTACT_ADDRESS_VI: document.getElementById('CONTACT_ADDRESS_VI').value,
             CONTACT_ADDRESS_EN: document.getElementById('CONTACT_ADDRESS_EN').value,
-            ADMIN_NOTIFICATION_EMAIL: document.getElementById('ADMIN_NOTIFICATION_EMAIL').value
+            ADMIN_NOTIFICATION_EMAIL: document.getElementById('ADMIN_NOTIFICATION_EMAIL').value,
+            MAC_DINH_SO_CHUONG_MAX: document.getElementById('MAC_DINH_SO_CHUONG_MAX').value,
+            MAC_DINH_SO_TU_MAX: document.getElementById('MAC_DINH_SO_TU_MAX').value,
+            GOOGLE_CLIENT_ID: document.getElementById('GOOGLE_CLIENT_ID').value
         };
 
         try {

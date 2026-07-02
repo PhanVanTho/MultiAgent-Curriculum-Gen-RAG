@@ -233,17 +233,18 @@ def xuat_docx(ket_qua: dict, duong_dan_docx: str):
             # Màu đen cho chuyên nghiệp (mặc định xanh)
             run.font.color.rgb = RGBColor(0, 0, 0) 
         
-        # V33: Tóm tắt chương (Đã ẩn theo yêu cầu)
-        # summary = ch.get("summary", "")
-        # if summary:
-        #     p_sum = doc.add_paragraph()
-        #     p_sum.paragraph_format.left_indent = Inches(0.3)
-        #     p_sum.paragraph_format.right_indent = Inches(0.3)
-        #     p_sum.paragraph_format.space_after = Pt(12)
-        #     run_label = p_sum.add_run("Tóm tắt chương: ")
-        #     _set_font(run_label, size=12, bold=True, italic=True)
-        #     run_text = p_sum.add_run(summary)
-        #     _set_font(run_text, size=12, italic=True)
+        # V33: Tóm tắt chương (Chỉ hiển thị cho luồng custom theo yêu cầu mới nhất)
+        if ket_qua.get("is_custom_flow"):
+            summary = ch.get("summary", "")
+            if summary:
+                p_sum = doc.add_paragraph()
+                p_sum.paragraph_format.left_indent = Inches(0.3)
+                p_sum.paragraph_format.right_indent = Inches(0.3)
+                p_sum.paragraph_format.space_after = Pt(12)
+                run_label = p_sum.add_run("Tóm tắt chương: ")
+                _set_font(run_label, size=12, bold=True, italic=True)
+                run_text = p_sum.add_run(summary)
+                _set_font(run_text, size=12, italic=True)
 
         # Sections
         for jdx, sec in enumerate(ch.get("sections", []), 1):
@@ -316,6 +317,8 @@ def xuat_docx(ket_qua: dict, duong_dan_docx: str):
                     elif line.startswith("### "):
                         flush_buffer()
                         text_clean = line[4:].strip()
+                        # Strip leading single/double digit list prefix like "1. ", "2. "
+                        text_clean = re.sub(r'^\d+\.\s*', '', text_clean)
                         text_clean = f"{idx}.{jdx}.{sub_idx}. {text_clean}"
                         sub_idx += 1
                         h3 = doc.add_heading(text_clean, level=3)

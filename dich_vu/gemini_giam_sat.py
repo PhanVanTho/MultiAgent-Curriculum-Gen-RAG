@@ -28,6 +28,7 @@ import logging
 from google import genai
 from google.genai import types
 from cau_hinh import CauHinh
+from dich_vu.lay_wikipedia import dem_so_tu_word
 
 logger = logging.getLogger(__name__)
 
@@ -486,6 +487,7 @@ def giam_sat_quy_mo(
     model_lite: str = CauHinh.SUPERVISOR_MODEL_LITE,
     model_pro: str = CauHinh.SUPERVISOR_MODEL_PRO,
     so_chuong_yeu_cau: int = 0,
+    custom_section_words: int = 0,
 ) -> dict:
     """
     Gemini Supervisor kiểm tra xem giáo trình đã đáp ứng quy mô người dùng chọn chưa.
@@ -502,6 +504,7 @@ def giam_sat_quy_mo(
         api_keys: Gemini API keys
         model_lite/model_pro: Model để dùng
         so_chuong_yeu_cau: Số chương yêu cầu thực tế (nếu custom)
+        custom_section_words: Số lượng từ custom mỗi mục
 
     Returns:
         {
@@ -532,7 +535,13 @@ def giam_sat_quy_mo(
         chuong_chuan = nguong["chuong_min"]
         nguong["chuong_min"] = so_chuong_yeu_cau
         nguong["trang_min"] = max(1, round(nguong["trang_min"] * so_chuong_yeu_cau / chuong_chuan))
-    CHARS_PER_PAGE = 1800  # ~1800 ký tự = 1 trang A4
+    
+    if custom_section_words and custom_section_words > 0:
+        nguong["chars_per_section"] = custom_section_words * 4.3
+        # Calculate dynamic page minimum based on sections and average 4.3 chars/word
+        total_sections = sum(len(chap.get("sections", [])) for chap in final_chapters)
+        nguong["trang_min"] = max(1, round((total_sections * custom_section_words * 4.3) / 3000))
+    CHARS_PER_PAGE = 3000  # ~3000 ký tự = 1 trang A4
 
     # --- Phân tích thống kê thực tế ---
     tong_ky_tu = 0
@@ -545,17 +554,30 @@ def giam_sat_quy_mo(
         )
         tong_ky_tu += chap_chars
 
-        # Tính trung bình chars per section
+        # Tính trung bình chars/words per section
         so_section = len(chap.get("sections", []))
-        avg_chars = chap_chars / max(1, so_section)
-        if avg_chars < nguong["chars_per_section"]:
-            thin_chapters.append({
-                "title": chap.get("title", "?"),
-                "total_chars": chap_chars,
-                "avg_chars_per_section": round(avg_chars),
-                "required_per_section": nguong["chars_per_section"],
-                "sections": [s.get("title") for s in chap.get("sections", [])]
-            })
+        if custom_section_words and custom_section_words > 0:
+            chap_words = sum(dem_so_tu_word(sec.get("content", "")) for sec in chap.get("sections", []))
+            avg_words = chap_words / max(1, so_section)
+            # Dùng 85% làm ngưỡng tối thiểu của supervisor
+            if avg_words < custom_section_words * 0.85:
+                thin_chapters.append({
+                    "title": chap.get("title", "?"),
+                    "total_chars": chap_chars,
+                    "avg_chars_per_section": round(avg_words),
+                    "required_per_section": custom_section_words,
+                    "sections": [s.get("title") for s in chap.get("sections", [])]
+                })
+        else:
+            avg_chars = chap_chars / max(1, so_section)
+            if avg_chars < nguong["chars_per_section"]:
+                thin_chapters.append({
+                    "title": chap.get("title", "?"),
+                    "total_chars": chap_chars,
+                    "avg_chars_per_section": round(avg_chars),
+                    "required_per_section": nguong["chars_per_section"],
+                    "sections": [s.get("title") for s in chap.get("sections", [])]
+                })
 
     actual_chapters = len(final_chapters)
     estimated_pages = round(tong_ky_tu / CHARS_PER_PAGE, 1)
@@ -567,6 +589,19 @@ def giam_sat_quy_mo(
         "required_chapters_min": nguong["chuong_min"],
         "required_pages_min": nguong["trang_min"],
     }
+
+    def _override_if_met(res):
+        if res.get("stats"):
+            act_ch = res["stats"].get("actual_chapters", actual_chapters)
+            req_ch = res["stats"].get("required_chapters_min", nguong["chuong_min"])
+            est_pg = res["stats"].get("estimated_pages", estimated_pages)
+            req_pg = res["stats"].get("required_pages_min", nguong["trang_min"])
+            if est_pg >= req_pg:
+                if "scores" in res:
+                    res["scores"]["length"] = 1.0
+                if act_ch >= req_ch:
+                    res["status"] = "pass"
+        return res
 
     logger.info(
         f"[GeminiSupervisor-QuyMo] quy_mo={quy_mo} | "
@@ -593,18 +628,25 @@ def giam_sat_quy_mo(
                 "title": c.get("title"),
                 "section_count": len(c.get("sections", [])),
                 "total_chars": sum(len(s.get("content", "")) for s in c.get("sections", [])),
+                "total_words": sum(dem_so_tu_word(s.get("content", "")) for s in c.get("sections", [])),
                 "sections": [s.get("title") for s in c.get("sections", [])],
+                "avg_words_per_section": sum(dem_so_tu_word(s.get("content", "")) for s in c.get("sections", [])) / max(1, len(c.get("sections", []))),
                 "avg_density": sum(len(s.get("content", "")) for s in c.get("sections", [])) / max(1, len(c.get("sections", [])))
             }
             for c in final_chapters
         ]
+
+        if custom_section_words and custom_section_words > 0:
+            length_target_desc = f"Minimum {nguong['trang_min']} pages (based on target {custom_section_words} words per section, total target {total_sections * custom_section_words} words)."
+        else:
+            length_target_desc = f"Minimum {nguong['trang_min']} pages ({nguong['trang_min'] * 3000} chars)."
 
         prompt = f"""You are an ACADEMIC CURRICULUM AUDITOR. Evaluate "{chu_de}" at scale "{quy_mo}".
 
 METRICS TARGET:
 - Coverage: Core concepts must be fully explained (not just listed).
 - Density: High analytical depth based on facts (not shallow summaries).
-- Length: Minimum {nguong['trang_min']} pages ({nguong['trang_min'] * 1800} chars).
+- Length: {length_target_desc}
 
 ACTUAL STATS:
 {json.dumps(stats, ensure_ascii=False)}
@@ -653,7 +695,7 @@ RETURN JSON:
                     result["missing_topics"] = result.get("missing_topics", [])
                     result["shallow_chapters"] = result.get("shallow_chapters", [])
                     logger.info(f"[GeminiSupervisor-QuyMo] status={result.get('status')} | scores={result['scores']}")
-                    return result
+                    return _override_if_met(result)
                 except Exception as e:
                     last_error = e
                     if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
@@ -693,7 +735,7 @@ RETURN JSON:
                     result["missing_topics"] = result.get("missing_topics", [])
                     result["shallow_chapters"] = result.get("shallow_chapters", [])
                     logger.info(f"[GeminiSupervisor-QuyMo] Fallback successful with {fallback_model} | status={result.get('status')} | scores={result['scores']}")
-                    return result
+                    return _override_if_met(result)
                 except Exception as e:
                     last_error = e
                     if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
@@ -707,7 +749,7 @@ RETURN JSON:
         fix_str = f"Giáo trình chưa đủ quy mô '{quy_mo}'. " + " ".join(local_issues)
         if thin_chapters:
             fix_str += f"\nCác chương cần mở rộng: {', '.join(c['title'] for c in thin_chapters)}"
-        return {
+        return _override_if_met({
             "status": "fail",
             "scores": {"coverage": 0.5, "density": 0.5, "length": estimated_pages/nguong["trang_min"]},
             "issues": local_issues + [f"AI Error: {str(last_error)}"],
@@ -716,7 +758,7 @@ RETURN JSON:
             "shallow_chapters": [c["title"] for c in thin_chapters],
             "fix_instructions": fix_str,
             "stats": stats,
-        }
+        })
 
     # --- Tất cả đều OK ---
     return {

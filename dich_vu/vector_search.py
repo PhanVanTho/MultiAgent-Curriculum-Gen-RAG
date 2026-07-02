@@ -379,7 +379,7 @@ def apply_diversity_control(all_docs, max_per_subtopic=10):
             
     return balanced_docs
 
-def tao_vector_db(passages: list, api_key: str, start_id: int = 1):
+def tao_vector_db(passages: list, api_key: str, start_id: int = 1, check_cancel=None):
     """
     Tạo Embeddings cho danh sách các passages bằng OpenAI text-embedding-3-small.
     Lưu ý: api_key phải hợp lệ.
@@ -411,6 +411,7 @@ def tao_vector_db(passages: list, api_key: str, start_id: int = 1):
     if to_embed_texts:
         logger.info(f"[Embedding] {len(to_embed_texts)}/{len(texts)} new texts to embed.")
         for i in range(0, len(to_embed_texts), batch_size):
+            if check_cancel: check_cancel()
             batch_texts = to_embed_texts[i:i + batch_size]
             batch_indices = to_embed_indices[i:i + batch_size]
             

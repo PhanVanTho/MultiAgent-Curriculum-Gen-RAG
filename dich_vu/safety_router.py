@@ -14,6 +14,7 @@ Pipeline:
 import json
 import re
 import logging
+import unicodedata
 from openai import OpenAI
 
 logger = logging.getLogger(__name__)
@@ -168,8 +169,8 @@ SAFETY_CLASSIFICATION_SCHEMA = {
             "properties": {
                 "classification": {
                     "type": "string",
-                    "description": "Classification of the topic: SAFE, REFRAME, or BLOCK",
-                    "enum": ["SAFE", "REFRAME", "BLOCK"]
+                    "description": "Classification of the topic: SAFE, REFRAME, BLOCK, or BLOCK_LANG",
+                    "enum": ["SAFE", "REFRAME", "BLOCK", "BLOCK_LANG"]
                 },
                 "reason": {
                     "type": "string",
@@ -182,6 +183,18 @@ SAFETY_CLASSIFICATION_SCHEMA = {
         "strict": True
     }
 }
+
+def _has_unsupported_script(text: str) -> bool:
+    """
+    Kiểm tra nhanh nếu có chữ cái thuộc bảng chữ cái không phải Latinh (ngoại trừ ký tự đặc biệt).
+    Blocks Chinese, Japanese, Korean, Russian (Cyrillic), Arabic, Thai, Hebrew, etc.
+    """
+    for char in text:
+        if char.isalpha():
+            name = unicodedata.name(char, "")
+            if any(s in name for s in ["CJK", "CYRILLIC", "ARABIC", "HANGUL", "KATAKANA", "HIRAGANA", "THAI", "HEBREW"]):
+                return True
+    return False
 
 def _ai_classify(topic: str, api_key: str) -> dict:
     """
@@ -213,6 +226,11 @@ CLASSIFICATION RULES:
    - "Hack tài khoản Facebook" → BLOCK (specific attack target)
    - "Mua ma túy ở đâu" → BLOCK (intent to purchase)
    - "Research on self-defense lethality methods" → BLOCK (disguised harm request)
+
+4. BLOCK_LANG: The topic is written primarily in a language other than English or Vietnamese (e.g., French, Japanese, Chinese, Russian, German, Spanish).
+   - If the topic is written in English, Vietnamese, or a mixture of both, do NOT classify it as BLOCK_LANG.
+   - We explicitly ALLOW mixing Vietnamese and English (e.g., "Lập trình Python", "Machine learning cơ bản", "Data Science ứng dụng", "CSDL SQL nâng cao").
+   - If the topic is written primarily in another language (e.g., "Cours de français", "apprentissage automatique", "機械学習", "Pythons programmierung", "Économie internationale"), you MUST classify it as BLOCK_LANG.
 
 CRITICAL DISTINCTION:
 - "How X WORKS" (nguyên lý, cơ chế, hoạt động) = Understanding → REFRAME
@@ -267,6 +285,15 @@ def classify_topic(topic: str, api_key: str) -> dict:
     if not api_key:
         return {"classification": "BLOCK", "reason": "Missing API key", "layer": "failsafe"}
     
+    # === Local Language Guard ===
+    if _has_unsupported_script(topic):
+        logger.warning(f"[SafetyRouter] Language Block triggered locally for '{topic}'")
+        return {
+            "classification": "BLOCK_LANG",
+            "reason": "Chủ đề chứa ngôn ngữ không hỗ trợ. Hệ thống chỉ hỗ trợ Tiếng Anh hoặc Tiếng Việt.",
+            "layer": "rule"
+        }
+
     # === Tầng 1: Rule-based ===
     rule_result = rule_based_filter(topic)
     
@@ -354,6 +381,13 @@ BLOCK_MESSAGES = {
         "title": "🔄 Vui lòng thử lại",
         "message": "Hệ thống kiểm tra an toàn tạm thời không khả dụng.",
         "suggestion": "⏳ Vui lòng thử lại sau vài giây. Nếu vẫn lỗi, hãy liên hệ quản trị viên.",
+    },
+    "block_lang": {
+        "title": "🌐 Ngôn ngữ không hỗ trợ / Unsupported Language",
+        "message": "Hệ thống chỉ hỗ trợ biên soạn giáo trình bằng Tiếng Việt hoặc Tiếng Anh (hoặc kết hợp cả hai).\n"
+                   "The system only supports compiling curricula in Vietnamese or English (or a combination of both).",
+        "suggestion": "💡 Vui lòng nhập chủ đề bằng Tiếng Việt hoặc Tiếng Anh để tiếp tục.\n"
+                      "Please enter the topic in Vietnamese or English to continue.",
     }
 }
 
@@ -367,6 +401,9 @@ def get_block_message(classification_result: dict) -> dict:
     
     if classification == "SAFE":
         return None  # Không cần thông báo
+    
+    if classification == "BLOCK_LANG":
+        return BLOCK_MESSAGES["block_lang"]
     
     if layer == "failsafe":
         return BLOCK_MESSAGES["failsafe"]

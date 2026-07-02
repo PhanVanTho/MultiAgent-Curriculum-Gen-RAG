@@ -91,7 +91,7 @@
                     <td>
                         <span class="fw-bold text-success">{{ u.token }}</span>
                     </td>
-                    <td style="color: var(--text-muted); font-size:0.82rem;">{{ u.ngay_tao.strftime('%d/%m/%Y') if u.ngay_tao else '—' }}</td>
+                    <td style="color: var(--text-muted); font-size:0.82rem;">{{ (u.ngay_tao|gmt7).strftime('%d/%m/%Y') if u.ngay_tao else '—' }}</td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary" onclick="openEditModal('{{ u.id }}', '{{ u.ho_ten or '' }}', '{{ u.email or '' }}', '{{ u.token }}', {{ 'true' if u.la_admin else 'false' }})">
                             <i class="fa-solid fa-pen-to-square"></i>

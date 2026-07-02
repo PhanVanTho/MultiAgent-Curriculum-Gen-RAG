@@ -257,7 +257,7 @@ def safe_section_fix(raw_section: dict, expected_title: str):
         }
     
     # 1. Clean Title
-    title = raw_section.get("title") or expected_title
+    title = expected_title or raw_section.get("title") or "Mục không tiêu đề"
     title = clean_title_numbering(title)
     
     # 2. Normalize Content (Hotfix V5.5 sync)

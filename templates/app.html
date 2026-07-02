@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <title>Cấu hình giáo trình - Giáo Trình AI</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root {
@@ -30,7 +32,15 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        h1, h2, h3, h4, h5, h6, .brand-logo, .nav-link, .btn {
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        .brand-logo,
+        .nav-link,
+        .btn {
             font-family: var(--font-main);
             font-weight: 700;
         }
@@ -40,7 +50,8 @@
             width: var(--sidebar-width);
             height: 100vh;
             position: fixed;
-            left: 0; top: 0;
+            left: 0;
+            top: 0;
             background: white;
             border-right: 1px solid #e2e8f0;
             padding: 2rem 1.5rem;
@@ -48,23 +59,58 @@
             flex-direction: column;
             z-index: 1000;
         }
+
         .brand-logo {
-            display: flex; align-items: center; gap: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
             font-family: 'Space Grotesk', sans-serif;
-            font-weight: 700; font-size: 1.5rem;
-            color: var(--primary); text-decoration: none;
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--primary);
+            text-decoration: none;
             margin-bottom: 3rem;
         }
-        .nav-menu { list-style: none; padding: 0; margin: 0; flex-grow: 1; }
-        .nav-item { margin-bottom: 0.5rem; }
-        .nav-link {
-            display: flex; align-items: center; gap: 12px;
-            padding: 0.8rem 1rem; color: var(--text-muted);
-            text-decoration: none; border-radius: 12px;
-            font-weight: 500; transition: all 0.3s;
+
+        .nav-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex-grow: 1;
         }
-        .nav-link:hover, .nav-link.active { background: var(--primary-light); color: var(--primary); }
-        .logout-link { color: #ef4444; padding: 0.8rem 1rem; text-decoration: none; display: flex; align-items: center; gap: 12px; font-weight: 600; margin-top: auto; }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0.8rem 1rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .logout-link {
+            color: #ef4444;
+            padding: 0.8rem 1rem;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            margin-top: auto;
+        }
 
         /* Main Content */
         .main-content {
@@ -72,6 +118,7 @@
             padding: 2rem 4rem;
             min-height: 100vh;
         }
+
         .content-container {
             max-width: 1000px;
             margin: 0 auto;
@@ -79,14 +126,24 @@
         }
 
         .top-header {
-            display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
             width: 100%;
         }
+
         .token-badge {
-            background: white; padding: 8px 16px; border-radius: 100px;
-            border: 1px solid #e2e8f0; display: flex; align-items: center;
-            gap: 10px; font-weight: 700; font-size: 0.9rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            background: white;
+            padding: 8px 16px;
+            border-radius: 100px;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
         }
 
         /* Config Form Layout */
@@ -95,7 +152,7 @@
             border-radius: var(--radius-xl);
             border: 1px solid #e2e8f0;
             padding: 3rem;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
         }
 
         .header-section {
@@ -108,21 +165,26 @@
             font-family: var(--font-main) !important;
             padding: 2rem !important;
         }
+
         .swal2-title {
             font-weight: 700 !important;
             color: var(--text-dark) !important;
         }
+
         .swal2-confirm {
             background-color: var(--primary) !important;
             border-radius: 12px !important;
             padding: 12px 32px !important;
             font-weight: 600 !important;
         }
+
         .swal2-styled.swal2-confirm:focus {
             box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.5) !important;
         }
-            margin-bottom: 2.5rem;
+
+        margin-bottom: 2.5rem;
         }
+
         .header-section h2 {
             font-family: 'Space Grotesk', sans-serif;
             font-weight: 700;
@@ -131,8 +193,14 @@
             align-items: center;
             gap: 12px;
         }
-        .header-section h2 i { color: var(--primary); }
-        .header-section p { color: var(--text-muted); }
+
+        .header-section h2 i {
+            color: var(--primary);
+        }
+
+        .header-section p {
+            color: var(--text-muted);
+        }
 
         /* Inputs */
         .form-label {
@@ -149,6 +217,7 @@
             position: relative;
             margin-bottom: 2rem;
         }
+
         .form-control-custom {
             width: 100%;
             padding: 1rem 1.25rem;
@@ -159,6 +228,7 @@
             font-weight: 500;
             transition: all 0.3s;
         }
+
         .form-control-custom:focus {
             outline: none;
             border-color: var(--primary);
@@ -179,6 +249,7 @@
             padding: 6px;
             border-radius: 16px;
         }
+
         .chip-item {
             flex: 1;
             text-align: center;
@@ -192,10 +263,11 @@
             border: 1px solid transparent;
             background: transparent;
         }
+
         .chip-item.active {
             background: white;
             color: var(--primary);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
             border-color: #e2e8f0;
         }
 
@@ -205,6 +277,7 @@
             grid-template-columns: repeat(3, 1fr);
             gap: 1rem;
         }
+
         .mode-card {
             background: #f8fafc;
             border: 2px solid #f1f5f9;
@@ -215,33 +288,44 @@
             text-align: left;
             position: relative;
         }
+
         .mode-card:hover {
             border-color: #d1d5db;
         }
+
         .mode-card.active {
             background: white;
             border-color: var(--primary);
             box-shadow: 0 8px 20px -5px rgba(16, 185, 129, 0.15);
         }
+
         .mode-icon {
             font-size: 1.25rem;
             margin-bottom: 0.5rem;
             display: block;
         }
+
         .mode-title {
             font-weight: 700;
             font-size: 0.9rem;
             display: block;
             margin-bottom: 2px;
         }
+
         .mode-desc {
             font-size: 0.75rem;
             color: var(--text-muted);
             line-height: 1.3;
             display: block;
         }
-        .mode-card.active .mode-title { color: var(--primary); }
-        .mode-card.active .mode-icon { color: var(--primary); }
+
+        .mode-card.active .mode-title {
+            color: var(--primary);
+        }
+
+        .mode-card.active .mode-icon {
+            color: var(--primary);
+        }
 
         .token-cost-badge {
             position: absolute;
@@ -255,6 +339,7 @@
             font-weight: 700;
             border: 1px solid #e2e8f0;
         }
+
         .mode-card.active .token-cost-badge {
             background: var(--primary);
             color: white;
@@ -273,7 +358,10 @@
             margin-bottom: 1.5rem;
             transition: 0.3s;
         }
-        .advanced-toggle:hover { opacity: 0.8; }
+
+        .advanced-toggle:hover {
+            opacity: 0.8;
+        }
 
         .advanced-panel {
             background: #f1f5f9;
@@ -284,12 +372,41 @@
             border: 1px dashed #cbd5e1;
         }
 
+        /* Custom words slider style to increase contrast */
+        .custom-words-slider.form-range::-webkit-slider-runnable-track {
+            background-color: #cbd5e1 !important;
+            border-radius: 1rem;
+            height: 6px;
+        }
+
+        .custom-words-slider.form-range::-moz-range-track {
+            background-color: #cbd5e1 !important;
+            border-radius: 1rem;
+            height: 6px;
+        }
+
+        .custom-words-slider.form-range::-webkit-slider-thumb {
+            background-color: var(--primary) !important;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+            width: 16px;
+            height: 16px;
+            margin-top: -5px;
+        }
+
+        .custom-words-slider.form-range::-moz-range-thumb {
+            background-color: var(--primary) !important;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+            width: 16px;
+            height: 16px;
+        }
+
         .chapter-input-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 1rem;
             margin-top: 1rem;
         }
+
         .chapter-item-input {
             background: white;
             border: 1px solid #e2e8f0;
@@ -298,9 +415,94 @@
             font-size: 0.85rem;
             width: 100%;
         }
+
         .chapter-item-input:focus {
             border-color: var(--primary);
             outline: none;
+        }
+
+        .chapter-block {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .subsection-inputs-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-left: 1rem;
+            border-left: 2px dashed #cbd5e1;
+            padding-left: 0.75rem;
+            margin-top: 0.25rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .subsection-input-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .subsection-item-input {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 0.8rem;
+            flex-grow: 1;
+        }
+
+        .subsection-item-input:focus {
+            border-color: var(--primary);
+            outline: none;
+            background: white;
+        }
+
+        .btn-add-subsection {
+            background: transparent;
+            border: 1px dashed #cbd5e1;
+            color: #64748b;
+            font-size: 0.75rem;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: all 0.2s;
+            align-self: flex-start;
+            margin-left: 1rem;
+            width: fit-content;
+        }
+
+        .btn-add-subsection:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: #f0fdf4;
+        }
+
+        .btn-remove-subsection {
+            background: transparent;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            font-size: 0.85rem;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+
+        .btn-remove-subsection:hover {
+            color: #b91c1c;
         }
 
         /* Scale Selector Cards */
@@ -310,6 +512,7 @@
             gap: 1.5rem;
             margin-top: 1rem;
         }
+
         .scale-card {
             background: white;
             border: 2px solid #e2e8f0;
@@ -322,16 +525,19 @@
             flex-direction: column;
             gap: 10px;
         }
+
         .scale-card:hover {
             border-color: #10b981;
             transform: translateY(-4px);
-            box-shadow: 0 10px 20px -10px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.1);
         }
+
         .scale-card.active {
             border-color: var(--primary);
             background: var(--primary-light);
             box-shadow: 0 0 0 1px var(--primary), 0 10px 25px -10px rgba(16, 185, 129, 0.3);
         }
+
         .scale-card .icon {
             width: 40px;
             height: 40px;
@@ -344,22 +550,26 @@
             color: var(--text-muted);
             transition: all 0.3s;
         }
+
         .scale-card.active .icon {
             background: var(--primary);
             color: white;
         }
+
         .scale-card .title {
             font-weight: 700;
             font-size: 1.1rem;
             color: var(--text-dark);
             margin: 0;
         }
+
         .scale-card .info {
             font-size: 0.85rem;
             color: var(--text-muted);
             line-height: 1.5;
             margin: 0;
         }
+
         .scale-card .badge-check {
             position: absolute;
             top: 12px;
@@ -374,6 +584,7 @@
             justify-content: center;
             font-size: 10px;
         }
+
         .scale-card.active .badge-check {
             display: flex;
         }
@@ -384,6 +595,7 @@
             align-items: center;
             margin-bottom: 1rem;
         }
+
         .label-group label {
             font-weight: 700;
             text-transform: uppercase;
@@ -391,11 +603,13 @@
             letter-spacing: 0.05em;
             color: var(--text-muted);
         }
+
         .current-scale-val {
             color: var(--primary);
             font-weight: 800;
             font-size: 1rem;
         }
+
         /* Description Box Animation */
         .desc-box {
             background: white;
@@ -410,20 +624,35 @@
             transform: translateY(0);
             opacity: 1;
         }
+
         .desc-box.changing {
             transform: translateY(10px);
             opacity: 0;
         }
+
         .desc-icon {
-            width: 40px; height: 40px;
+            width: 40px;
+            height: 40px;
             border-radius: 10px;
             background: var(--primary-light);
             color: var(--primary);
-            display: flex; align-items: center; justify-content: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             flex-shrink: 0;
         }
-        .desc-content h5 { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
-        .desc-content p { font-size: 0.85rem; color: var(--text-muted); margin: 0; }
+
+        .desc-content h5 {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+
+        .desc-content p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
 
         /* Submit Button */
         .btn-submit {
@@ -442,11 +671,15 @@
             transition: all 0.3s;
             box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.4);
         }
+
         .btn-submit:hover {
             transform: translateY(-3px);
             box-shadow: 0 15px 25px -5px rgba(16, 185, 129, 0.5);
         }
-        .btn-submit:active { transform: scale(0.98); }
+
+        .btn-submit:active {
+            transform: scale(0.98);
+        }
 
         /* Progress Overlay */
         #progress-overlay {
@@ -460,6 +693,7 @@
             justify-content: center;
             text-align: center;
         }
+
         .lang-btn {
             background: #f1f5f9;
             border: 1px solid #e2e8f0;
@@ -476,8 +710,16 @@
             margin-right: 15px;
             margin-left: auto;
         }
-        .lang-btn:hover { background: #e2e8f0; }
-        .top-header { display: flex; align-items: center; justify-content: flex-end; }
+
+        .lang-btn:hover {
+            background: #e2e8f0;
+        }
+
+        .top-header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
 
         /* Mobile nav toggle button */
         .mobile-nav-toggle {
@@ -494,6 +736,7 @@
             font-size: 1.25rem;
             transition: all 0.2s;
         }
+
         .mobile-nav-toggle:hover {
             background: #f1f5f9;
         }
@@ -509,36 +752,10 @@
             opacity: 0;
             transition: opacity 0.3s ease;
         }
+
         .sidebar-backdrop.show {
             display: block;
             opacity: 1;
-        }
-
-        /* Sidebar close button for mobile */
-        .sidebar-close-btn {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background: rgba(0, 0, 0, 0.05);
-            border: none;
-            border-radius: 50%;
-            width: 36px;
-            height: 36px;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-dark);
-            cursor: pointer;
-            z-index: 1010;
-            transition: all 0.2s;
-        }
-        .sidebar-close-btn:hover {
-            background: rgba(0, 0, 0, 0.1);
-        }
-        @media (max-width: 991.98px) {
-            .sidebar-close-btn {
-                display: flex !important;
-            }
         }
 
         /* Mobile responsive layout adjustment */
@@ -546,18 +763,22 @@
             .sidebar {
                 transform: translateX(-100%);
                 transition: transform 0.3s ease-in-out;
-                box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+                box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
             }
+
             .sidebar.show {
                 transform: translateX(0);
             }
+
             .main-content {
                 margin-left: 0 !important;
                 padding: 1.5rem 1rem !important;
             }
+
             .mobile-nav-toggle {
                 display: flex !important;
             }
+
             /* Reposition top-header for mobile */
             .top-header {
                 justify-content: space-between !important;
@@ -565,37 +786,44 @@
                 gap: 10px;
                 flex-wrap: wrap;
             }
-            .top-header > div:first-of-type {
+
+            .top-header>div:first-of-type {
                 width: 100%;
                 order: 2;
                 margin-top: 1rem;
                 margin-right: 0 !important;
             }
+
             .top-header .mobile-nav-toggle {
                 order: 1;
             }
+
             .top-header .lang-btn {
                 margin-left: auto !important;
                 margin-right: 0 !important;
                 order: 1;
             }
+
             .top-header .token-badge {
                 order: 1;
             }
-            
+
             /* Responsive Grid scaling */
             .mode-grid {
                 grid-template-columns: 1fr !important;
                 gap: 0.75rem !important;
             }
+
             .scale-grid {
                 grid-template-columns: 1fr !important;
                 gap: 1rem !important;
             }
+
             .config-card {
                 padding: 1.5rem !important;
                 border-radius: var(--radius-lg) !important;
             }
+
             .chapter-input-grid {
                 grid-template-columns: 1fr !important;
                 gap: 0.75rem !important;
@@ -603,26 +831,31 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Sidebar -->
     <aside class="sidebar">
-        <!-- Close button for mobile -->
-        <button type="button" class="sidebar-close-btn d-lg-none" id="sidebar-close" aria-label="Close menu">
-            <i class="fa-solid fa-xmark"></i>
-        </button>
         <a href="/" class="brand-logo">
             <i class="fa-solid fa-bolt"></i>
             <span>Giáo Trình AI</span>
         </a>
         <ul class="nav-menu">
-            <li class="nav-item"><a href="/" class="nav-link"><i class="fa-solid fa-house"></i> <span data-i18n="nav.home">Trang Chủ</span></a></li>
-            <li class="nav-item"><a href="{{ url_for('profile') }}" class="nav-link"><i class="fa-solid fa-grid-2"></i> <span data-i18n="nav.overview">Tổng Quan</span></a></li>
-            <li class="nav-item"><a href="{{ url_for('trang_tao_giao_trinh') }}" class="nav-link active"><i class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n="nav.create">Tạo Giáo Trình</span></a></li>
-            <li class="nav-item"><a href="{{ url_for('buy_tokens') }}" class="nav-link"><i class="fa-solid fa-credit-card"></i> <span data-i18n="nav.pricing">Gói Cước</span></a></li>
-            <li class="nav-item"><a href="{{ url_for('lich_su') }}" class="nav-link"><i class="fa-solid fa-clock-rotate-left"></i> <span data-i18n="nav.history">Lịch Sử</span></a></li>
-            
+            <li class="nav-item"><a href="/" class="nav-link"><i class="fa-solid fa-house"></i> <span
+                        data-i18n="nav.home">Trang Chủ</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('profile') }}" class="nav-link"><i class="fa-solid fa-grid-2"></i>
+                    <span data-i18n="nav.overview">Tổng Quan</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('trang_tao_giao_trinh') }}" class="nav-link active"><i
+                        class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n="nav.create">Tạo Giáo
+                        Trình</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('buy_tokens') }}" class="nav-link"><i
+                        class="fa-solid fa-credit-card"></i> <span data-i18n="nav.pricing">Gói Cước</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('lich_su') }}" class="nav-link"><i
+                        class="fa-solid fa-clock-rotate-left"></i> <span data-i18n="nav.history">Lịch Sử</span></a></li>
+
             {% if current_user.la_admin %}
-            <div style="margin: 1.5rem 0 0.5rem 1rem; font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Admin</div>
+            <div
+                style="margin: 1.5rem 0 0.5rem 1rem; font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">
+                Admin</div>
             <li class="nav-item">
                 <a href="{{ url_for('admin_dashboard') }}" class="nav-link">
                     <i class="fa-solid fa-chart-pie"></i> Dashboard Quản trị
@@ -635,7 +868,8 @@
             </li>
             {% endif %}
         </ul>
-        <a href="{{ url_for('logout') }}" class="logout-link"><i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="nav.logout">Đăng Xuất</span></a>
+        <a href="{{ url_for('logout') }}" class="logout-link"><i class="fa-solid fa-right-from-bracket"></i> <span
+                data-i18n="nav.logout">Đăng Xuất</span></a>
     </aside>
 
     <main class="main-content">
@@ -646,7 +880,8 @@
                 </button>
                 <div style="margin-right: auto;">
                     <h4 class="fw-bold mb-0" data-i18n="app.title">Thiết lập giáo trình</h4>
-                    <p class="text-muted small" data-i18n="app.subtitle">Cấu hình các tham số để AI bắt đầu biên soạn.</p>
+                    <p class="text-muted small" data-i18n="app.subtitle">Cấu hình các tham số để AI bắt đầu biên soạn.
+                    </p>
                 </div>
                 <button class="lang-btn" onclick="toggleLanguage()" title="Switch Language" style="margin-right: 15px;">
                     <span id="langFlag">🇻🇳</span><span id="langLabel">VI</span>
@@ -655,219 +890,276 @@
                     <i class="fa-solid fa-coins text-warning"></i>
                     <span>
                         {% if current_user.la_admin %}
-                            ∞ Unlimited
+                        ∞ Unlimited
                         {% else %}
-                            {{ current_user.token }} <span data-i18n="profile.credits">Credits</span>
+                        {{ current_user.token }} <span data-i18n="profile.credits">Credits</span>
                         {% endif %}
                     </span>
                 </div>
             </header>
 
             <section class="config-card">
-            <div class="header-section">
-                <h2><i class="fa-solid fa-sliders"></i> <span data-i18n="app.ai_params">Thông số AI</span></h2>
-            </div>
-
-            <form id="tao-form" onsubmit="handleFormSubmit(event)">
-                <div class="input-group-custom">
-                    <label class="form-label" data-i18n="app.label_topic">Chủ đề giáo trình</label>
-                    <input type="text" id="chu_de" class="form-control-custom" placeholder="Ví dụ: Cơ học lượng tử, Kinh tế vĩ mô nâng cao..." data-i18n="app.placeholder_topic" maxlength="100" oninput="validateChuDe()" required>
-                    <div id="chu_de_warning" class="text-danger mt-2" style="display: none; font-size: 0.8rem; font-weight: 500;"></div>
+                <div class="header-section">
+                    <h2><i class="fa-solid fa-sliders"></i> <span data-i18n="app.ai_params">Thông số AI</span></h2>
                 </div>
 
-                <div class="toggle-group">
-                    <div class="row g-4">
-                        <div class="col-md-4">
-                            <label class="form-label" data-i18n="app.label_output_lang">Ngôn ngữ đầu ra</label>
-                            <div class="chip-group" id="lang-group">
-                                <button type="button" class="chip-item active" onclick="setLang('vi', this)">Tiếng Việt</button>
-                                <button type="button" class="chip-item" onclick="setLang('en', this)">English</button>
+                <form id="tao-form" onsubmit="handleFormSubmit(event)">
+                    <div class="input-group-custom">
+                        <label class="form-label" data-i18n="app.label_topic">Chủ đề giáo trình</label>
+                        <input type="text" id="chu_de" class="form-control-custom"
+                            placeholder="Ví dụ: Cơ học lượng tử, Kinh tế vĩ mô nâng cao..."
+                            data-i18n="app.placeholder_topic" maxlength="100" oninput="validateChuDe()" required>
+                        <div id="chu_de_warning" class="text-danger mt-2"
+                            style="display: none; font-size: 0.8rem; font-weight: 500;"></div>
+                    </div>
+
+                    <div class="toggle-group">
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <label class="form-label" data-i18n="app.label_output_lang">Ngôn ngữ đầu ra</label>
+                                <div class="chip-group" id="lang-group">
+                                    <button type="button" class="chip-item active" onclick="setLang('vi', this)">Tiếng
+                                        Việt</button>
+                                    <button type="button" class="chip-item"
+                                        onclick="setLang('en', this)">English</button>
+                                </div>
+                                <input type="hidden" id="ngon_ngu" value="vi">
                             </div>
-                            <input type="hidden" id="ngon_ngu" value="vi">
-                        </div>
-                        <div class="col-md-8">
-                            <label class="form-label" data-i18n="app.label_mode">Chế độ biên soạn</label>
-                            <div class="mode-grid" id="mode-group">
-                                <div class="mode-card active" onclick="setMode('auto', this)">
-                                    <span class="token-cost-badge">{{ phi_token_auto }} Token{{ 's' if phi_token_auto > 1 else '' }}</span>
-                                    <i class="fa-solid fa-wand-magic-sparkles mode-icon"></i>
-                                    <span class="mode-title">Auto</span>
-                                    <span class="mode-desc" data-i18n="app.mode_auto_desc">Tự động hoàn toàn</span>
+                            <div class="col-md-8">
+                                <label class="form-label" data-i18n="app.label_mode">Chế độ biên soạn</label>
+                                <div class="mode-grid" id="mode-group">
+                                    <div class="mode-card active" onclick="setMode('auto', this)">
+                                        <span class="token-cost-badge">{{ phi_token_auto }} Token{{ 's' if
+                                            phi_token_auto > 1 else '' }}</span>
+                                        <i class="fa-solid fa-wand-magic-sparkles mode-icon"></i>
+                                        <span class="mode-title">Auto</span>
+                                        <span class="mode-desc" data-i18n="app.mode_auto_desc">Tự động hoàn toàn</span>
+                                    </div>
+                                    <div class="mode-card" onclick="setMode('expert', this)">
+                                        <span class="token-cost-badge">{{ phi_token_expert }} Token{{ 's' if
+                                            phi_token_expert > 1 else '' }}</span>
+                                        <i class="fa-solid fa-shield-halved mode-icon"></i>
+                                        <span class="mode-title">Expert</span>
+                                        <span class="mode-desc" data-i18n="app.mode_expert_desc">Chuyên gia audit</span>
+                                    </div>
+                                    <div class="mode-card" onclick="setMode('creative', this)">
+                                        <span class="token-cost-badge">{{ phi_token_creative }} Token{{ 's' if
+                                            phi_token_creative > 1 else '' }}</span>
+                                        <i class="fa-solid fa-lightbulb mode-icon"></i>
+                                        <span class="mode-title">Creative</span>
+                                        <span class="mode-desc" data-i18n="app.mode_creative_desc">Sáng tạo nội
+                                            dung</span>
+                                    </div>
                                 </div>
-                                <div class="mode-card" onclick="setMode('expert', this)">
-                                    <span class="token-cost-badge">{{ phi_token_expert }} Token{{ 's' if phi_token_expert > 1 else '' }}</span>
-                                    <i class="fa-solid fa-shield-halved mode-icon"></i>
-                                    <span class="mode-title">Expert</span>
-                                    <span class="mode-desc" data-i18n="app.mode_expert_desc">Chuyên gia audit</span>
-                                </div>
-                                <div class="mode-card" onclick="setMode('creative', this)">
-                                    <span class="token-cost-badge">{{ phi_token_creative }} Token{{ 's' if phi_token_creative > 1 else '' }}</span>
-                                    <i class="fa-solid fa-lightbulb mode-icon"></i>
-                                    <span class="mode-title">Creative</span>
-                                    <span class="mode-desc" data-i18n="app.mode_creative_desc">Sáng tạo nội dung</span>
-                                </div>
-                            </div>
-                            <input type="hidden" id="che_do" value="auto">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mb-5">
-                    <div class="label-group">
-                        <label data-i18n="app.scale">QUY MÔ GIÁO TRÌNH</label>
-                        <div class="current-scale-val" id="scale-display" data-i18n="app.scale_standard">Tiêu chuẩn</div>
-                    </div>
-                    
-                    <div class="scale-grid">
-                        <div class="scale-card" onclick="selectScale(1, 'Căn bản')" id="scale-1">
-                            <div class="badge-check"><i class="fa-solid fa-check"></i></div>
-                            <div class="icon"><i class="fa-solid fa-leaf"></i></div>
-                            <div class="title" data-i18n="app.scale_basic">Căn bản</div>
-                            <p class="info" data-i18n="app.scale_basic_desc">~4-7 phút • 3-6 chương. Tóm tắt cốt lõi, nhanh chóng.</p>
-                        </div>
-                        <div class="scale-card active" onclick="selectScale(2, 'Tiêu chuẩn')" id="scale-2">
-                            <div class="badge-check"><i class="fa-solid fa-check"></i></div>
-                            <div class="icon"><i class="fa-solid fa-book-open"></i></div>
-                            <div class="title" data-i18n="app.scale_standard">Tiêu chuẩn</div>
-                            <p class="info" data-i18n="app.scale_standard_desc">~7-11 phút • 7-10 chương. Chuẩn đại học, đầy đủ kiến thức.</p>
-                        </div>
-                        <div class="scale-card" onclick="selectScale(3, 'Chuyên sâu')" id="scale-3">
-                            <div class="badge-check"><i class="fa-solid fa-check"></i></div>
-                            <div class="icon"><i class="fa-solid fa-graduation-cap"></i></div>
-                            <div class="title" data-i18n="app.scale_advanced">Chuyên sâu</div>
-                            <p class="info" data-i18n="app.scale_advanced_desc">~11-16 phút • 11-14 chương. Nghiên cứu sâu, học thuật.</p>
-                        </div>
-                    </div>
-                    <input type="hidden" name="quy_mo" id="quy_mo_input" value="2">
-                </div>
-
-                <!-- Cấu hình nâng cao -->
-                <div class="advanced-toggle" onclick="toggleAdvanced()">
-                    <i class="fa-solid fa-gear" id="gear-icon"></i>
-                    <span data-i18n="app.advanced_toggle">Cấu hình nâng cao (Tùy chọn số chương & Tên chương)</span>
-                </div>
-
-                <div class="advanced-panel" id="advanced-panel">
-                    <div class="row align-items-center mb-4">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-muted small mb-0" data-i18n="app.chapters_count">SỐ LƯỢNG CHƯƠNG TỰ CHỌN (1-15)</label>
-                        </div>
-                        <div class="col-md-6 d-flex align-items-center gap-2">
-                            <input type="number" id="custom_so_chuong" name="custom_so_chuong" 
-                                   class="form-control fw-bold text-center" min="1" max="15" 
-                                   placeholder="Chọn số chương..." data-i18n="app.chapters_hint"
-                                   oninput="updateTimeEstimate(); generateChapterInputs()">
-                            <div id="time-estimate-badge" class="badge bg-primary-light text-primary py-2 px-3 rounded-3" style="display: none; min-width: 110px; font-weight: 700;">
-                                <i class="fa-solid fa-clock me-1"></i> <span id="est-time"></span>
+                                <input type="hidden" id="che_do" value="auto">
                             </div>
                         </div>
                     </div>
 
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="manual_titles_toggle" onchange="generateChapterInputs()">
-                        <label class="form-check-label fw-600" for="manual_titles_toggle" style="font-size: 0.9rem;" data-i18n="app.chapter_names">Tôi muốn tự đặt tên cho từng chương</label>
+                    <div class="mb-5">
+                        <div class="label-group">
+                            <label data-i18n="app.scale">QUY MÔ GIÁO TRÌNH</label>
+                            <div class="current-scale-val" id="scale-display" data-i18n="app.scale_standard">Tiêu chuẩn
+                            </div>
+                        </div>
+
+                        <div class="scale-grid">
+                            <div class="scale-card" onclick="selectScale(1, 'Căn bản')" id="scale-1">
+                                <div class="badge-check"><i class="fa-solid fa-check"></i></div>
+                                <div class="icon"><i class="fa-solid fa-leaf"></i></div>
+                                <div class="title" data-i18n="app.scale_basic">Căn bản</div>
+                                <p class="info" data-i18n="app.scale_basic_desc">3-6 chương. Tóm tắt cốt lõi, nhanh
+                                    chóng.</p>
+                            </div>
+                            <div class="scale-card active" onclick="selectScale(2, 'Tiêu chuẩn')" id="scale-2">
+                                <div class="badge-check"><i class="fa-solid fa-check"></i></div>
+                                <div class="icon"><i class="fa-solid fa-book-open"></i></div>
+                                <div class="title" data-i18n="app.scale_standard">Tiêu chuẩn</div>
+                                <p class="info" data-i18n="app.scale_standard_desc">7-10 chương. Chuẩn đại học, đầy đủ
+                                    kiến thức.</p>
+                            </div>
+                            <div class="scale-card" onclick="selectScale(3, 'Chuyên sâu')" id="scale-3">
+                                <div class="badge-check"><i class="fa-solid fa-check"></i></div>
+                                <div class="icon"><i class="fa-solid fa-graduation-cap"></i></div>
+                                <div class="title" data-i18n="app.scale_advanced">Chuyên sâu</div>
+                                <p class="info" data-i18n="app.scale_advanced_desc">11-14 chương. Nghiên cứu sâu, học
+                                    thuật.</p>
+                            </div>
+                        </div>
+                        <input type="hidden" name="quy_mo" id="quy_mo_input" value="2">
                     </div>
 
-                    <div id="chapter-inputs-container" class="chapter-input-grid">
-                        <!-- Chapter inputs will appear here -->
+                    <!-- Cấu hình nâng cao -->
+                    <div class="advanced-toggle" onclick="toggleAdvanced()">
+                        <i class="fa-solid fa-gear" id="gear-icon"></i>
+                        <span data-i18n="app.advanced_toggle">Cấu hình nâng cao (Tùy chọn số chương & Tên chương)</span>
                     </div>
-                </div>
 
-                <button type="submit" class="btn-submit" id="submit-btn">
-                    <span data-i18n="app.btn_submit">KHỞI TẠO GIÁO TRÌNH</span>
-                    <i class="fa-solid fa-bolt"></i>
-                </button>
-            </form>
-        </section>
-        <!-- INLINE PROGRESS AREA -->
-        <section id="progress-area" class="mt-4 animate-fade-in-up" style="display: none;">
-            <!-- Main Supervisor Progress -->
-            <div id="supervisor-panel" class="p-4 mb-4 shadow-sm" style="background: white; border-radius: 16px; border: 1px solid var(--glass-border);">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0 fw-bold text-primary d-flex align-items-center">
-                        <i class="fa-solid fa-microchip me-2"></i> AI Supervisor
-                    </h5>
-                    <span id="progress-percentage" class="badge bg-primary rounded-pill">0%</span>
-                </div>
-                
-                <div class="progress mb-3" style="height: 10px; border-radius: 5px; background: var(--bg-surface-2);">
-                    <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width: 0%"></div>
-                </div>
-                
-                <p id="progress-status" class="text-muted fw-medium mb-0 small"><i class="fa-solid fa-circle-notch fa-spin me-2"></i>Đang khởi tạo Agent...</p>
-                <div class="mt-3 text-center" id="cancel-btn-container">
-                    <button type="button" class="btn btn-outline-danger btn-sm px-4 rounded-pill fw-bold" onclick="huyTienTrinh()">
-                        <i class="fa-solid fa-stop me-1"></i> Hủy tiến trình
+                    <div class="advanced-panel" id="advanced-panel">
+                        <div class="row align-items-center mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-muted small mb-0"
+                                    data-i18n="app.chapters_count">SỐ LƯỢNG CHƯƠNG TỰ CHỌN (1-{{ max_so_chuong
+                                    }})</label>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-center gap-2">
+                                <input type="number" id="custom_so_chuong" name="custom_so_chuong"
+                                    class="form-control fw-bold text-center" min="1" max="{{ max_so_chuong }}"
+                                    placeholder="Chọn số chương..." data-i18n="app.chapters_hint"
+                                    oninput="updateTimeEstimate(); generateChapterInputs()">
+
+                            </div>
+                        </div>
+
+                        <div class="words-slider-container mb-4">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small mb-0"
+                                        data-i18n="app.section_words">ĐỘ DÀI MỖI MỤC CẤP 2 (100 - {{ max_so_tu }}
+                                        từ)</label>
+                                    <div class="text-muted small mt-1" style="font-size: 0.78rem; line-height: 1.3;"
+                                        data-i18n="app.section_words_help">
+                                        (Số từ tối thiểu áp dụng cho mỗi mục con cấp 2 của chương, ví dụ: mục 1.1, 1.2)
+                                    </div>
+                                </div>
+                                <div class="col-md-6 d-flex align-items-center gap-3">
+                                    <input type="range" id="custom_section_words" name="custom_section_words"
+                                        class="form-range custom-words-slider flex-grow-1" min="100"
+                                        max="{{ max_so_tu }}" step="50" value="400" oninput="updateWordsDisplay()">
+                                    <span id="words-display"
+                                        class="badge bg-primary-light text-primary py-2 px-3 rounded-3 fw-bold"
+                                        style="min-width: 130px; text-align: center;">400 từ (~2400 ký tự)</span>
+                                    <span id="page-prediction-badge" class="badge py-2 px-3 rounded-3 fw-bold"
+                                        style="min-width: 110px; text-align: center; background-color: rgba(16, 185, 129, 0.1); color: #059669; border: 1px solid rgba(16, 185, 129, 0.2);">~1
+                                        trang</span>
+                                </div>
+                            </div>
+                            <div id="page-prediction-info" class="text-muted small mt-2 d-flex align-items-center gap-2"
+                                style="font-size: 0.8rem; padding: 8px 12px; background: rgba(5, 150, 105, 0.05); border-radius: 8px; border: 1px dashed rgba(5, 150, 105, 0.25);">
+                                <i class="fa-solid fa-book-open text-success"></i>
+                                <span id="page-prediction-text">Đang tính toán dự kiến trang...</span>
+                            </div>
+                        </div>
+
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="manual_titles_toggle"
+                                onchange="generateChapterInputs()">
+                            <label class="form-check-label fw-600" for="manual_titles_toggle" style="font-size: 0.9rem;"
+                                data-i18n="app.chapter_names">Tôi muốn tự đặt tên cho từng chương</label>
+                        </div>
+
+                        <div class="form-check form-switch mb-3" style="display: none !important;">
+                            <input class="form-check-input" type="checkbox" id="approve_outline_toggle">
+                            <label class="form-check-label fw-600" for="approve_outline_toggle"
+                                style="font-size: 0.9rem;" data-i18n="app.approve_outline">Tôi muốn duyệt dàn ý chi tiết
+                                trước khi sinh nội dung</label>
+                        </div>
+
+                        <div id="chapter-inputs-container" class="chapter-input-grid">
+                            <!-- Chapter inputs will appear here -->
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-submit" id="submit-btn">
+                        <span data-i18n="app.btn_submit">KHỞI TẠO GIÁO TRÌNH</span>
+                        <i class="fa-solid fa-bolt"></i>
                     </button>
-                </div>
-            </div>
+                </form>
+            </section>
+            <!-- INLINE PROGRESS AREA -->
+            <section id="progress-area" class="mt-4 animate-fade-in-up" style="display: none;">
+                <!-- Main Supervisor Progress -->
+                <div id="supervisor-panel" class="p-4 mb-4 shadow-sm"
+                    style="background: white; border-radius: 16px; border: 1px solid var(--glass-border);">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0 fw-bold text-primary d-flex align-items-center">
+                            <i class="fa-solid fa-microchip me-2"></i> AI Supervisor
+                        </h5>
+                        <span id="progress-percentage" class="badge bg-primary rounded-pill">0%</span>
+                    </div>
 
-            <!-- X-Ray Discovery Log & Scraped Sources -->
-            <div id="xray-panel" class="p-4 shadow-sm" style="background: #f8fafc; border-radius: 16px; border: 1px dashed #cbd5e1;">
-                <div class="row">
-                    <!-- Logs Column -->
-                    <div class="col-md-6 mb-3 mb-md-0">
-                        <h6 class="fw-bold mb-3 d-flex align-items-center" style="color: #475569;">
-                            <i class="fa-solid fa-terminal me-2 text-info"></i> System Logs
-                        </h6>
-                        <div id="xray-log-container" style="height: 250px; overflow-y: auto; font-family: 'JetBrains Mono', 'Consolas', monospace; font-size: 0.8rem;" class="pe-2">
-                            <!-- Logs will be inserted here dynamically -->
-                        </div>
+                    <div class="progress mb-3"
+                        style="height: 10px; border-radius: 5px; background: var(--bg-surface-2);">
+                        <div id="progress-bar"
+                            class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                            style="width: 0%"></div>
                     </div>
-                    <!-- Sources Column -->
-                    <div class="col-md-6">
-                        <h6 class="fw-bold mb-3 d-flex align-items-center" style="color: #475569;">
-                            <i class="fa-solid fa-satellite-dish me-2 text-primary"></i> Crawled Sources
-                        </h6>
-                        <div id="xray-docs-container" style="height: 250px; overflow-y: auto; font-size: 0.85rem;" class="pe-2">
-                            <div class="text-muted small fst-italic">Đang thu thập dữ liệu...</div>
+
+                    <p id="progress-status" class="text-muted fw-medium mb-0 small"><i
+                            class="fa-solid fa-circle-notch fa-spin me-2"></i>Đang khởi tạo Agent...</p>
+                    <div class="mt-3 text-center" id="cancel-btn-container">
+                        <button type="button" class="btn btn-outline-danger btn-sm px-4 rounded-pill fw-bold"
+                            onclick="huyTienTrinh()">
+                            <i class="fa-solid fa-stop me-1"></i> Hủy tiến trình
+                        </button>
+                    </div>
+                </div>
+
+                <!-- X-Ray Discovery Log & Scraped Sources -->
+                <div id="xray-panel" class="p-4 shadow-sm"
+                    style="background: #f8fafc; border-radius: 16px; border: 1px dashed #cbd5e1;">
+                    <div class="row">
+                        <!-- Logs Column -->
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <h6 class="fw-bold mb-3 d-flex align-items-center" style="color: #475569;">
+                                <i class="fa-solid fa-terminal me-2 text-info"></i> System Logs
+                            </h6>
+                            <div id="xray-log-container"
+                                style="height: 250px; overflow-y: auto; font-family: 'JetBrains Mono', 'Consolas', monospace; font-size: 0.8rem;"
+                                class="pe-2">
+                                <!-- Logs will be inserted here dynamically -->
+                            </div>
+                        </div>
+                        <!-- Sources Column -->
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mb-3 d-flex align-items-center" style="color: #475569;">
+                                <i class="fa-solid fa-satellite-dish me-2 text-primary"></i> Crawled Sources
+                            </h6>
+                            <div id="xray-docs-container" style="height: 250px; overflow-y: auto; font-size: 0.85rem;"
+                                class="pe-2">
+                                <div class="text-muted small fst-italic">Đang thu thập dữ liệu...</div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
         </div>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        function validateChuDe() {
-            const input = document.getElementById('chu_de').value;
-            const warning = document.getElementById('chu_de_warning');
-            
-            // Check for special characters (allow alphanumeric, spaces, vietnamese accents, and basic punctuation ,.-)
-            const specialCharRegex = /[!@#$%^&*()_+=\[\]{};':"\\|<>\/?]/;
-            const hasSpecialChars = specialCharRegex.test(input);
-            
-            // Check for Vietnamese without accents
-            const hasVietnameseAccents = /[àáảãạâầấẩẫậăằắẳẵặèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđÀÁẢÃẠÂẦẤẨẪẬĂẰẮẲẴẶÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴĐ]/i.test(input);
-            const words = input.trim().split(/\s+/).filter(w => w.length > 0);
-            const isVi = document.getElementById('ngon_ngu').value === 'vi';
-            
-            // If >= 2 words, no accents, and language is Vietnamese -> likely "tiếng việt không dấu" or English phrase
-            const looksLikeKhongDau = isVi && words.length >= 2 && !hasVietnameseAccents;
 
-            if (hasSpecialChars || looksLikeKhongDau) {
-                warning.style.display = 'block';
-                warning.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Lưu ý: Vui lòng nhập Tiếng Việt có dấu và hạn chế ký tự lạ để AI biên soạn chính xác nhất!';
-            } else {
-                warning.style.display = 'none';
-            }
-        }
 
         function setFormInputsDisabled(disabled) {
             document.getElementById('chu_de').disabled = disabled;
             document.getElementById('custom_so_chuong').disabled = disabled;
             document.getElementById('manual_titles_toggle').disabled = disabled;
-            
+
+            const approveToggle = document.getElementById('approve_outline_toggle');
+            if (approveToggle) {
+                approveToggle.disabled = disabled;
+            }
+
+            const wordsSlider = document.getElementById('custom_section_words');
+            if (wordsSlider) {
+                wordsSlider.disabled = disabled;
+            }
+
             const interactiveElements = document.querySelectorAll('#tao-form .scale-card, #tao-form .mode-card, #tao-form .chip-item, .advanced-toggle');
             interactiveElements.forEach(el => {
                 el.style.pointerEvents = disabled ? 'none' : 'auto';
                 el.style.opacity = disabled ? '0.6' : '1';
             });
 
-            const customInputs = document.querySelectorAll('.chapter-item-input');
+            const customInputs = document.querySelectorAll('.chapter-item-input, .subsection-item-input');
             customInputs.forEach(input => input.disabled = disabled);
+
+            const customButtons = document.querySelectorAll('.btn-add-subsection, .btn-remove-subsection');
+            customButtons.forEach(btn => {
+                btn.disabled = disabled;
+                btn.style.pointerEvents = disabled ? 'none' : 'auto';
+                btn.style.opacity = disabled ? '0.5' : '1';
+            });
         }
 
         function setLang(lang, btn) {
@@ -876,6 +1168,7 @@
             chips.forEach(c => c.classList.remove('active'));
             btn.classList.add('active');
             validateChuDe(); // Re-validate when language changes
+            if (typeof saveFormState === 'function') saveFormState();
         }
 
         function setMode(mode, card) {
@@ -893,7 +1186,7 @@
                 advancedPanel.style.display = 'none';
                 advancedToggle.style.display = 'flex';
                 document.getElementById('gear-icon').style.transform = 'rotate(0deg)';
-                
+
                 // Clear custom settings when reverting to Auto mode
                 document.getElementById('custom_so_chuong').value = '';
                 document.getElementById('manual_titles_toggle').checked = false;
@@ -904,7 +1197,7 @@
                 advancedPanel.style.display = 'block';
                 advancedToggle.style.display = 'none';
                 document.getElementById('gear-icon').style.transform = 'rotate(90deg)';
-                
+
                 // Xử lý logic liên kết giữa Mode và Nút đặt tên chương
                 const manualToggle = document.getElementById('manual_titles_toggle');
                 if (mode === 'creative') {
@@ -919,61 +1212,185 @@
                 }
                 generateChapterInputs();
             }
+            if (typeof saveFormState === 'function') saveFormState();
         }
 
         function updateTimeEstimate() {
-            const count = parseInt(document.getElementById('custom_so_chuong').value);
+            const countInput = document.getElementById('custom_so_chuong');
+            const count = parseInt(countInput ? countInput.value : 0);
             const badge = document.getElementById('time-estimate-badge');
             const span = document.getElementById('est-time');
+            const slider = document.getElementById('custom_section_words');
+            const words = parseInt(slider ? slider.value : 400);
 
             if (count > 0) {
-                badge.style.display = 'flex';
-                badge.style.alignItems = 'center';
-                // ~1.1 phút/chương (min), ~1.5 phút/chương (max)
-                const min = Math.ceil(count * 1.1);
-                const max = Math.ceil(count * 1.5);
-                span.innerText = `~${min}-${max} phút`;
+                if (badge) {
+                    badge.style.visibility = 'visible';
+                    badge.style.opacity = '1';
+                }
+
+                // Thời gian cơ sở (giây): Tìm kiếm + Lập dàn ý
+                const baseSeconds = 45;
+                // Thời gian mỗi chương (giây): Tối ưu hóa cho sinh song song
+                const secondsPerChapter = 15 + (words / 12.0);
+
+                const totalSeconds = baseSeconds + count * secondsPerChapter;
+                const totalMinutes = totalSeconds / 60;
+
+                let min = Math.floor(totalMinutes * 0.85) + 2;
+                let max = Math.ceil(totalMinutes * 1.15) + 3;
+
+                if (min < 1) min = 1;
+                if (max <= min) max = min + 1;
+
+                if (span) {
+                    span.innerText = `~${min}-${max} phút`;
+                }
             } else {
-                badge.style.display = 'none';
+                if (badge) {
+                    badge.style.visibility = 'hidden';
+                    badge.style.opacity = '0';
+                }
             }
         }
+
+        function updateWordsDisplay() {
+            const slider = document.getElementById('custom_section_words');
+            if (!slider) return;
+            const val = slider.value;
+            const min = slider.min || 100;
+            const max = slider.max || 1000;
+            const pct = ((val - min) / (max - min)) * 100;
+            slider.style.setProperty('--p', `${pct}%`);
+            const chars = Math.round(val * 4.3);
+            document.getElementById('words-display').innerText = `${val} từ (~${chars} ký tự)`;
+            updateTimeEstimate();
+            updatePageEstimate();
+        }
+
+        function updatePageEstimate() {
+            const slider = document.getElementById('custom_section_words');
+            const wordsPerSection = parseInt(slider ? slider.value : 400);
+
+            const manualToggle = document.getElementById('manual_titles_toggle');
+            const isManual = manualToggle && manualToggle.checked;
+
+            const advancedPanel = document.getElementById('advanced-panel');
+            const isAdvancedVisible = advancedPanel && advancedPanel.style.display === 'block';
+
+            let numChapters = 10;
+            let numSections = 40;
+
+            if (isManual) {
+                const chapterInputs = document.querySelectorAll('.chapter-item-input');
+                numChapters = chapterInputs.length || parseInt(document.getElementById('custom_so_chuong').value) || 10;
+
+                const subInputs = document.querySelectorAll('.subsection-item-input');
+                if (subInputs.length > 0) {
+                    numSections = subInputs.length;
+                } else {
+                    numSections = numChapters * 3; // default fallback estimate
+                }
+            } else if (isAdvancedVisible) {
+                numChapters = parseInt(document.getElementById('custom_so_chuong').value) || 10;
+                numSections = numChapters * 4; // average 4 sections per chapter
+            } else {
+                const scaleVal = document.getElementById('quy_mo_input')?.value || '2';
+                if (scaleVal === '1') {
+                    numChapters = 5;
+                    numSections = 15;
+                } else if (scaleVal === '2') {
+                    numChapters = 10;
+                    numSections = 40;
+                } else if (scaleVal === '3') {
+                    numChapters = 15;
+                    numSections = 90;
+                }
+            }
+
+            const totalWords = numSections * wordsPerSection;
+            const totalChars = totalWords * 4.3;
+            const contentPages = Math.ceil(totalChars / 3000);
+            const overheadPages = Math.ceil(numChapters * 0.8) + 2;
+            const estimatedPages = contentPages + overheadPages;
+
+            const predTextEl = document.getElementById('page-prediction-text');
+            if (predTextEl) {
+                const isVi = (typeof getCurrentLang === 'function' ? getCurrentLang() : 'vi') === 'vi';
+                if (isVi) {
+                    predTextEl.innerHTML = `Dự kiến: <strong>${numSections}</strong> mục cấp 2 &bull; <strong>~${estimatedPages}</strong> trang giáo trình (ước tính ~3.000 ký tự/trang)`;
+                } else {
+                    predTextEl.innerHTML = `Estimated: <strong>${numSections}</strong> sections &bull; <strong>~${estimatedPages}</strong> pages (approx. 3,000 chars/page)`;
+                }
+            }
+
+            const pageBadge = document.getElementById('page-prediction-badge');
+            if (pageBadge) {
+                const isVi = (typeof getCurrentLang === 'function' ? getCurrentLang() : 'vi') === 'vi';
+                pageBadge.innerHTML = isVi ? `~${estimatedPages} trang` : `~${estimatedPages} pages`;
+            }
+        }
+
+        window.addEventListener('languageChanged', () => {
+            updatePageEstimate();
+        });
 
         function selectScale(val, title) {
             // Update hidden input
             document.getElementById('quy_mo_input').value = val;
-            
+
             // Update UI classes
             const cards = document.querySelectorAll('.scale-card');
             cards.forEach(c => c.classList.remove('active'));
             document.getElementById('scale-' + val).classList.add('active');
-            
+
             // Update display text
             document.getElementById('scale-display').innerText = title;
+            if (typeof saveFormState === 'function') saveFormState();
+            updatePageEstimate();
         }
 
         // Initialize display if needed
         window.addEventListener('DOMContentLoaded', async () => {
+            updateWordsDisplay();
             const activeCard = document.querySelector('.scale-card.active');
             if (activeCard) {
                 const val = activeCard.id.split('-')[1];
                 document.getElementById('quy_mo_input').value = val;
             }
 
-            // Tự động phục hồi tiến trình nếu người dùng tải lại trang hoặc quay lại từ trang khác
             const activeMaCv = localStorage.getItem('active_job_ma_cv');
+
+            // Restore form state first
+            if (typeof restoreFormState === 'function') {
+                if (activeMaCv) {
+                    restoreFormState('active_job_params');
+                } else {
+                    restoreFormState('draft_form_state');
+                }
+            }
+            // Set up listener to save state dynamically
+            if (typeof setupFormPersistence === 'function') {
+                setupFormPersistence();
+            }
+
+            // Tự động phục hồi tiến trình nếu người dùng tải lại trang hoặc quay lại từ trang khác
             if (activeMaCv) {
                 try {
                     const res = await fetch(`/trang_thai/${activeMaCv}`);
                     const d = await res.json();
-                    
+
                     if (d.trang_thai === 'dang_chay' || d.trang_thai === 'cho_xac_nhan') {
+                        if (d.cau_hinh_goc && typeof restoreFormFromObject === 'function') {
+                            restoreFormFromObject(d.cau_hinh_goc);
+                        }
                         // Khôi phục giao diện tiến trình
                         const btn = document.getElementById('submit-btn');
                         btn.disabled = true;
                         btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-2"></i> ĐANG XỬ LÝ...';
                         document.getElementById('progress-area').style.display = 'block';
                         setFormInputsDisabled(true);
-                        
+
                         // Đặt lại tên chủ đề nếu có
                         const savedTitle = localStorage.getItem('active_job_title');
                         if (savedTitle && !document.getElementById('chu_de').value) {
@@ -985,11 +1402,13 @@
                     } else if (d.trang_thai === 'hoan_thanh') {
                         localStorage.removeItem('active_job_ma_cv');
                         localStorage.removeItem('active_job_title');
+                        localStorage.removeItem('active_job_params');
                         window.location.href = `/ket_qua/${activeMaCv}`;
                     } else {
                         // Job thất bại hoặc không tồn tại
                         localStorage.removeItem('active_job_ma_cv');
                         localStorage.removeItem('active_job_title');
+                        localStorage.removeItem('active_job_params');
                     }
                 } catch (e) {
                     console.error("Lỗi khi khôi phục tiến trình:", e);
@@ -1000,13 +1419,72 @@
         function toggleAdvanced() {
             const panel = document.getElementById('advanced-panel');
             const icon = document.getElementById('gear-icon');
+            const scaleSection = document.getElementById('scale-display')?.closest('.mb-5');
+            const currentMode = document.getElementById('che_do')?.value || 'auto';
+
             if (panel.style.display === 'block') {
-                panel.style.display = 'none';
-                icon.style.transform = 'rotate(0deg)';
+                const autoCard = document.querySelector('.mode-card[onclick*="auto"]');
+                if (autoCard) {
+                    setMode('auto', autoCard);
+                } else {
+                    panel.style.display = 'none';
+                    icon.style.transform = 'rotate(0deg)';
+                    if (scaleSection) scaleSection.style.display = 'block';
+                }
             } else {
-                panel.style.display = 'block';
-                icon.style.transform = 'rotate(90deg)';
+                const expertCard = document.querySelector('.mode-card[onclick*="expert"]');
+                if (expertCard) {
+                    setMode('expert', expertCard);
+                } else {
+                    panel.style.display = 'block';
+                    icon.style.transform = 'rotate(90deg)';
+                    if (scaleSection) scaleSection.style.display = 'none';
+                }
             }
+            if (typeof saveFormState === 'function') saveFormState();
+        }
+
+        function addSubsectionInput(chapterIndex, value = '') {
+            const container = document.getElementById(`subsections-container-${chapterIndex}`);
+            if (!container) return null;
+
+            const currentCount = container.children.length;
+            if (currentCount >= 12) {
+                return null;
+            }
+
+            const row = document.createElement('div');
+            row.className = 'subsection-input-row';
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'subsection-item-input';
+            input.placeholder = `Mục cấp 2...`;
+            input.value = value;
+            input.maxLength = 150;
+            input.addEventListener('input', () => {
+                if (input.value.length > 150) {
+                    input.value = input.value.slice(0, 150);
+                }
+                if (typeof saveFormState === 'function') saveFormState();
+            });
+
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'btn-remove-subsection';
+            removeBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+            removeBtn.addEventListener('click', () => {
+                row.remove();
+                if (typeof saveFormState === 'function') saveFormState();
+                updatePageEstimate();
+            });
+
+            row.appendChild(input);
+            row.appendChild(removeBtn);
+            container.appendChild(row);
+
+            updatePageEstimate();
+            return input;
         }
 
         function generateChapterInputs() {
@@ -1014,7 +1492,6 @@
             const toggle = document.getElementById('manual_titles_toggle');
             const count = parseInt(document.getElementById('custom_so_chuong').value) || 0;
 
-            // Xử lý chuyển đổi mode dựa trên nút gạt đặt tên chương
             const currentMode = document.getElementById('che_do').value;
             if (toggle.checked && currentMode !== 'creative') {
                 const creativeCard = document.querySelector('.mode-card[onclick*="creative"]');
@@ -1027,40 +1504,104 @@
             container.innerHTML = '';
             if (toggle.checked && count > 0) {
                 for (let i = 1; i <= count; i++) {
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.className = 'chapter-item-input';
-                    input.placeholder = `Tên chương ${i}...`;
-                    input.dataset.index = i;
-                    input.maxLength = 100;
-                    input.addEventListener('input', () => {
-                        if (input.value.length > 100) {
-                            input.value = input.value.slice(0, 100);
+                    const block = document.createElement('div');
+                    block.className = 'chapter-block';
+                    block.dataset.index = i;
+
+                    const chInput = document.createElement('input');
+                    chInput.type = 'text';
+                    chInput.className = 'chapter-item-input';
+                    chInput.placeholder = `Tên chương ${i}...`;
+                    chInput.dataset.index = i;
+                    chInput.maxLength = 100;
+                    chInput.addEventListener('input', () => {
+                        if (chInput.value.length > 100) {
+                            chInput.value = chInput.value.slice(0, 100);
                         }
+                        if (typeof saveFormState === 'function') saveFormState();
                     });
-                    container.appendChild(input);
+                    block.appendChild(chInput);
+
+                    const subContainer = document.createElement('div');
+                    subContainer.className = 'subsection-inputs-container';
+                    subContainer.id = `subsections-container-${i}`;
+                    block.appendChild(subContainer);
+
+                    const addBtn = document.createElement('button');
+                    addBtn.type = 'button';
+                    addBtn.className = 'btn-add-subsection';
+                    addBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Thêm mục cấp 2';
+                    addBtn.addEventListener('click', () => {
+                        addSubsectionInput(i, '');
+                        if (typeof saveFormState === 'function') saveFormState();
+                    });
+                    block.appendChild(addBtn);
+
+                    container.appendChild(block);
                 }
             }
+            updatePageEstimate();
         }
 
         function validateChuDe() {
             const input = document.getElementById('chu_de');
             const warning = document.getElementById('chu_de_warning');
-            
+
+            if (!input || !warning) return;
+
             // Cắt chuỗi nếu vượt quá 100 ký tự (đề phòng copy paste)
             if (input.value.length > 100) {
                 input.value = input.value.slice(0, 100);
             }
-            
-            const len = input.value.length;
+
+            const val = input.value;
+            const len = val.length;
+
+            // 1. Kiểm tra ngôn ngữ không hỗ trợ trước
+            let hasUnsupportedLetters = false;
+            try {
+                const allLetters = val.match(/\p{L}/gu);
+                if (allLetters) {
+                    const allowedLettersRegex = /^[a-zA-ZàáảãạăắằẳẵặâấầẩẫậđèéẻẽẹêếềểễệìíỉĩịòóỏõọôồốổỗộơờớợởỡợùúủũụưừứừửữựỳýỷỹỵđÀÁẢÃẠÂẦẤẨẪẬĂẰẮẰẲẴẶÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴĐ]$/i;
+                    hasUnsupportedLetters = allLetters.some(char => !allowedLettersRegex.test(char));
+                }
+            } catch (e) {
+                console.error("Unicode regex not supported", e);
+            }
+
+            if (hasUnsupportedLetters) {
+                warning.style.display = 'block';
+                warning.style.color = '#ef4444';
+                warning.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Cảnh báo: Vui lòng nhập chủ đề bằng Tiếng Anh hoặc Tiếng Việt. Các ngôn ngữ khác không được hỗ trợ!';
+                return;
+            }
+
+            // 2. Kiểm tra độ dài
             if (len >= 100) {
                 warning.style.display = 'block';
                 warning.style.color = '#ef4444'; // Red color for max limit
                 warning.innerText = `Đã đạt giới hạn tối đa: 100/100 ký tự`;
+                return;
             } else if (len >= 85) {
                 warning.style.display = 'block';
                 warning.style.color = '#eab308'; // Orange/yellow color for warning
                 warning.innerText = `Độ dài chủ đề: ${len}/100 ký tự (Sắp đạt giới hạn)`;
+                return;
+            }
+
+            // 3. Kiểm tra ký tự đặc biệt hoặc tiếng Việt không dấu
+            const specialCharRegex = /[!@#$%^&*()_+=\[\]{};':"\\|<>\/?]/;
+            const hasSpecialChars = specialCharRegex.test(val);
+
+            const hasVietnameseAccents = /[àáảãạâầấẩẫậăằắẳẵặèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđÀÁẢÃẠÂẦẤẨẪẬĂẰẮẲẴẶÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴĐ]/i.test(val);
+            const words = val.trim().split(/\s+/).filter(w => w.length > 0);
+            const isVi = document.getElementById('ngon_ngu').value === 'vi';
+            const looksLikeKhongDau = isVi && words.length >= 2 && !hasVietnameseAccents;
+
+            if (hasSpecialChars || looksLikeKhongDau) {
+                warning.style.display = 'block';
+                warning.style.color = '#eab308';
+                warning.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Lưu ý: Vui lòng nhập Tiếng Việt có dấu và hạn chế ký tự lạ để AI biên soạn chính xác nhất!';
             } else {
                 warning.style.display = 'none';
             }
@@ -1071,7 +1612,7 @@
             const words = txt.split(/\s+/);
             const vowels = "aeiouyàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ";
             const consonants = "bcdfghjklmnpqrstvwxzđ";
-            
+
             for (let word of words) {
                 let consecConsonants = 0;
                 let maxConsec = 0;
@@ -1083,9 +1624,9 @@
                         consecConsonants = 0;
                     }
                 }
-                
+
                 if (maxConsec >= 6) return true;
-                
+
                 if (word.length > 5) {
                     let vowelCount = 0;
                     for (let char of word) {
@@ -1099,66 +1640,6 @@
         }
 
         function isAbbreviation(str) {
-            const trimmed = str.trim();
-            const cleanLower = trimmed.toLowerCase().replace(/[^a-zđàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ\s]/g, '');
-            
-            // Danh sách các từ viết tắt cực kỳ phổ biến được phép thông qua
-            const allowedCommonAbbrs = ["ai", "iot", "it", "cntt", "csdl", "html", "css", "sql", "dna", "rna", "gdp", "vpn", "wifi", "ip"];
-            
-            if (allowedCommonAbbrs.includes(cleanLower)) {
-                return false;
-            }
-            
-            if (/^[A-ZĐÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝĂĨŨƠƯ]{2,6}$/.test(trimmed)) {
-                if (allowedCommonAbbrs.includes(trimmed.toLowerCase())) {
-                    return false;
-                }
-                return true;
-            }
-            const words = trimmed.split(/\s+/);
-            if (words.length > 1 && words.length <= 4) {
-                const allUppercaseAndShort = words.every(w => {
-                    const cleanWord = w.replace(/[^a-zA-ZĐÀÁÂÃÈÉÊÌÍÒÓÔÕÙÝĂĨŨƠƯ]/g, '');
-                    if (cleanWord.length === 0) return true;
-                    return /^[A-ZĐÀÁÂÃÈÉÊÌÍÒÓÔÕÙÝĂĨŨƠƯ]+$/.test(cleanWord) && cleanWord.length <= 5;
-                });
-                if (allUppercaseAndShort) {
-                    const hasUnallowed = words.some(w => {
-                        const cleanW = w.toLowerCase().replace(/[^a-zđàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ]/g, '');
-                        if (cleanW.length >= 2 && !allowedCommonAbbrs.includes(cleanW)) {
-                            return true;
-                        }
-                        return false;
-                    });
-                    if (hasUnallowed) return true;
-                }
-            }
-            
-            const vowels = "aeiouyàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ";
-            for (let w of words) {
-                const cleanWord = w.toLowerCase().replace(/[^a-zđàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ]/g, '');
-                if (cleanWord.length === 0) continue;
-                
-                if (allowedCommonAbbrs.includes(cleanWord)) {
-                    continue;
-                }
-                
-                let hasVowel = false;
-                for (let char of cleanWord) {
-                    if (vowels.includes(char)) {
-                        hasVowel = true;
-                        break;
-                    }
-                }
-                if (!hasVowel && cleanWord.length >= 2) {
-                    return true;
-                }
-                
-                const commonAbbrs = ["nsnd", "rag", "gdp", "fdi", "wto", "who", "asean", "opec", "imf", "wb", "dns", "tcp", "udp", "http", "https", "ssl", "tls", "api", "dom", "xml", "nosql", "db", "mvc", "oop", "rest", "soap", "crud", "sdk", "ide", "gui", "cli", "cpu", "ram", "rom", "gpu", "ssd", "hdd", "lan", "wan", "vpn", "url", "uri", "seo", "sem", "b2b", "b2c", "kpi", "okr", "roi", "hr", "pr", "qa", "qc", "r&d", "saas", "paas", "iaas", "bi", "erp", "crm", "cms", "lms", "pos", "rfid", "gps", "gis", "cad", "cam", "cae"];
-                if (commonAbbrs.includes(cleanWord)) {
-                    return true;
-                }
-            }
             return false;
         }
 
@@ -1166,7 +1647,7 @@
             e.preventDefault();
             const btn = document.getElementById('submit-btn');
             const chuDe = document.getElementById('chu_de').value.trim();
-            
+
             // V33.5: Validation chủ đề (Tối thiểu 2 ký tự, tối đa 100 ký tự)
             const hasLetters = /[a-zA-ZÀ-ỹ]/.test(chuDe); // Kiểm tra có ít nhất 1 chữ cái
             if (!chuDe || chuDe.length < 2 || !hasLetters) {
@@ -1179,7 +1660,7 @@
                 });
                 return;
             }
-            
+
             if (isAbbreviation(chuDe)) {
                 Swal.fire({
                     icon: 'warning',
@@ -1190,7 +1671,30 @@
                 });
                 return;
             }
-            
+
+            // Check for unsupported languages
+            let hasUnsupportedLetters = false;
+            try {
+                const allLetters = chuDe.match(/\p{L}/gu);
+                if (allLetters) {
+                    const allowedLettersRegex = /^[a-zA-ZàáảãạăắằẳẵặâấầẩẫậđèéẻẽẹêếềểễệìíỉĩịòóỏõọôồốổỗộơờớợởỡợùúủũụưừứừửữựỳýỷỹỵđÀÁẢÃẠÂẦẤẨẪẬĂẰẮẰẲẴẶÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴĐ]$/i;
+                    hasUnsupportedLetters = allLetters.some(char => !allowedLettersRegex.test(char));
+                }
+            } catch (e) {
+                console.error("Unicode regex not supported", e);
+            }
+
+            if (hasUnsupportedLetters) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Thông báo',
+                    text: 'Vui lòng nhập chủ đề bằng Tiếng Anh hoặc Tiếng Việt. Các ngôn ngữ khác không được hỗ trợ.',
+                    confirmButtonText: 'Tôi hiểu',
+                    confirmButtonColor: '#059669'
+                });
+                return;
+            }
+
             if (isGibberish(chuDe)) {
                 Swal.fire({
                     icon: 'warning',
@@ -1217,16 +1721,46 @@
             const isAdvancedVisible = advancedPanel && advancedPanel.style.display === 'block';
 
             const customCount = isAdvancedVisible ? document.getElementById('custom_so_chuong').value : null;
+            const customWords = isAdvancedVisible ? document.getElementById('custom_section_words').value : null;
             const manualToggle = isAdvancedVisible ? document.getElementById('manual_titles_toggle').checked : false;
+            const approveOutline = isAdvancedVisible ? document.getElementById('approve_outline_toggle').checked : false;
+            let hasSubsections = false;
+            if (manualToggle) {
+                const inputs = document.querySelectorAll('.chapter-item-input');
+                for (let input of inputs) {
+                    const idx = input.dataset.index;
+                    const subContainer = document.getElementById(`subsections-container-${idx}`);
+                    if (subContainer) {
+                        const subInputs = subContainer.querySelectorAll('.subsection-item-input');
+                        for (let subIn of subInputs) {
+                            if (subIn.value.trim()) {
+                                hasSubsections = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (hasSubsections) break;
+                }
+            }
+
             let chapterTitles = [];
             if (manualToggle) {
                 const inputs = document.querySelectorAll('.chapter-item-input');
                 let hasAbbr = false;
                 let tooLong = false;
                 let hasEmpty = false;
+                let hasUnsupportedChapterLang = false;
                 let invalidInput = null;
                 let indexNum = 0;
-                
+
+                let hasSubEmpty = false;
+                let subTooLong = false;
+                let hasSubAbbr = false;
+                let hasUnsupportedSubLang = false;
+                let subInvalidInput = null;
+                let subChapterIndexNum = 0;
+                let subIndexNum = 0;
+
                 for (let input of inputs) {
                     const val = input.value.trim();
                     if (!val) {
@@ -1247,9 +1781,96 @@
                         indexNum = input.dataset.index;
                         break;
                     }
-                    chapterTitles.push(val);
+
+                    // Check for unsupported languages in chapters
+                    try {
+                        const chapterLetters = val.match(/\p{L}/gu);
+                        if (chapterLetters) {
+                            const allowedLettersRegex = /^[a-zA-ZàáảãạăắằẳẵặâấầẩẫậđèéẻẽẹêếềểễệìíỉĩịòóỏõọôồốổỗộơờớợởỡợùúủũụưừứừửữựỳýỷỹỵđÀÁẢÃẠÂẦẤẨẪẬĂẰẮẰẲẴẶÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴĐ]$/i;
+                            if (chapterLetters.some(char => !allowedLettersRegex.test(char))) {
+                                hasUnsupportedChapterLang = true;
+                                invalidInput = input;
+                                indexNum = input.dataset.index;
+                                break;
+                            }
+                        }
+                    } catch (e) {
+                        console.error(e);
+                    }
+
+                    if (hasSubsections) {
+                        const idx = input.dataset.index;
+                        const subContainer = document.getElementById(`subsections-container-${idx}`);
+                        let sections = [];
+                        if (subContainer) {
+                            const subInputs = subContainer.querySelectorAll('.subsection-item-input');
+                            let subIdx = 1;
+                            for (let subIn of subInputs) {
+                                const subVal = subIn.value.trim();
+                                if (!subVal) {
+                                    hasSubEmpty = true;
+                                    subInvalidInput = subIn;
+                                    subChapterIndexNum = idx;
+                                    subIndexNum = subIdx;
+                                    break;
+                                }
+                                if (subVal.length > 150) {
+                                    subTooLong = true;
+                                    subInvalidInput = subIn;
+                                    subChapterIndexNum = idx;
+                                    subIndexNum = subIdx;
+                                    break;
+                                }
+                                if (isAbbreviation(subVal)) {
+                                    hasSubAbbr = true;
+                                    subInvalidInput = subIn;
+                                    subChapterIndexNum = idx;
+                                    subIndexNum = subIdx;
+                                    break;
+                                }
+                                try {
+                                    const subLetters = subVal.match(/\p{L}/gu);
+                                    if (subLetters) {
+                                        const allowedLettersRegex = /^[a-zA-ZàáảãạăắằẳẵặâấầẩẫậđèéẻẽẹêếềểễệìíỉĩịòóọỏõọôồốổỗộơờớợởỡợùúủũụưừứừửữựỳýỷỹỵđÀÁẢÃẠÂẦẤẨẪẬĂẰẮẰẲẴẶÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴĐ]$/i;
+                                        if (subLetters.some(char => !allowedLettersRegex.test(char))) {
+                                            hasUnsupportedSubLang = true;
+                                            subInvalidInput = subIn;
+                                            subChapterIndexNum = idx;
+                                            subIndexNum = subIdx;
+                                            break;
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.error(e);
+                                }
+                                sections.push(subVal);
+                                subIdx++;
+                            }
+                        }
+                        if (hasSubEmpty || subTooLong || hasSubAbbr || hasUnsupportedSubLang) {
+                            break;
+                        }
+                        chapterTitles.push({
+                            title: val,
+                            sections: sections
+                        });
+                    } else {
+                        chapterTitles.push(val);
+                    }
                 }
-                
+
+                if (hasUnsupportedChapterLang) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Thông báo',
+                        text: `Tên chương ${indexNum} chứa ngôn ngữ không được hỗ trợ. Vui lòng nhập bằng Tiếng Anh hoặc Tiếng Việt.`,
+                        confirmButtonText: 'Tôi hiểu',
+                        confirmButtonColor: '#059669'
+                    });
+                    if (invalidInput) invalidInput.focus();
+                    return;
+                }
+
                 if (hasEmpty) {
                     Swal.fire({
                         icon: 'warning',
@@ -1261,7 +1882,7 @@
                     if (invalidInput) invalidInput.focus();
                     return;
                 }
-                
+
                 if (tooLong) {
                     Swal.fire({
                         icon: 'warning',
@@ -1273,7 +1894,7 @@
                     if (invalidInput) invalidInput.focus();
                     return;
                 }
-                
+
                 if (hasAbbr) {
                     Swal.fire({
                         icon: 'warning',
@@ -1283,6 +1904,54 @@
                         confirmButtonColor: '#059669'
                     });
                     if (invalidInput) invalidInput.focus();
+                    return;
+                }
+
+                if (hasSubEmpty) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Thông báo',
+                        text: `Vui lòng nhập đầy đủ tiêu đề cho các mục con của Chương ${subChapterIndexNum}.`,
+                        confirmButtonText: 'Tôi hiểu',
+                        confirmButtonColor: '#059669'
+                    });
+                    if (subInvalidInput) subInvalidInput.focus();
+                    return;
+                }
+
+                if (subTooLong) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Thông báo',
+                        text: `Mục ${subIndexNum} của Chương ${subChapterIndexNum} vượt quá giới hạn 150 ký tự. Vui lòng rút ngắn lại.`,
+                        confirmButtonText: 'Tôi hiểu',
+                        confirmButtonColor: '#059669'
+                    });
+                    if (subInvalidInput) subInvalidInput.focus();
+                    return;
+                }
+
+                if (hasSubAbbr) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Thông báo',
+                        text: `Mục ${subIndexNum} của Chương ${subChapterIndexNum} chứa từ viết tắt hoặc kí tự không hợp lệ. Hãy nhập đầy đủ nội dung để đạt được kết quả tốt nhất.`,
+                        confirmButtonText: 'Tôi hiểu',
+                        confirmButtonColor: '#059669'
+                    });
+                    if (subInvalidInput) subInvalidInput.focus();
+                    return;
+                }
+
+                if (hasUnsupportedSubLang) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Thông báo',
+                        text: `Mục ${subIndexNum} của Chương ${subChapterIndexNum} chứa ngôn ngữ không được hỗ trợ. Vui lòng nhập bằng Tiếng Anh hoặc Tiếng Việt.`,
+                        confirmButtonText: 'Tôi hiểu',
+                        confirmButtonColor: '#059669'
+                    });
+                    if (subInvalidInput) subInvalidInput.focus();
                     return;
                 }
             }
@@ -1300,7 +1969,9 @@
                 che_do: document.getElementById('che_do').value,
                 quy_mo: document.getElementById('quy_mo_input').value,
                 so_chuong_custom: customCount || null,
-                danh_sach_chuong: chapterTitles.length > 0 ? chapterTitles : null
+                custom_section_words: customWords || null,
+                danh_sach_chuong: chapterTitles.length > 0 ? chapterTitles : null,
+                approve_outline: approveOutline
             };
 
             try {
@@ -1309,11 +1980,30 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                
+
                 const data = await res.json();
                 if (data.ma_cv) {
                     localStorage.setItem('active_job_ma_cv', data.ma_cv);
                     localStorage.setItem('active_job_title', chuDe);
+
+                    // Save active job parameters
+                    const activeParams = {
+                        chu_de: chuDe,
+                        ngon_ngu: document.getElementById('ngon_ngu').value,
+                        che_do: document.getElementById('che_do').value,
+                        quy_mo: document.getElementById('quy_mo_input').value,
+                        custom_so_chuong: customCount || null,
+                        custom_section_words: customWords || null,
+                        manual_titles_toggle: document.getElementById('manual_titles_toggle').checked,
+                        advanced_panel_open: document.getElementById('advanced-panel')?.style.display === 'block',
+                        manual_chapter_titles: Array.from(document.querySelectorAll('.chapter-item-input')).reduce((acc, input) => {
+                            if (input.dataset.index) acc[input.dataset.index] = input.value;
+                            return acc;
+                        }, {})
+                    };
+                    localStorage.setItem('active_job_params', JSON.stringify(activeParams));
+
+                    localStorage.removeItem('draft_form_state'); // Clear draft state on success
                     pollStatus(data.ma_cv);
                 } else {
                     Swal.fire({
@@ -1343,14 +2033,14 @@
             const statusText = document.getElementById('progress-status');
             const pctText = document.getElementById('progress-percentage');
             const logContainer = document.getElementById('xray-log-container');
-            
+
             if (pollingInterval) clearInterval(pollingInterval);
-            
+
             pollingInterval = setInterval(async () => {
                 try {
                     const r = await fetch(`/trang_thai/${ma_cv}`);
                     const d = await r.json();
-                    
+
                     if (d.tien_do) {
                         bar.style.width = `${d.tien_do}%`;
                         pctText.innerText = `${d.tien_do}%`;
@@ -1363,7 +2053,7 @@
                     if (d.nhat_ky && d.nhat_ky.length > 0) {
                         const currentLogsCount = logContainer.children.length;
                         if (d.nhat_ky.length > currentLogsCount) {
-                            logContainer.innerHTML = ''; 
+                            logContainer.innerHTML = '';
                             d.nhat_ky.forEach(log => {
                                 const icon = (log.includes('TRƯỢT') || log.includes('LOW_YIELD') || log.includes('🛑') || log.includes('Error')) ? '🔴' : '🟢';
                                 logContainer.innerHTML += `<div class="mb-2 pb-2 border-bottom border-light text-muted">
@@ -1382,7 +2072,7 @@
                             const isKept = doc.status === 'kept';
                             const badgeColor = isKept ? 'bg-success' : 'bg-secondary';
                             const icon = isKept ? '<i class="fa-solid fa-check-circle text-success me-2"></i>' : '<i class="fa-solid fa-times-circle text-danger me-2"></i>';
-                            
+
                             docsContainer.innerHTML += `
                                 <div class="p-2 mb-2 rounded bg-white border">
                                     <div class="d-flex justify-content-between align-items-start mb-1">
@@ -1402,20 +2092,132 @@
                         pollingInterval = null;
                         localStorage.removeItem('active_job_ma_cv');
                         localStorage.removeItem('active_job_title');
+                        localStorage.removeItem('active_job_params');
                         window.location.href = `/ket_qua/${ma_cv}`;
                     } else if (d.trang_thai === 'cho_xac_nhan') {
                         clearInterval(pollingInterval);
                         pollingInterval = null;
-                        
+
+                        if (d.loai_loi === 'APPROVE_OUTLINE') {
+                            const title = i18next.t('app.approve_outline_title') || 'Duyệt dàn ý chi tiết';
+                            const desc = i18next.t('app.approve_outline_desc') || 'Đánh dấu chọn các mục con cấp 2 bạn muốn giữ lại để viết nội dung:';
+                            const confirmText = i18next.t('app.btn_approve_outline') || 'Tiến hành viết';
+                            const cancelText = i18next.t('verify.cancel_btn') || 'Từ chối (Hủy)';
+
+                            let treeHtml = `<div class="text-start mb-3 text-muted small">${desc}</div>`;
+                            treeHtml += `<div id="outline-approve-tree" class="text-start border rounded p-3 bg-light" style="max-height: 350px; overflow-y: auto;">`;
+
+                            if (d.outline_temp && d.outline_temp.length > 0) {
+                                d.outline_temp.forEach(ch => {
+                                    treeHtml += `
+                                        <div class="mb-3">
+                                            <div class="fw-bold text-primary mb-1" style="font-size: 0.95rem;">
+                                                <i class="fa-solid fa-book-open me-2"></i>${ch.title}
+                                            </div>
+                                            <div class="ps-3 border-start">
+                                    `;
+                                    if (ch.sections && ch.sections.length > 0) {
+                                        ch.sections.forEach(sec => {
+                                            treeHtml += `
+                                                <div class="form-check my-1">
+                                                    <input class="form-check-input section-approve-checkbox" type="checkbox" value="${sec.idx}" id="sec_approve_${sec.idx}" checked>
+                                                    <label class="form-check-label fw-600 text-dark small" for="sec_approve_${sec.idx}">
+                                                        ${sec.title}
+                                                    </label>
+                                                </div>
+                                            `;
+                                        });
+                                    } else {
+                                        treeHtml += `<div class="text-muted small fst-italic ps-2">Không có mục con</div>`;
+                                    }
+                                    treeHtml += `
+                                            </div>
+                                        </div>
+                                    `;
+                                });
+                            } else {
+                                treeHtml += `<div class="text-muted text-center py-4">Không tìm thấy dàn ý</div>`;
+                            }
+
+                            treeHtml += `</div>`;
+
+                            Swal.fire({
+                                title: title,
+                                html: treeHtml,
+                                icon: 'info',
+                                showCancelButton: true,
+                                confirmButtonColor: '#059669',
+                                cancelButtonColor: '#d33',
+                                confirmButtonText: confirmText,
+                                cancelButtonText: cancelText,
+                                allowOutsideClick: false,
+                                allowEscapeKey: false,
+                                width: '600px'
+                            }).then(async (result) => {
+                                if (result.isConfirmed) {
+                                    const selectedSections = [];
+                                    document.querySelectorAll('.section-approve-checkbox').forEach(cb => {
+                                        if (cb.checked) {
+                                            selectedSections.push(parseInt(cb.value));
+                                        }
+                                    });
+
+                                    if (selectedSections.length === 0) {
+                                        Swal.fire('Cảnh báo', 'Vui lòng chọn ít nhất một mục con để tạo giáo trình.', 'warning').then(() => {
+                                            pollStatus(ma_cv);
+                                        });
+                                        return;
+                                    }
+
+                                    try {
+                                        const confirmRes = await fetch(`/xac_nhan/${ma_cv}/dong_y`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ selected_sections: selectedSections })
+                                        });
+                                        const confirmData = await confirmRes.json();
+                                        if (confirmData.status === 'success') {
+                                            pollStatus(ma_cv);
+                                        } else {
+                                            throw new Error(confirmData.message || "Lỗi không xác định");
+                                        }
+                                    } catch (err) {
+                                        Swal.fire('Lỗi', 'Không thể gửi phản hồi: ' + err.message, 'error');
+                                        pollStatus(ma_cv);
+                                    }
+                                } else {
+                                    try {
+                                        await fetch(`/xac_nhan/${ma_cv}/tu_choi`, { method: 'POST' });
+                                    } catch (err) {
+                                        console.error("Lỗi gửi từ chối:", err);
+                                    }
+                                    pollStatus(ma_cv);
+                                }
+                            });
+                            return;
+                        }
+
                         const isChapterDowngrade = d.loai_loi === 'CUSTOM_CHAPTER_DOWNGRADE';
+                        const isWordsDowngrade = d.loai_loi === 'CUSTOM_WORDS_DOWNGRADE';
+
+                        let title = 'Xác nhận hạ quy mô';
+                        let confirmText = 'Đồng ý hạ quy mô';
+                        if (isChapterDowngrade) {
+                            title = 'Xác nhận hạ số chương';
+                            confirmText = 'Đồng ý hạ số chương';
+                        } else if (isWordsDowngrade) {
+                            title = 'Xác nhận hạ độ dài mục';
+                            confirmText = 'Đồng ý hạ độ dài';
+                        }
+
                         Swal.fire({
-                            title: isChapterDowngrade ? 'Xác nhận hạ số chương' : 'Xác nhận hạ quy mô',
-                            html: d.loi || (isChapterDowngrade ? 'Dữ liệu không đủ để tạo đủ số chương yêu cầu.' : 'Dữ liệu không đủ để tạo giáo trình ở mức quy mô hiện tại.'),
+                            title: title,
+                            html: d.loi || 'Dữ liệu không đủ để tạo giáo trình ở mức hiện tại.',
                             icon: 'warning',
                             showCancelButton: true,
                             confirmButtonColor: '#059669',
                             cancelButtonColor: '#d33',
-                            confirmButtonText: isChapterDowngrade ? 'Đồng ý hạ số chương' : 'Đồng ý hạ quy mô',
+                            confirmButtonText: confirmText,
                             cancelButtonText: 'Từ chối (Hủy)',
                             allowOutsideClick: false,
                             allowEscapeKey: false
@@ -1447,7 +2249,8 @@
                         pollingInterval = null;
                         localStorage.removeItem('active_job_ma_cv');
                         localStorage.removeItem('active_job_title');
-                        
+                        localStorage.removeItem('active_job_params');
+
                         let errorMessage = d.loi || "Không rõ lỗi";
                         let swalOptions = {
                             icon: 'error',
@@ -1495,7 +2298,7 @@
                         Swal.fire(swalOptions).then(() => {
                             // V33.6: Không reload trang, reset UI để sửa lỗi
                             const btn = document.getElementById('submit-btn');
-                            if(btn) {
+                            if (btn) {
                                 btn.disabled = false;
                                 btn.innerHTML = '<span>KHỞI TẠO GIÁO TRÌNH</span><i class="fa-solid fa-bolt ms-2"></i>';
                             }
@@ -1513,37 +2316,38 @@
         async function huyTienTrinh() {
             const ma_cv = localStorage.getItem('active_job_ma_cv');
             if (!ma_cv) return;
-            
+
             if (!confirm("Bạn có chắc chắn muốn hủy tiến trình đang chạy? Dữ liệu đang tạo có thể bị mất.")) return;
 
             try {
                 // Gửi lệnh hủy xuống backend
                 await fetch(`/huy/${ma_cv}`, { method: 'POST' });
-                
+
                 // Dừng polling UI
                 if (pollingInterval) {
                     clearInterval(pollingInterval);
                     pollingInterval = null;
                 }
-                
+
                 // Reset giao diện
                 const btn = document.getElementById('submit-btn');
                 btn.disabled = false;
                 btn.innerHTML = '<span>KHỞI TẠO GIÁO TRÌNH</span><i class="fa-solid fa-bolt ms-2"></i>';
                 setFormInputsDisabled(false);
                 document.getElementById('progress-area').style.display = 'none';
-                
+
                 // Xóa trạng thái local
                 localStorage.removeItem('active_job_ma_cv');
                 localStorage.removeItem('active_job_title');
-                
+                localStorage.removeItem('active_job_params');
+
                 Swal.fire({
                     icon: 'info',
                     title: 'Đã hủy tiến trình',
                     text: 'Tiến trình đã được dừng lại. Bạn có thể bắt đầu tạo giáo trình mới.',
                     confirmButtonColor: '#059669'
                 });
-                
+
             } catch (e) {
                 console.error("Lỗi khi hủy tiến trình:", e);
                 Swal.fire({
@@ -1554,37 +2358,242 @@
                 });
             }
         }
+        window.isRestoring = false;
+
+        function saveFormState() {
+            if (window.isRestoring) return;
+            try {
+                const state = {
+                    chu_de: document.getElementById('chu_de')?.value || '',
+                    ngon_ngu: document.getElementById('ngon_ngu')?.value || 'vi',
+                    che_do: document.getElementById('che_do')?.value || 'auto',
+                    quy_mo: document.getElementById('quy_mo_input')?.value || 'tieu_chuan',
+                    custom_so_chuong: document.getElementById('custom_so_chuong')?.value || '',
+                    custom_section_words: document.getElementById('custom_section_words')?.value || '400',
+                    manual_titles_toggle: document.getElementById('manual_titles_toggle')?.checked || false,
+                    advanced_panel_open: document.getElementById('advanced-panel')?.style.display === 'block'
+                };
+
+                const chapterInputs = document.querySelectorAll('.chapter-item-input');
+                const chapterTitles = {};
+                const chapterSubsections = {};
+                chapterInputs.forEach(input => {
+                    const idx = input.dataset.index;
+                    if (idx) {
+                        chapterTitles[idx] = input.value;
+                        const subContainer = document.getElementById(`subsections-container-${idx}`);
+                        if (subContainer) {
+                            const subInputs = subContainer.querySelectorAll('.subsection-item-input');
+                            const subs = [];
+                            subInputs.forEach(subIn => {
+                                if (subIn.value.trim()) {
+                                    subs.push(subIn.value.trim());
+                                }
+                            });
+                            if (subs.length > 0) {
+                                chapterSubsections[idx] = subs;
+                            }
+                        }
+                    }
+                });
+                state.manual_chapter_titles = chapterTitles;
+                state.manual_chapter_subsections = chapterSubsections;
+
+                localStorage.setItem('draft_form_state', JSON.stringify(state));
+            } catch (e) {
+                console.error("Error saving form state:", e);
+            }
+        }
+
+        function restoreFormFromObject(state) {
+            window.isRestoring = true;
+            try {
+                if (!state) return;
+
+                if (state.chu_de && document.getElementById('chu_de')) {
+                    document.getElementById('chu_de').value = state.chu_de;
+                    validateChuDe();
+                } else if (state.tieu_de && document.getElementById('chu_de')) {
+                    document.getElementById('chu_de').value = state.tieu_de;
+                    validateChuDe();
+                }
+
+                if (state.ngon_ngu) {
+                    const langBtn = document.querySelector(`#lang-group .chip-item[onclick*="${state.ngon_ngu}"]`);
+                    if (langBtn) {
+                        setLang(state.ngon_ngu, langBtn);
+                    }
+                }
+
+                if (state.che_do) {
+                    const modeCard = document.querySelector(`#mode-group .mode-card[onclick*="${state.che_do}"]`);
+                    if (modeCard) {
+                        setMode(state.che_do, modeCard);
+                    }
+                }
+
+                if (state.quy_mo) {
+                    const scaleCard = document.getElementById('scale-' + state.quy_mo);
+                    if (scaleCard) {
+                        const titleEl = scaleCard.querySelector('.scale-title') || scaleCard.querySelector('h5');
+                        const title = titleEl ? titleEl.innerText : state.quy_mo;
+                        selectScale(state.quy_mo, title);
+                    }
+                }
+
+                const customChaptersVal = state.so_chuong_custom !== undefined ? state.so_chuong_custom : state.custom_so_chuong;
+                if (customChaptersVal !== undefined && customChaptersVal !== null && document.getElementById('custom_so_chuong')) {
+                    document.getElementById('custom_so_chuong').value = customChaptersVal;
+                }
+
+                const customWordsVal = state.custom_section_words !== undefined ? state.custom_section_words : state.custom_section_words;
+                if (customWordsVal !== undefined && customWordsVal !== null && document.getElementById('custom_section_words')) {
+                    document.getElementById('custom_section_words').value = customWordsVal;
+                    updateWordsDisplay();
+                }
+
+                const hasManualToggle = state.manual_titles_toggle !== undefined ? state.manual_titles_toggle : (state.danh_sach_chuong && state.danh_sach_chuong.length > 0);
+                if (document.getElementById('manual_titles_toggle')) {
+                    document.getElementById('manual_titles_toggle').checked = !!hasManualToggle;
+                }
+
+                generateChapterInputs();
+
+                const chapterInputs = document.querySelectorAll('.chapter-item-input');
+                chapterInputs.forEach(input => {
+                    const idx = parseInt(input.dataset.index);
+                    if (!idx) return;
+
+                    let chVal = '';
+                    let subVals = [];
+
+                    if (state.danh_sach_chuong) {
+                        if (Array.isArray(state.danh_sach_chuong)) {
+                            const item = state.danh_sach_chuong[idx - 1];
+                            if (item) {
+                                if (typeof item === 'object' && item !== null) {
+                                    chVal = item.title || '';
+                                    subVals = item.sections || [];
+                                } else {
+                                    chVal = item;
+                                }
+                            }
+                        } else if (typeof state.danh_sach_chuong === 'object') {
+                            const item = state.danh_sach_chuong[idx];
+                            if (item) {
+                                if (typeof item === 'object' && item !== null) {
+                                    chVal = item.title || '';
+                                    subVals = item.sections || [];
+                                } else {
+                                    chVal = item;
+                                }
+                            }
+                        }
+                    } else if (state.manual_chapter_titles && state.manual_chapter_titles[idx]) {
+                        chVal = state.manual_chapter_titles[idx];
+                    }
+
+                    if (chVal) {
+                        input.value = chVal;
+                    }
+
+                    if (subVals.length === 0 && state.manual_chapter_subsections && state.manual_chapter_subsections[idx]) {
+                        subVals = state.manual_chapter_subsections[idx];
+                    }
+
+                    if (subVals && subVals.length > 0) {
+                        subVals.forEach(val => {
+                            addSubsectionInput(idx, val);
+                        });
+                    }
+                });
+
+                const panel = document.getElementById('advanced-panel');
+                const icon = document.getElementById('gear-icon');
+                const scaleSection = document.getElementById('scale-display')?.closest('.mb-5');
+                if (panel && icon) {
+                    const isAdvanced = state.advanced_panel_open || (state.che_do !== 'auto');
+                    if (isAdvanced) {
+                        panel.style.display = 'block';
+                        icon.style.transform = 'rotate(90deg)';
+                        if (scaleSection) scaleSection.style.display = 'none';
+                    } else {
+                        panel.style.display = 'none';
+                        icon.style.transform = 'rotate(0deg)';
+                        if (scaleSection && state.che_do === 'auto') scaleSection.style.display = 'block';
+                    }
+                }
+
+                updateTimeEstimate();
+            } catch (e) {
+                console.error("Error restoring form state from object:", e);
+            } finally {
+                window.isRestoring = false;
+            }
+        }
+
+        function restoreFormState(storageKey = 'draft_form_state') {
+            try {
+                const saved = localStorage.getItem(storageKey);
+                if (!saved) return;
+                const state = JSON.parse(saved);
+                restoreFormFromObject(state);
+            } catch (e) {
+                console.error("Error restoring form state:", e);
+            }
+        }
+
+        function setupFormPersistence() {
+            const inputs = ['chu_de', 'custom_so_chuong', 'custom_section_words'];
+            inputs.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('input', () => {
+                        saveFormState();
+                    });
+                }
+            });
+
+            const manualToggle = document.getElementById('manual_titles_toggle');
+            if (manualToggle) {
+                manualToggle.addEventListener('change', () => {
+                    saveFormState();
+                });
+            }
+        }
+
+        // Expose to window scope so onclick handlers can access them
+        window.saveFormState = saveFormState;
+        window.restoreFormState = restoreFormState;
+        window.setupFormPersistence = setupFormPersistence;
+        window.setLang = setLang;
+        window.setMode = setMode;
+        window.selectScale = selectScale;
+        window.toggleAdvanced = toggleAdvanced;
     </script>
     <script>
         // Sidebar toggle logic for mobile
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const toggleBtn = document.getElementById('sidebar-toggle');
-            const closeBtn = document.getElementById('sidebar-close');
             const sidebar = document.querySelector('.sidebar');
-            if (sidebar) {
+            if (toggleBtn && sidebar) {
                 const backdrop = document.createElement('div');
                 backdrop.className = 'sidebar-backdrop';
                 document.body.appendChild(backdrop);
 
-                if (toggleBtn) {
-                    toggleBtn.addEventListener('click', function() {
-                        sidebar.classList.add('show');
-                        backdrop.classList.add('show');
-                    });
-                }
+                toggleBtn.addEventListener('click', function () {
+                    sidebar.classList.toggle('show');
+                    backdrop.classList.toggle('show');
+                });
 
-                const closeSidebar = function() {
+                backdrop.addEventListener('click', function () {
                     sidebar.classList.remove('show');
                     backdrop.classList.remove('show');
-                };
-
-                if (closeBtn) {
-                    closeBtn.addEventListener('click', closeSidebar);
-                }
-                backdrop.addEventListener('click', closeSidebar);
+                });
             }
         });
     </script>
     <script src="{{ url_for('static', filename='i18n.js') }}"></script>
 </body>
+
 </html>

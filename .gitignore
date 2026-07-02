@@ -6,7 +6,6 @@ du_lieu/*
 ThucNghiem_KetQua/
 ThucNghiem_KetQua/*
 app.log
-cli.log
 instance/
 .vscode/
 .idea/

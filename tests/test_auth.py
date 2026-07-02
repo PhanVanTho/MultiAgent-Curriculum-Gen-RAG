@@ -279,6 +279,55 @@ class TestAuthAndRBAC(unittest.TestCase):
         finally:
             CauHinh.GOOGLE_CLIENT_ID = original_google_client_id
 
+    @patch("requests.get")
+    def test_google_auth_linking_existing_account(self, mock_get):
+        from cau_hinh import CauHinh
+        original_google_client_id = CauHinh.GOOGLE_CLIENT_ID
+        mock_client_id = "mock-google-client-id"
+        CauHinh.GOOGLE_CLIENT_ID = mock_client_id
+        app.config["GOOGLE_CLIENT_ID"] = mock_client_id
+        
+        try:
+            # 1. Mock Google Token Verification response for a new Google User
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {
+                "sub": "new_google_id_6789",
+                "email": "different_google_email@local",
+                "name": "Different Google User",
+                "picture": "http://photo",
+                "aud": mock_client_id
+            }
+            mock_get.return_value = mock_response
+            
+            # 2. Post mock GIS credential to /auth/google
+            resp = self.client.post("/auth/google", json={
+                "credential": "mock_id_token"
+            })
+            self.assertEqual(resp.status_code, 200)
+            data = resp.get_json()
+            self.assertFalse(data["success"])
+            self.assertTrue(data["need_register"])
+            
+            # Now we have google_pending in session.
+            # 3. Log in with an existing username/password (e.g. 'user' / 'user123')
+            resp_login = self.client.post("/login", data={
+                "ten_dang_nhap": "user",
+                "mat_khau": "user123"
+            }, follow_redirects=True)
+            self.assertEqual(resp_login.status_code, 200)
+            
+            # Verify that the existing 'user' account in DB has been auto-linked to "new_google_id_6789"
+            user_db = NguoiDung.query.filter_by(ten_dang_nhap="user").first()
+            self.assertEqual(user_db.google_id, "new_google_id_6789")
+            self.assertEqual(user_db.ho_ten, "Different Google User")
+            
+            # Verify google_pending session is popped
+            with self.client.session_transaction() as sess:
+                self.assertNotIn("google_pending", sess)
+        finally:
+            CauHinh.GOOGLE_CLIENT_ID = original_google_client_id
+
     def test_profile_update_username(self):
         # Log in as user
         self.client.post("/login", data={

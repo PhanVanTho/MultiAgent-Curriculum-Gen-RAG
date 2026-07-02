@@ -378,7 +378,7 @@ def xay_dung_metadata_toan_dien(passages: list) -> list:
     return metadata
 
 @with_smart_retry(max_attempts=2)
-def trich_xuat_thuat_ngu(passages: list, api_key: str, target_core: int = 40, target_support: int = 60, semaphore=None):
+def trich_xuat_thuat_ngu(passages: list, api_key: str, target_core: int = 40, target_support: int = 60, semaphore=None, check_cancel=None):
     """
     Tier 1: Term Extraction (Adaptive V23.3)
     Điều phối việc trích xuất thuật ngữ: Nếu > 15-20 passages, dùng chu kỳ chunking tập trung.
@@ -388,13 +388,14 @@ def trich_xuat_thuat_ngu(passages: list, api_key: str, target_core: int = 40, ta
     # 💎 Adaptive Logic: Nếu quá nhiều dữ liệu, chia để trị tránh Timeout
     if len(passages) > 20:
         logger.info(f"[AdaptiveExtraction] Dữ liệu lớn ({len(passages)} docs). Kích hoạt chế độ Chunking.")
-        return trich_xuat_thuat_ngu_chunked(passages, api_key, target_core, target_support, semaphore)
+        return trich_xuat_thuat_ngu_chunked(passages, api_key, target_core, target_support, semaphore, check_cancel=check_cancel)
     
     metadata = xay_dung_metadata_toan_dien(passages)
-    return _trich_xuat_thuat_ngu_don_le(metadata, api_key, target_core, target_support, semaphore)
+    return _trich_xuat_thuat_ngu_don_le(metadata, api_key, target_core, target_support, semaphore, check_cancel=check_cancel)
 
-def _trich_xuat_thuat_ngu_don_le(metadata: list, api_key: str, target_core: int, target_support: int, semaphore=None):
+def _trich_xuat_thuat_ngu_don_le(metadata: list, api_key: str, target_core: int, target_support: int, semaphore=None, check_cancel=None):
     """Thực hiện trích xuất trong 1 lần gọi (Dùng cho lượng tin vừa phải)."""
+    if check_cancel: check_cancel()
     start_time = time.time()
     client = OpenAI(api_key=api_key, max_retries=0)
     
@@ -444,7 +445,7 @@ RETURN ONLY JSON matching TERM_EXTRACTION_SCHEMA.
             return {"core_terms": [], "supporting_terms": []}
 
 @with_smart_retry(max_attempts=2)
-def trich_xuat_thuat_ngu_chunked(passages: list, api_key: str, target_core: int, target_support: int, semaphore=None):
+def trich_xuat_thuat_ngu_chunked(passages: list, api_key: str, target_core: int, target_support: int, semaphore=None, check_cancel=None):
     """
     Tier 1.5: Chunked Term Extraction (V23.3)
     Groups passages into metadata, chunks metadata (max 3), and dedups.
@@ -458,9 +459,10 @@ def trich_xuat_thuat_ngu_chunked(passages: list, api_key: str, target_core: int,
     
     # Chỉ xử lý tối đa 3 chunks quan trọng nhất để bảo vệ performance
     for idx, c in enumerate(chunks[:3]):
+        if check_cancel: check_cancel()
         logger.info(f"[ChunkedExtraction] Processing Chunk {idx+1}/{min(len(chunks), 3)}...")
         try:
-            res = _trich_xuat_thuat_ngu_don_le(c, api_key, max(5, target_core // 2), max(5, target_support // 2), semaphore)
+            res = _trich_xuat_thuat_ngu_don_le(c, api_key, max(5, target_core // 2), max(5, target_support // 2), semaphore, check_cancel=check_cancel)
             all_core.extend(res.get("core_terms", []))
             all_support.extend(res.get("supporting_terms", []))
         except Exception as e:
@@ -596,18 +598,27 @@ def tao_dan_y(
             "url": p.get("url")
         })
     
+    is_scarce = len(corpus_passages) < 8
     cau_truc_prompt = ""
-    if che_do == "custom_so_chuong":
-        cau_truc_prompt = f"- BẮT BUỘC có CHÍNH XÁC {so_chuong_max} chương, mỗi chương 4-5 mục con."
-    elif che_do == "custom_danh_sach" and danh_sach_chuong:
-        cau_truc_prompt = f"- SỬ DỤNG DANH SÁCH: {danh_sach_chuong}. Mỗi chương cần 4-5 mục bóc tách."
+    if is_scarce:
+        if che_do == "custom_so_chuong":
+            cau_truc_prompt = f"- BẮT BUỘC có CHÍNH XÁC {so_chuong_max} chương, mỗi chương chỉ gồm 2-3 mục con tập trung vào khái niệm chính để tránh thiếu dữ liệu."
+        elif che_do == "custom_danh_sach" and danh_sach_chuong:
+            cau_truc_prompt = f"- SỬ DỤNG DANH SÁCH: {danh_sach_chuong}. Mỗi chương chỉ gồm 2-3 mục con tập trung vào khái niệm chính để tránh thiếu dữ liệu."
+        else:
+            cau_truc_prompt = f"- Tối đa {so_chuong_max} chương. Mỗi chương chỉ gồm 2-3 mục con tập trung vào khái niệm chính để tránh thiếu dữ liệu."
     else:
-        if quy_mo == "can_ban": 
-            cau_truc_prompt = f"- Tối đa {so_chuong_max} chương. Mỗi chương có ít nhất 2 mục con tập trung vào khái niệm chính."
-        elif quy_mo == "chuyen_sau": 
-            cau_truc_prompt = f"- Tối thiểu {so_chuong_min} chương. Mỗi chương BẮT BUỘC có 6-8 mục con chi tiết học thuật cao."
-        else: # tieu_chuan
-            cau_truc_prompt = "- Mỗi chương BẮT BUỘC có từ 4 đến 5 mục con chuyên sâu."
+        if che_do == "custom_so_chuong":
+            cau_truc_prompt = f"- BẮT BUỘC có CHÍNH XÁC {so_chuong_max} chương, mỗi chương 4-5 mục con."
+        elif che_do == "custom_danh_sach" and danh_sach_chuong:
+            cau_truc_prompt = f"- SỬ DỤNG DANH SÁCH: {danh_sach_chuong}. Mỗi chương cần 4-5 mục bóc tách."
+        else:
+            if quy_mo == "can_ban": 
+                cau_truc_prompt = f"- Tối đa {so_chuong_max} chương. Mỗi chương có ít nhất 2 mục con tập trung vào khái niệm chính."
+            elif quy_mo == "chuyen_sau": 
+                cau_truc_prompt = f"- Tối thiểu {so_chuong_min} chương. Mỗi chương BẮT BUỘC có 6-8 mục con chi tiết học thuật cao."
+            else: # tieu_chuan
+                cau_truc_prompt = "- Mỗi chương BẮT BUỘC có từ 4 đến 5 mục con chuyên sâu."
 
     prompt = f"""Bạn là chuyên gia biên soạn giáo trình đại học về "{chu_de}".
 Dữ liệu: {json.dumps(packed, ensure_ascii=False)}
@@ -617,7 +628,7 @@ YÊU CẦU DÀN Ý (V20.4 - High Fidelity):
 2. Xây dựng cấu trúc chương/mục: {cau_truc_prompt} 
    - LƯU Ý: Phải tuân thủ NGHIÊM NGẶT số lượng mục con tối thiểu cho mỗi chương.
 3. CHIỀU SÂU SEMANTIC: Mỗi chương phải đi từ: Nguyên lý/Bản chất -> Cơ chế chi tiết -> Ứng dụng thực tiễn -> Phân tích nâng cao. 
-   - Nếu dữ liệu ít, hãy tập trung phân tách các khía cạnh KỸ THUẬT khác nhau thành các mục con riêng biệt thay vì gộp chung.
+   - {"Nếu dữ liệu ít (khan hiếm), hãy hạn chế chia thành nhiều mục nhỏ, chỉ cần thiết lập 2-3 mục con tập trung trả lời đúng vấn đề cốt lõi của chương đó." if is_scarce else "Nếu dữ liệu ít, hãy tập trung phân tách các khía cạnh KỸ THUẬT khác nhau thành các mục con riêng biệt thay vì gộp chung."}
 4. TÍNH DANH BIỆT & ANTI-TRIVIAL: 
    - Mỗi mục phải có tên gắn liền với một thực thể kiến thức hoặc kỹ thuật cụ thể.
    - NGHIÊM CẤM "chia nhỏ giả tạo": Không sử dụng các tiêu đề rỗng như "Giới thiệu 1", "Giới thiệu 2", "Phần mở rộng A", "Phần mở rộng B".
@@ -674,6 +685,11 @@ def tao_dan_y_tu_passages(chu_de: str, corpus_passages: list, api_key: str, quy_
     # Chỉ lấy tinh hoa metadata để tránh tràn context
     packed = [{"title": p.get("title"), "text": p.get("text", "")[:400]} for p in corpus_passages[:15]]
     
+    is_scarce = len(corpus_passages) < 8
+    scale_text = "4. QUY MÔ: Chia thành tối đa 8 chương. Mỗi chương 3–5 mục con chi tiết."
+    if is_scarce:
+        scale_text = "4. QUY MÔ: Chia thành tối đa 8 chương. Vì dữ liệu khan hiếm, mỗi chương chỉ gồm 2–3 mục con chi tiết, tập trung trả lời đúng vấn đề cốt lõi của chương đó, tránh chia nhỏ quá mức."
+
     prompt = f"""Bạn là kiến trúc sư chương trình giảng dạy đại học. Tạo dàn ý giáo trình "{chu_de}" dựa trên các nguồn sau:
 DỮ LIỆU NGUỒN (METADATA): {json.dumps(packed, ensure_ascii=False)}
 
@@ -681,7 +697,7 @@ YÊU CẦU CỐT LÕI (STRICT RULES):
 1. LỘ TRÌNH HỌC THUẬT (ACADEMIC PROGRESSION): Cấu trúc phải đi từ Nền tảng (Intro/Fundamentals) -> Cốt lõi (Core Mechanics) -> Nâng cao (Advanced/Optimization) -> Ứng dụng/Thực tiễn (Applications).
 2. TÍNH DUY NHẤT (UNIQUENESS): Mỗi chương phải tập trung vào một cụm khái niệm BIỆT LẬP. KHÔNG được lặp lại chủ đề giữa các chương.
 3. ANTI-GENERIC: Tuyệt đối không dùng các tiêu đề chung chung như "Tổng quan", "Giới thiệu", "Kết luận" lặp đi lặp lại. Phải gắn tên chương với thực thể kỹ thuật cụ thể.
-4. QUY MÔ: Chia thành tối đa 8 chương. Mỗi chương 3–5 mục con chi tiết.
+{scale_text}
 5. VĂN PHONG GIÁO TRÌNH: Tinh chỉnh câu từ, tiêu đề chương/mục sao cho mang đậm tính học thuật, chuẩn mực như sách giáo trình đại học, nhưng tuyệt đối KHÔNG làm thay đổi nội dung lõi hay bịa thêm kiến thức.
 6. BẮT BUỘC (ANTI-HALLUCINATION): Toàn bộ Tên Chương và Tên Mục PHẢI được trích xuất hoặc tổng hợp TRỰC TIẾP từ dữ liệu CORPUS. TUYỆT ĐỐI KHÔNG sáng tạo thêm, bịa đặt thêm các chương/mục không có trong CORPUS.
 
@@ -1194,7 +1210,7 @@ def _polish_relevance_gate(outline: list, chu_de: str, api_key: str,
     if len(outline) <= 2 or np is None:
         return outline
     
-    # === Xây dựng anchor set ===
+    # === Xây dựng anchor set chung ===
     anchors = [chu_de]
     if core_terms:
         # Lấy top 15 core terms làm anchor bổ sung
@@ -1205,7 +1221,8 @@ def _polish_relevance_gate(outline: list, chu_de: str, api_key: str,
     
     logger.info(f"[Polish-Relevance] Anchors: {len(anchors)} ({anchors[:5]}...)")
     
-    # === Thu thập tất cả section titles ===
+    # === Thu thập tất cả chapter titles và section titles ===
+    chapter_titles = [ch.get("title", "") for ch in outline]
     all_section_titles = []
     section_map = []  # (chapter_idx, section_idx)
     for ch_i, ch in enumerate(outline):
@@ -1216,23 +1233,30 @@ def _polish_relevance_gate(outline: list, chu_de: str, api_key: str,
     if not all_section_titles:
         return outline
     
-    # === Embedding: anchors + section titles (1 batch duy nhất) ===
-    all_texts = anchors + all_section_titles
+    # === Embedding: anchors + chapter_titles + section titles (1 batch duy nhất) ===
+    all_texts = anchors + chapter_titles + all_section_titles
     vectors = _get_embeddings_batch(all_texts, api_key)
     
     if not vectors:
         return outline
     
     anchor_vecs = vectors[:len(anchors)]
-    section_vecs = vectors[len(anchors):]
+    chapter_vecs = vectors[len(anchors):len(anchors)+len(chapter_titles)]
+    section_vecs = vectors[len(anchors)+len(chapter_titles):]
     
     # === Tính multi-anchor relevance score cho từng section ===
     off_topic_sections = set()
     gray_zone_count = 0
     
     for idx, (ch_i, sec_i) in enumerate(section_map):
-        # Multi-anchor: lấy điểm MAX trong tất cả anchors
-        max_sim = max(_cosine_sim(section_vecs[idx], av) for av in anchor_vecs)
+        # Lấy vector của parent chapter tương ứng
+        parent_ch_vec = chapter_vecs[ch_i]
+        
+        # Multi-anchor: lấy điểm MAX trong (sim với các anchors chung, và sim với chính tên chương cha)
+        max_sim = max(
+            max(_cosine_sim(section_vecs[idx], av) for av in anchor_vecs),
+            _cosine_sim(section_vecs[idx], parent_ch_vec)
+        )
         sec_title = all_section_titles[idx]
         
         if max_sim <= threshold_remove:
@@ -1325,6 +1349,9 @@ def _apply_polish_layer(result: dict, chu_de: str, api_key: str, skip_rename: bo
                 norm_sections.append(s)
         ch["sections"] = norm_sections
     
+    if skip_rename:
+        logger.info("[Polish] SKIPPED ENTIRE POLISH LAYER — user-defined chapter names.")
+        return result
     
     client = OpenAI(api_key=api_key, max_retries=0)
     original = copy.deepcopy(outline)
@@ -1558,11 +1585,34 @@ def _clean_lazy_placeholders_from_outline(result: dict) -> dict:
     return result
 
 
-def nhom_thuat_ngu_va_tao_dan_y(terms_data: dict, api_key: str, chu_de: str, so_chuong: int = 10, quy_mo: str = "tieu_chuan", semaphore=None, safety_class: str = "SAFE", ngon_ngu: str = "vi", so_chuong_custom=None, danh_sach_chuong=None, passages: list = None, is_hard_case: bool = False, domain_info: dict = None):
+def nhom_thuat_ngu_va_tao_dan_y(terms_data: dict, api_key: str, chu_de: str, so_chuong: int = 10, quy_mo: str = "tieu_chuan", semaphore=None, safety_class: str = "SAFE", ngon_ngu: str = "vi", so_chuong_custom=None, danh_sach_chuong=None, passages: list = None, is_hard_case: bool = False, domain_info: dict = None, custom_section_words=None, custom_sections_map=None):
     """
     Cognitive Layer: Clustering & Outline.
     V35: Section titles are grounded in actual KB headings/content.
     """
+    if custom_sections_map:
+        logger.info(f"[Architect] Custom sections map provided. Constructing outline directly, bypassing LLM.")
+        outline = []
+        for ch_idx, ch_title in enumerate(danh_sach_chuong, 1):
+            sections_list = custom_sections_map.get(ch_title, [])
+            if not sections_list:
+                sections_list = [f"Tổng quan về {ch_title}"]
+            
+            sections = []
+            for sec_title in sections_list:
+                sections.append({
+                    "title": sec_title,
+                    "subsections": []
+                })
+            
+            outline.append({
+                "chapter_index": ch_idx,
+                "title": ch_title,
+                "sections": sections
+            })
+            
+        return {"outline": outline}
+
     if not api_key: raise RuntimeError("Thiếu OPENAI_API_KEY")
     client = OpenAI(api_key=api_key, max_retries=0)
     
@@ -1581,6 +1631,15 @@ def nhom_thuat_ngu_va_tao_dan_y(terms_data: dict, api_key: str, chu_de: str, so_
     ch_max = cfg.get("ch", (4, 8))[1]
     sec_min = cfg.get("sec", (3, 5))[0]
     sec_max = cfg.get("sec", (3, 5))[1]
+
+    # Kiểm tra độ khan hiếm dữ liệu
+    is_scarce = False
+    passages_count = len(passages) if passages else 0
+    if doc_count < 15 or passages_count < 80:
+        is_scarce = True
+        logger.warning(f"[Architect] SCARCE DATA detected (terms={doc_count}, passages={passages_count}). Lowering section count per chapter to focus core questions.")
+        sec_min = 2
+        sec_max = 3
 
     # 💡 V35: Soft Scaling Safety Valve — giảm nhẹ nếu ít dữ liệu, ưu tiên max nếu đủ
     if quy_mo == "chuyen_sau":
@@ -1736,12 +1795,34 @@ def nhom_thuat_ngu_va_tao_dan_y(terms_data: dict, api_key: str, chu_de: str, so_
     field_model = FIELD_MODELS.get(domain_key, f"theory → systems → methods → implementation → societal impact → future trajectory")
 
     # V28+: Prompt thay đổi tuỳ theo mode
+    # V40: Detect "focused custom mode" — user provides custom chapter titles AND custom word count
+    # In this mode, don't enforce section count targets; let the AI focus on content quality
+    is_focused_custom = bool(danh_sach_chuong and len(danh_sach_chuong) > 0 and custom_section_words)
+
     if target_mode == "MANUAL_LIST":
-        chapter_instruction = f"""- YOU MUST USE THIS EXACT CHAPTER LIST: {json.dumps(danh_sach_chuong, ensure_ascii=False)}
-- DO NOT RENAME, REWORD, OR MODIFY these chapter titles in any way. Use them EXACTLY as provided.
+        if is_focused_custom:
+            # V40: Focused Custom Mode — no strict section count, focus on answering the chapter's core question
+            chapter_instruction = f"""- You MUST use the exact chapter titles from this list: {json.dumps(danh_sach_chuong, ensure_ascii=False)}
+- DO NOT RENAME, REWORD, OR MODIFY these chapter titles in any way.
+- The number of chapters MUST be EXACTLY {target_ch}.
+- You may arrange these chapters in any logical progression (they do NOT need to follow the exact order in the list; arrange them so the content flows logically from fundamental concepts to advanced applications).
+- Assign each set of sections to its correct matching chapter title from the list.
 - CRITICAL HIERARCHY CONSTRAINT: For each chapter, the generated Level 2 titles (sections) and Level 3 titles (subsections) MUST strictly follow, align with, and be directly relevant to the specific semantics of that custom chapter's name.
 - CRITICAL FILTERING CONSTRAINT: Because the user has provided a strictly limited list of chapters, you MUST DISCARD any input terms or knowledge map data that do not naturally belong to these specific chapter titles. DO NOT force irrelevant terms into the outline just to use them. Your sections and subsections MUST be highly cohesive and strictly scoped to the chapter title.
-- The number of chapters MUST be EXACTLY {target_ch} (following the provided list)."""
+- FOCUSED CONTENT MODE: The user has specified a custom word count of ~{custom_section_words} words per section.
+  * DO NOT impose a fixed number of sections per chapter. Instead, create only the sections that are genuinely necessary to fully address the chapter topic.
+  * If a chapter's topic is narrow or the data is limited, 1-2 focused sections are perfectly acceptable.
+  * If a chapter's topic is broad with rich data, you may create 3-4 sections.
+  * The goal is QUALITY over QUANTITY — each section must deliver substantive, focused content that directly answers the chapter's core question.
+  * DO NOT create filler sections, empty sections, or sections that merely rephrase the chapter title."""
+        else:
+            chapter_instruction = f"""- You MUST use the exact chapter titles from this list: {json.dumps(danh_sach_chuong, ensure_ascii=False)}
+- DO NOT RENAME, REWORD, OR MODIFY these chapter titles in any way.
+- The number of chapters MUST be EXACTLY {target_ch}.
+- You may arrange these chapters in any logical progression (they do NOT need to follow the exact order in the list; arrange them so the content flows logically from fundamental concepts to advanced applications).
+- Assign each set of sections to its correct matching chapter title from the list.
+- CRITICAL HIERARCHY CONSTRAINT: For each chapter, the generated Level 2 titles (sections) and Level 3 titles (subsections) MUST strictly follow, align with, and be directly relevant to the specific semantics of that custom chapter's name.
+- CRITICAL FILTERING CONSTRAINT: Because the user has provided a strictly limited list of chapters, you MUST DISCARD any input terms or knowledge map data that do not naturally belong to these specific chapter titles. DO NOT force irrelevant terms into the outline just to use them. Your sections and subsections MUST be highly cohesive and strictly scoped to the chapter title."""
     elif target_mode == "EXACT":
         chapter_instruction = f"""- EXACTLY {target_ch} chapters. THIS IS MANDATORY. Count them before returning.
 - Each chapter must have {sec_min} to {sec_max} sections.
@@ -1752,6 +1833,15 @@ def nhom_thuat_ngu_va_tao_dan_y(terms_data: dict, api_key: str, chu_de: str, so_
 - Do NOT force exactly {ch_max} chapters if the data is thin and does not support it, as this leads to duplication or empty content.
 - However, do NOT be lazy and default to the minimum {ch_min} chapters if the provided data is rich enough to support more chapters. Prioritize writing as many high-quality, distinct chapters as the data can support.
 - Each chapter must have {sec_min} to {sec_max} sections."""
+
+    scarce_instruction = """
+- CRITICAL SCARCE DATA CONSTRAINT: The available knowledge/data is scarce.
+- You MUST limit the number of sections (Level 2) per chapter to only 2-3 essential sections.
+- Focus ONLY on answering the core concepts and problem statements of each chapter.
+- DO NOT fragment the outline into shallow, redundant, or empty subsections."""
+
+    if is_scarce and not is_focused_custom:
+        chapter_instruction += scarce_instruction
 
     translation_rule = ""
     if ngon_ngu == "vi":
@@ -2088,34 +2178,105 @@ Trả về JSON:
     if danh_sach_chuong and isinstance(danh_sach_chuong, list) and result:
         outline = result.get("outline", [])
         
-        # 1. Cắt bỏ các chương dư thừa nếu LLM sinh lố
-        if len(outline) > len(danh_sach_chuong):
-            logger.warning(f"[TitleEnforce] Cắt bỏ {len(outline) - len(danh_sach_chuong)} chương dư thừa do LLM tự thêm.")
-            outline = outline[:len(danh_sach_chuong)]
-            result["outline"] = outline
+        # Hàm chuẩn hóa tiêu đề phục vụ so khớp ngữ nghĩa
+        def normalize_title(s):
+            if not s:
+                return ""
+            from dich_vu.kiem_tra_cau_truc_json import clean_title_numbering
+            s = clean_title_numbering(s)
+            s = s.lower()
+            if chu_de:
+                s = s.replace(chu_de.lower(), "")
+            s = re.sub(r'^(chương|chapter|\d+)\s*\d*[\.:\-]*\s*', '', s)
+            s = re.sub(r'[^\w\s]', '', s)
+            return s.strip()
 
-        # 2. Đổi tên các chương có sẵn cho khớp
-        for i, ch in enumerate(outline):
-            original_title = ch.get("title", "")
-            forced_title = danh_sach_chuong[i].strip()
-            if original_title != forced_title:
-                logger.info(f"[TitleEnforce] Ch{i+1}: '{original_title}' → '{forced_title}'")
-            ch["title"] = forced_title
+        # Hàm tìm chương khớp nhất trong các chương sinh ra từ LLM dựa trên cả tiêu đề và nội dung mục con
+        def find_best_match(custom_title, generated_chapters, used_indices):
+            c_norm = normalize_title(custom_title)
+            c_words = set(c_norm.split())
+            if not c_words:
+                return None
+                
+            best_idx = None
+            best_score = -1.0
             
-        # 3. Bổ sung các chương bị thiếu nếu LLM sinh thiếu
-        if len(outline) < len(danh_sach_chuong):
-            for i in range(len(outline), len(danh_sach_chuong)):
-                forced_title = danh_sach_chuong[i].strip()
-                outline.append({
-                    "title": forced_title,
-                    "sections": [
-                        {"title": f"Mục lục tự động 1 cho {forced_title}"},
-                        {"title": f"Mục lục tự động 2 cho {forced_title}"},
-                        {"title": f"Mục lục tự động 3 cho {forced_title}"}
-                    ]
-                })
-                logger.warning(f"[TitleEnforce] Bổ sung chương bị thiếu: '{forced_title}'")
-            result["outline"] = outline
+            for idx, ch in enumerate(generated_chapters):
+                if idx in used_indices:
+                    continue
+                
+                # 1. So khớp tiêu đề chương (trọng số 0.3)
+                g_title = ch.get("title", "")
+                g_norm = normalize_title(g_title)
+                g_words = set(g_norm.split())
+                title_overlap = len(c_words.intersection(g_words)) / len(c_words) if c_words else 0
+                if c_norm in g_norm or g_norm in c_norm:
+                    title_overlap += 0.5
+                
+                # 2. So khớp tiêu đề các mục con (trọng số 0.7)
+                sec_scores = []
+                for sec in ch.get("sections", []):
+                    s_title = sec.get("title", "") if isinstance(sec, dict) else sec
+                    s_norm = normalize_title(s_title)
+                    s_words = set(s_norm.split())
+                    sec_overlap = len(c_words.intersection(s_words)) / len(c_words) if c_words else 0
+                    if c_norm in s_norm or s_norm in c_norm:
+                        sec_overlap += 0.5
+                    sec_scores.append(sec_overlap)
+                
+                avg_sec_score = sum(sec_scores) / len(sec_scores) if sec_scores else 0.0
+                combined_score = 0.3 * title_overlap + 0.7 * avg_sec_score
+                
+                if combined_score > best_score:
+                    best_score = combined_score
+                    best_idx = idx
+            
+            if best_score > 0.1:
+                return best_idx
+            return None
+
+        # Tiến hành so khớp và xây dựng lại outline theo đúng thứ tự người dùng yêu cầu
+        new_outline = []
+        used_indices = set()
+        
+        for forced_title in danh_sach_chuong:
+            forced_title = forced_title.strip()
+            best_idx = find_best_match(forced_title, outline, used_indices)
+            if best_idx is not None:
+                ch = outline[best_idx]
+                ch["title"] = forced_title
+                new_outline.append(ch)
+                used_indices.add(best_idx)
+            else:
+                new_outline.append(None)
+                
+        # Điền các chương chưa khớp bằng các chương sinh ra còn dư hoặc tạo mới nếu thiếu hẳn
+        for i, forced_title in enumerate(danh_sach_chuong):
+            if new_outline[i] is None:
+                unused_idx = next((idx for idx in range(len(outline)) if idx not in used_indices), None)
+                if unused_idx is not None:
+                    ch = outline[unused_idx]
+                    ch["title"] = forced_title.strip()
+                    new_outline[i] = ch
+                    used_indices.add(unused_idx)
+                    logger.info(f"[TitleEnforce] Ghép chương dư '{ch.get('title')}' vào vị trí '{forced_title}'")
+                else:
+                    # Tạo mới nếu thiếu
+                    new_outline[i] = {
+                        "title": forced_title.strip(),
+                        "sections": [
+                            {"title": f"Mục lục tự động 1 cho {forced_title.strip()}"},
+                            {"title": f"Mục lục tự động 2 cho {forced_title.strip()}"},
+                            {"title": f"Mục lục tự động 3 cho {forced_title.strip()}"}
+                        ]
+                    }
+                    logger.warning(f"[TitleEnforce] Bổ sung chương trống cho tiêu đề custom: '{forced_title.strip()}'")
+                    
+        # Đánh lại chỉ mục chương
+        for idx, ch in enumerate(new_outline):
+            ch["chapter_index"] = idx + 1
+            
+        result["outline"] = new_outline
     
     # 🆕 Programmatic Post-Processing Cleanup Layer: Ensure no placeholders
     result = _clean_lazy_placeholders_from_outline(result)
@@ -2428,22 +2589,69 @@ def viet_noi_dung_muc(
         facts_text += f"[{p_id}] {p_text}\n"
         fact_ids.append(p_id)
 
+    custom_sections_map = kwargs.get("custom_sections_map")
+    has_custom_subsections = False
+    if custom_sections_map:
+        has_custom_subsections = any(len(secs) > 0 for secs in custom_sections_map.values())
+
+    custom_section_words = kwargs.get("custom_section_words")
     expansion_constraint = ""
-    if quy_mo == "can_ban":
-        expansion_constraint = "Viết gãy gọn để trình bày rõ ràng các facts."
-    elif quy_mo == "tieu_chuan":
-        expansion_constraint = "Mở rộng phân tích cơ bản để giải thích nguyên lý. Viết đầy đủ đạt khoảng 400 từ."
-    else: # chuyen_sau
-        expansion_constraint = "Viết chi tiết và đầy đủ để đạt tối thiểu ~800 từ. Áp dụng nghiêm ngặt cấu trúc 3 lớp (Nguyên lý - Cơ chế - Diễn giải) cho mỗi Fact."
+    if custom_section_words:
+        min_words = int(custom_section_words)
+        if kwargs.get('ngon_ngu', 'vi') == "en":
+            expansion_constraint = (
+                f"Each section MUST be written with exactly around {min_words} words (tolerance +/- 10% is allowed).\n"
+                f"To reach the target length of {min_words} words without hallucinating, apply these PEDAGOGICAL ELABORATION & TRANSITION directives:\n"
+                f"1. After each sentence containing a source citation [ID], write 1-2 sentences of academic explanation/interpretation, discussing its significance, practical applications, or pedagogical value.\n"
+                f"2. Use rich academic transition phrases to ensure smooth prose flow (e.g., 'To further clarify this principle...', 'A direct consequence of this mechanism is...', 'In practical development contexts, applying... helps...', 'This is closely linked to...').\n"
+                f"3. Provide deep analysis and contrast of the source facts rather than writing short, shallow summaries."
+            )
+        else:
+            expansion_constraint = (
+                f"Nội dung của mục này bắt buộc PHẢI đạt chính xác khoảng {min_words} từ (sai số cho phép tối đa +/- 10%).\n"
+                f"Để đạt mục tiêu độ dài của người dùng mà không gây ảo giác, bạn cần áp dụng các chỉ thị DIỄN GIẢI HỌC THUẬT & TỪ NỐI:\n"
+                f"1. Sau mỗi câu chứa trích dẫn nguồn [ID], hãy viết thêm 1-2 câu diễn giải sâu sắc về ý nghĩa lý thuyết, tầm quan trọng sư phạm hoặc cách thức vận dụng thực tiễn của thông tin đó.\n"
+                f"2. Sử dụng các cụm từ nối học thuật phong phú để làm mịn mạch văn (ví dụ: 'Để làm rõ hơn nguyên lý này...', 'Hệ quả trực tiếp của cơ chế này là...', 'Trong ngữ cảnh phát triển thực tế, việc áp dụng... giúp...', 'Điều này có mối liên hệ mật thiết với...').\n"
+                f"3. Phân tích chi tiết và đối chiếu các thông tin nguồn thay vì chỉ viết tóm tắt quá ngắn gọn."
+            )
+    else:
+        if quy_mo == "can_ban":
+            expansion_constraint = "Viết gãy gọn để trình bày rõ ràng các facts."
+        elif quy_mo == "tieu_chuan":
+            expansion_constraint = "Mở rộng phân tích cơ bản để giải thích nguyên lý. Viết đầy đủ đạt khoảng 400 từ."
+        else: # chuyen_sau
+            expansion_constraint = "Viết chi tiết và đầy đủ để đạt tối thiểu ~800 từ. Áp dụng nghiêm ngặt cấu trúc 3 lớp (Nguyên lý - Cơ chế - Diễn giải) cho mỗi Fact."
 
     context_flow = ""
     if prev_section_summary:
         context_flow = f"\nPREV SECTION SUMMARY: {prev_section_summary} (Use this to ensure smooth transition)\n"
 
+    if has_custom_subsections:
+        level3_rule = """STRICT RULE ON PRESENTATION:
+- NO LEVEL-3 SUBSECTIONS (CRITICAL): Do NOT organize the `content` field into Level-3 subsections using Markdown headers (###) or any other sub-headers (like 1.1.1). The user has already provided custom Level-2 subsections, so you MUST write the content as naturally flowing academic prose (divided into standard paragraphs) WITHOUT any internal ### sub-headers or list-like headers.
+- DO NOT include the main Chapter or Section title in the `content`.
+- Use smooth transitions (e.g., "Hơn nữa...", "Cụ thể...", "Bởi vậy...") to connect ideas into a cohesive academic narrative."""
+    else:
+        level3_rule = """STRICT RULE ON PRESENTATION:
+- LEVEL-3 SUBSECTIONS (CRITICAL): You MUST organize the `content` field into Level-3 subsections using Markdown headers (###). 
+  * Identify core scientific terms from the SOURCE FACTS.
+  * STRICT RULE: DO NOT add any numbering prefixes (like 1., 1.1., etc.) to the headers. The system handles numbering automatically.
+  * Use those exact terms as Level-3 headers (e.g., "### Hợp đồng thông minh").
+  * Place the corresponding factual content underneath.
+  * STRICT ANTI-HALLUCINATION: Do NOT invent terms. Only use terms explicitly found in the SOURCE FACTS.
+- DO NOT include the main Chapter or Section title in the `content`.
+- Use smooth transitions (e.g., "Hơn nữa...", "Cụ thể...", "Bởi vậy...") to connect these layers into a cohesive academic paragraph under each Level-3 header.
+- The reader should perceive a professional narrative, not a structured list."""
+
     prompt = f"""You are a university professor creating ONE SECTION of a textbook about "{chu_de}".
 Chapter: "{chapter_title}"
 Section: "{section_title}"
 {_lang_directive(kwargs.get('ngon_ngu', 'vi'))}
+{f'''
+CRITICAL REQUIREMENT: The content you generate MUST strictly focus on and align with the specific scope of the custom Chapter: "{chapter_title}" and Section: "{section_title}".
+Do NOT drift into general or unrelated aspects of the overall textbook topic "{chu_de}" that are outside this chapter's theme.
+Every concept, mechanism, and explanation MUST directly support and relate to this specific chapter title.
+''' if kwargs.get("danh_sach_chuong") or kwargs.get("is_custom_chapter") else ''}
 
 {context_flow}
 
@@ -2456,15 +2664,7 @@ Instead of freewriting, you MUST organize each paragraph in `content` follow thi
 2. MECHANISMS: Explain "HOW" (technical mechanics/details) based on 100% of the `span`.
 3. INTERPRETATION: Clarify the importance of the fact for the overall topic.
 
-STRICT RULE ON PRESENTATION:
-- LEVEL-3 SUBSECTIONS (CRITICAL): You MUST organize the `content` field into Level-3 subsections using Markdown headers (###). 
-  * Identify core scientific terms from the SOURCE FACTS.
-  * Use those exact terms as Level-3 headers (e.g., "### Hợp đồng thông minh").
-  * Place the corresponding factual content underneath.
-  * STRICT ANTI-HALLUCINATION: Do NOT invent terms. Only use terms explicitly found in the SOURCE FACTS.
-- DO NOT include the main Chapter or Section title in the `content`.
-- Use smooth transitions (e.g., "Hơn nữa...", "Cụ thể...", "Bởi vậy...") to connect these layers into a cohesive academic paragraph under each Level-3 header.
-- The reader should perceive a professional narrative, not a structured list.
+{level3_rule}
 
 INTERPRETATION RULES:
 - CHỈ ĐƯỢC PHÉP làm rõ ý nghĩa của fact đã có trong span.
@@ -2473,10 +2673,10 @@ INTERPRETATION RULES:
 QUY TẮC SỐNG CÒN VỀ TRÍCH DẪN (STRICT INLINE CITATION ENFORCEMENT):
 - Mỗi khi bạn đưa ra một định nghĩa, con số, hoặc sự kiện, bạn BẮT BUỘC phải đặt mã nguồn ở cuối câu, ví dụ: [Doc 1], [Doc 3].
 - Nếu một câu không thể tìm được Doc tương ứng trong Context, bạn KHÔNG ĐƯỢC PHÉP viết câu đó. Không được tự bịa ra thông tin.
-- Các câu văn mang tính chất diễn giải, chuyển ý thuần túy (không chứa factual claim) thì không cần mã nguồn.
+- Các câu văn mang tính chất diễn giải, chuyển ý giải thích cho một sự kiện BẮT BUỘC phải gắn kèm mã nguồn của sự kiện đó ở cuối câu để đảm bảo khả năng tra cứu đầy đủ.
 - TUYỆT ĐỐI KHÔNG viết bất kỳ sự kiện, số liệu hay nhận định khoa học nào mà không có [ID] trích dẫn đi kèm.
 - TUYỆT ĐỐI KHÔNG "gom cite đại diện" ở cuối đoạn (ví dụ sai: "Nội dung phân tích... [1][2][3]").
-- PHẢI gắn chính xác [source_id] NGAY SÁT SAU luận điểm thông tin (ví dụ đúng: "Ý A [1]. Còn ý B [2]. Do đó, điều này mang ý nghĩa rất lớn.").
+- PHẢI gắn chính xác [source_id] NGAY SÁT SAU luận điểm thông tin VÀ câu diễn giải (ví dụ đúng: "Ý A [1]. Còn ý B [2]. Do đó, điều này mang ý nghĩa rất lớn đối với B [2].").
 
 ĐỘ SÂU (EXPANSION DEPTH):
 ################################################################################
@@ -2580,6 +2780,73 @@ def viet_rut_gon_rescue(chu_de: str, section_title: str, relevant_passages: list
                 "mode": "emergency"
             }
 
+def viet_mo_rong_muc(chu_de: str, section_title: str, current_content: str, relevant_passages: list, target_words: int, api_key: str, semaphore=None, ngon_ngu="vi"):
+    """
+    Expansion Retry Loop: Yêu cầu AI viết mở rộng thêm cho mục nội dung hiện tại để đạt đủ target_words.
+    """
+    if not api_key: return None
+    client = OpenAI(api_key=api_key, max_retries=1)
+    
+    facts_text = ""
+    for i, p in enumerate(relevant_passages[:10]):
+        facts_text += f"[{p.get('id', i+1)}] {p.get('text', '')}\n"
+        
+    if ngon_ngu == "en":
+        prompt = f"""You are an educational assistant. The current content for section "{section_title}" in book "{chu_de}" is too short.
+        Target length: {target_words} words.
+        
+        Current content:
+        {current_content}
+        
+        TASK:
+        Please WRITE AN EXPANSION (continuation/deepening) for this section to reach the target word count.
+        - DO NOT rewrite the existing content. Write NEW paragraphs that logically follow or dive deeper into the topic.
+        - Use the provided source facts to elaborate, explain mechanisms, or provide practical examples.
+        - Cite sources using [ID]. Explanatory sentences MUST also end with the [ID] of the fact they explain.
+        - Return ONLY the newly added expansion text. Do not use JSON.
+        
+        SOURCE FACTS:
+        {facts_text}
+        """
+    else:
+        prompt = f"""Bạn là một chuyên gia biên soạn giáo trình. Nội dung hiện tại của mục "{section_title}" thuộc giáo trình "{chu_de}" đang bị quá ngắn.
+        Mục tiêu độ dài: {target_words} từ.
+        
+        Nội dung hiện tại:
+        {current_content}
+        
+        NHIỆM VỤ:
+        Hãy VIẾT MỞ RỘNG (viết nối tiếp hoặc phân tích sâu hơn) cho mục này để bù đắp số từ còn thiếu.
+        - KHÔNG viết lại nội dung đã có. Hãy viết thêm các đoạn văn mới có tính logic nối tiếp, đi sâu vào giải thích cơ chế, ý nghĩa học thuật, hoặc ví dụ thực tiễn.
+        - Sử dụng các tài liệu nguồn để lấy thông tin.
+        - Trích dẫn nguồn theo định dạng [ID]. Kể cả câu diễn giải cũng phải gắn [ID] của thông tin gốc.
+        - CHỈ trả về phần văn bản mở rộng mới viết thêm. Tuyệt đối không dùng JSON.
+        
+        TÀI LIỆU NGUỒN:
+        {facts_text}
+        """
+        
+    try:
+        if semaphore:
+            with semaphore:
+                resp = client.chat.completions.create(
+                    messages=[{"role": "user", "content": prompt}],
+                    model=CauHinh.WRITER_MODEL,
+                    temperature=0.4,
+                    timeout=45.0
+                )
+        else:
+            resp = client.chat.completions.create(
+                messages=[{"role": "user", "content": prompt}],
+                model=CauHinh.WRITER_MODEL,
+                temperature=0.4,
+                timeout=45.0
+            )
+        return resp.choices[0].message.content
+    except Exception as e:
+        logger.error(f"[ExpansionRetry] Failed to expand {section_title}: {e}")
+        return None
+
 def sua_noi_dung_targeted(chu_de: str, section_data: dict, feedback_list: list, api_key: str, semaphore=None):
     """
     Targeted Fix (V21.1): Sửa đúng claim bị lỗi, khóa phạm vi (Lock Scope).
@@ -2678,37 +2945,67 @@ def viet_noi_dung_batch_sections(
                 seen_ids.add(p_id)
 
     # 2. V34.1: Ràng buộc CỨNG theo quy mô (Grounding-First Rebalance)
-    # Giảm word minimums để ưu tiên grounding > length
-    WORD_MINIMUMS = {
-        "can_ban": 150,
-        "tieu_chuan": 400,
-        "chuyen_sau": 700
-    }
-    min_words = WORD_MINIMUMS.get(quy_mo, 350)
-    
-    expansion_depth = {
-        "can_ban": f"Each section should be around {min_words} words. Focus on clarity.",
-        "tieu_chuan": f"Each section should be around {min_words} words. Explain mechanisms with depth.",
-        "chuyen_sau": f"Each section should be around {min_words} words. Deep academic analysis."
-    }.get(quy_mo, "Standard")
-    
-    # V34: max_tokens theo quy mô
-    MAX_TOKENS_MAP = {
-        "can_ban": 4096,
-        "tieu_chuan": 8192,
-        "chuyen_sau": 16384
-    }
-    max_output_tokens = MAX_TOKENS_MAP.get(quy_mo, 4096)
+    custom_sections_map = kwargs.get("custom_sections_map")
+    is_custom_flow = bool(custom_sections_map) or bool(kwargs.get("danh_sach_chuong"))
+    has_custom_subsections = False
+    if custom_sections_map:
+        has_custom_subsections = any(len(secs) > 0 for secs in custom_sections_map.values())
+
+    custom_section_words = kwargs.get("custom_section_words")
+    if custom_section_words:
+        min_words = int(custom_section_words)
+        if kwargs.get('ngon_ngu', 'vi') == "en":
+            expansion_depth = (
+                f"Each section MUST be written with exactly around {min_words} words (tolerance +/- 10% is allowed).\n"
+                f"To reach the target length of {min_words} words without hallucinating, apply these PEDAGOGICAL ELABORATION & TRANSITION directives:\n"
+                f"1. After each sentence containing a source citation [ID], write 1-2 sentences of academic explanation/interpretation. You MUST attach the exact same [ID] citation to the end of these explanatory sentences.\n"
+                f"2. Use rich academic transition phrases to ensure smooth prose flow (e.g., 'To further clarify this principle...', 'A direct consequence of this mechanism is...', 'In practical development contexts, applying... helps...', 'This is closely linked to...').\n"
+                f"3. Provide deep analysis and contrast of the source facts rather than writing short, shallow summaries."
+            )
+        else:
+            expansion_depth = (
+                f"Nội dung mỗi mục bắt buộc PHẢI đạt chính xác khoảng {min_words} từ (sai số cho phép tối đa +/- 10%).\n"
+                f"Để đạt mục tiêu độ dài của người dùng mà không gây ảo giác, bạn cần áp dụng các chỉ thị DIỄN GIẢI HỌC THUẬT & TỪ NỐI:\n"
+                f"1. Sau mỗi câu chứa trích dẫn nguồn [ID], hãy viết thêm 1-2 câu diễn giải sâu sắc. BẮT BUỘC phải gắn lại chính mã trích dẫn [ID] đó vào cuối các câu diễn giải này để duy trì tính toàn vẹn trích dẫn.\n"
+                f"2. Sử dụng các cụm từ nối học thuật phong phú để làm mịn mạch văn (ví dụ: 'Để làm rõ hơn nguyên lý này...', 'Hệ quả trực tiếp của cơ chế này là...', 'Trong ngữ cảnh phát triển thực tế, việc áp dụng... giúp...', 'Điều này có mối liên hệ mật thiết với...').\n"
+                f"3. Phân tích chi tiết và đối chiếu các thông tin nguồn thay vì chỉ viết tóm tắt quá ngắn gọn."
+            )
+        max_output_tokens = max(4096, min(16384, min_words * 4 * len(sections_info)))
+    else:
+        # Giảm word minimums để ưu tiên grounding > length
+        WORD_MINIMUMS = {
+            "can_ban": 150,
+            "tieu_chuan": 400,
+            "chuyen_sau": 700
+        }
+        min_words = WORD_MINIMUMS.get(quy_mo, 350)
+        
+        expansion_depth = {
+            "can_ban": f"Each section should be around {min_words} words. Focus on clarity.",
+            "tieu_chuan": f"Each section should be around {min_words} words. Explain mechanisms with depth.",
+            "chuyen_sau": f"Each section should be around {min_words} words. Deep academic analysis."
+        }.get(quy_mo, "Standard")
+        
+        # V34: max_tokens theo quy mô
+        MAX_TOKENS_MAP = {
+            "can_ban": 4096,
+            "tieu_chuan": 8192,
+            "chuyen_sau": 16384
+        }
+        max_output_tokens = MAX_TOKENS_MAP.get(quy_mo, 4096)
 
     # 3. Prompt Batching & Self-Audit
-    if kwargs.get('ngon_ngu', 'vi') == "en":
+    if is_custom_flow:
+        exercise_rule = "7. NO EXERCISES (CRITICAL): Do NOT generate review questions or exercises at the end of the section content. Leave the `review_questions` JSON array empty: []."
+        en_density_boost = ""
+    elif kwargs.get('ngon_ngu', 'vi') == "en":
         exercise_rule = """7. EXERCISES (CRITICAL): You MUST generate EXACTLY 4 review questions strictly based on the section's knowledge and place them in the `review_questions` JSON array (DO NOT put them in the `content` field):
    a) 2 Conceptual Questions: Ask students to explain, compare, or analyze core concepts.
    b) 1 Applied Question: Present a practical scenario or problem and ask students to apply the knowledge to solve it.
    c) 1 Critical Thinking Question: Ask students to evaluate, debate, or provide a reasoned personal opinion.
    DO NOT generate multiple-choice questions. All questions must be open-ended essay/discussion format suitable for university-level assessment."""
         en_density_boost = """\nCRITICAL DENSITY REQUIREMENT (ENGLISH SYLLABUS):
-- English academic writing in this pipeline requires STRICTER citation density.
+- English academic academic writing in this pipeline requires STRICTER citation density.
 - You MUST provide AT LEAST 2 to 3 [ID] citations per paragraph.
 - Every major sentence introducing a new concept MUST have a citation. Do NOT write long explanatory paragraphs without citing the source facts."""
     else:
@@ -2722,9 +3019,45 @@ def viet_noi_dung_batch_sections(
 - Bạn PHẢI cung cấp ÍT NHẤT 2 đến 3 trích dẫn [ID] cho mỗi đoạn văn.
 - Mỗi câu giới thiệu một khái niệm, thông tin hoặc số liệu mới đều PHẢI có trích dẫn nguồn [ID] ngay sau đó. TUYỆT ĐỐI KHÔNG viết các đoạn văn giải thích dài dòng mà không trích dẫn các tài liệu thực tế [ID] đi kèm."""
 
+    if has_custom_subsections:
+        level3_rule = "4. NO LEVEL-3 SUBSECTIONS (CRITICAL): Do NOT organize the text inside the 'content' field into Level-3 subsections using Markdown headers (###) or any other sub-headers (like 1.1.1). The user has already provided custom Level-2 subsections, so you MUST write the content as naturally flowing academic prose (divided into standard paragraphs) WITHOUT any internal ### sub-headers or list-like headers. DO NOT include the main chapter or section titles."
+    else:
+        level3_rule = "4. LEVEL-3 SUBSECTIONS (CRITICAL): You MUST organize the text inside the \"content\" field into Level-3 subsections using Markdown headers (###). You MUST USE the exact \"subsections\" provided in the \"Sections to write\" mapping as your Level-3 headers. STRICT RULE: DO NOT add any numbering prefixes (like 1., 1.1., etc.) to the headers. Output ONLY the raw text (e.g., \"### Tên mục con\"). Place the corresponding factual content under each header. DO NOT include the main chapter or section titles. You MAY also create additional headers for core terms found in SOURCE FACTS if necessary."
+
+    if custom_section_words and int(custom_section_words) >= 600:
+        grounding_protocol = f"""CRITICAL ANTI-HALLUCINATION RULE (GROUNDED SYNTHESIS - GUIDED ELABORATION ACTIVE):
+1. Core factual claims, definitions, unique parameters, and data statistics MUST be explicitly grounded in the provided SOURCE FACTS.
+2. GUIDED ACADEMIC ELABORATION (ALLOWED): To reach the target length of {min_words} words per section, you are ENCOURAGED to use your own extensive, high-quality, university-level academic knowledge base to explain mechanisms, define theoretical concepts in depth, analyze principles, and write detailed pedagogical prose. 
+   - VERY IMPORTANT: When you use your own academic knowledge to elaborate on a concept, you MUST STILL attach the [ID] of the source fact that triggered this elaboration at the end of your sentences. This ensures the Auditor recognizes your elaboration as legally grounded in the original concept.
+3. Every paragraph MUST contain at least one [ID] citation immediately after the factual claim it references.
+4. You are ALLOWED to:
+   - Reorganize facts for logical pedagogical flow.
+   - Synthesize multiple facts to explain a broader concept.
+   - Add academic prose, deep theoretical explanations, and transitions. You MUST append the [ID] of the nearest related source fact to these added sentences to pass the strict grounding audit.
+5. You are STRICTLY FORBIDDEN to:
+   - Invent fake definitions, non-existent software specifications, or false historical information that is not academically true.
+   - Contradict any information in the SOURCE FACTS."""
+    else:
+        grounding_protocol = """CRITICAL ANTI-HALLUCINATION RULE (GROUNDED SYNTHESIS):
+1. ALL factual claims, definitions, mechanisms, technical statements, and numerical information MUST be explicitly grounded in the provided SOURCE FACTS.
+2. Pedagogical paraphrasing, explanatory transitions, and educational restructuring are ENCOURAGED, ONLY IF they do not introduce new factual claims beyond the cited evidence.
+3. Every paragraph MUST contain at least one [ID] citation placed immediately after the factual claim it supports.
+4. You are ALLOWED to:
+   - Reorganize facts for logical pedagogical flow.
+   - Synthesize multiple facts to explain a broader concept.
+   - Add academic prose and transitions (e.g., "Therefore", "In practice") to connect ideas.
+5. You are STRICTLY FORBIDDEN to:
+   - Invent new definitions, examples, or mechanisms not present in the SOURCE FACTS.
+   - Use internal knowledge to add factual padding."""
+
     prompt = f"""You are a university professor writing {len(sections_info)} sections for the book "{chu_de}".
 Chapter: "{chapter_title}"
 Sections to write (including required subsections): {json.dumps([{"title": s['title'], "subsections": s.get('subsections', [])} for s in sections_info], ensure_ascii=False)}
+{f'''
+CRITICAL REQUIREMENT: The content you generate for each section MUST strictly focus on and align with the specific scope of the custom Chapter: "{chapter_title}" and the respective section titles.
+Do NOT drift into general or unrelated aspects of the overall textbook topic "{chu_de}" that are outside this chapter's theme.
+Every concept, mechanism, and explanation MUST directly support and relate to this specific chapter title.
+''' if kwargs.get("danh_sach_chuong") or kwargs.get("is_custom_chapter") else ''}
 
 {all_facts_text}
 
@@ -2732,9 +3065,9 @@ Sections to write (including required subsections): {json.dumps([{"title": s['ti
 STRICT BATCHING & GROUNDING PROTOCOL (V23.2)
 ################################################################################
 1. INDEPENDENCE: Each section must be self-contained. Do NOT merge them.
-2. CITATION (CRITICAL): EVERY FACTUAL CLAIM MUST end with at least one EXACT INLINE CITATION [ID]. Explanatory sentences, transitions, and logical interpretations DO NOT need citations. Attach [ID] immediately after the specific factual claim it supports (e.g., "Fact A [1]. Fact B [2]. Therefore, this is important."). DO NOT group or cluster citations at the end of paragraphs.
+2. CITATION (CRITICAL): EVERY FACTUAL CLAIM MUST end with at least one EXACT INLINE CITATION [ID]. Explanatory sentences, transitions, and logical interpretations MUST ALSO CARRY the same [ID] citation as the fact they explain to ensure full traceability. Attach [ID] immediately after the specific claim AND its explanation (e.g., "Fact A [1]. Therefore, this means X [1]. Fact B [2]."). DO NOT group or cluster citations at the end of paragraphs.
 3. QUALITY: {expansion_depth}
-4. LEVEL-3 SUBSECTIONS (CRITICAL): You MUST organize the text inside the "content" field into Level-3 subsections using Markdown headers (###). You MUST USE the exact "subsections" provided in the "Sections to write" mapping as your Level-3 headers (e.g., "### Tên mục con"). Place the corresponding factual content under each header. DO NOT include the main chapter or section titles. You MAY also create additional headers for core terms found in SOURCE FACTS if necessary.
+{level3_rule}
 
 CURRENT TERMS LIST:
 {json.dumps(current_terms, ensure_ascii=False) if current_terms else '[]'}
@@ -2757,17 +3090,7 @@ GROUNDED ACADEMIC SYNTHESIS PROTOCOL (V35.0)
 ################################################################################
 Target: ~{min_words} words per section.
 
-CRITICAL ANTI-HALLUCINATION RULE (GROUNDED SYNTHESIS):
-1. ALL factual claims, definitions, mechanisms, technical statements, and numerical information MUST be explicitly grounded in the provided SOURCE FACTS.
-2. Pedagogical paraphrasing, explanatory transitions, and educational restructuring are ENCOURAGED, ONLY IF they do not introduce new factual claims beyond the cited evidence.
-3. Every paragraph MUST contain at least one [ID] citation placed immediately after the factual claim it supports.
-4. You are ALLOWED to:
-   - Reorganize facts for logical pedagogical flow.
-   - Synthesize multiple facts to explain a broader concept.
-   - Add academic prose and transitions (e.g., "Therefore", "In practice") to connect ideas.
-5. You are STRICTLY FORBIDDEN to:
-   - Invent new definitions, examples, or mechanisms not present in the SOURCE FACTS.
-   - Use internal knowledge to add factual padding.
+{grounding_protocol}
 
 {en_density_boost}
 ################################################################################
@@ -2798,6 +3121,8 @@ RETURN VALID JSON matching BATCH_SECTION_SCHEMA:
 """
 
     def _inject_review_questions(json_text):
+        if is_custom_flow:
+            return json_text
         try:
             data = json.loads(json_text)
             for s in data.get("sections", []):
@@ -2935,6 +3260,7 @@ BROKEN TEXT TO REPAIR:
         return {"status": "error", "message": "All generators failed."}
 
     # --- V34: QUALITY GATE + AUTO-RETRY VALIDATOR ---
+    is_custom_words = bool(custom_section_words)
     try:
         parsed = json.loads(raw_text)
         sections_returned = parsed.get("sections", [])
@@ -2946,12 +3272,21 @@ BROKEN TEXT TO REPAIR:
             raise ValueError(f"Nội dung quá ngắn ({total_len} chars)")
         
         # V34: Auto-Retry Validator — kiểm tra từng section có đạt ngưỡng từ tối thiểu
+        # V40: Log nguồn min_words để debug
+        # V40.1: Ngưỡng tolerance 85% cho custom mode, giữ 60% cho auto mode để tránh xung đột
+        tolerance_ratio = 0.85 if is_custom_words else 0.6
+        import logging
+        _v34_logger = logging.getLogger(__name__)
+        _v34_logger.info(
+            f"[V34-Validator] min_words={min_words} (source={'CUSTOM' if is_custom_words else 'AUTO-' + quy_mo}) | "
+            f"threshold({int(tolerance_ratio*100)}%)={int(min_words * tolerance_ratio)}w | sections={len(sections_returned)}"
+        )
         min_chars_per_section = min_words * 5  # ~5 chars/word cho tiếng Việt
         short_sections = []
         for s in sections_returned:
             content = str(s.get("content", ""))
             word_count = len(content.split())
-            if word_count < min_words * 0.6:  # Tolerance 60% để tránh retry quá nhiều
+            if word_count < min_words * tolerance_ratio:
                 short_sections.append({
                     "title": s.get("title", "?"),
                     "actual_words": word_count,
@@ -2959,13 +3294,30 @@ BROKEN TEXT TO REPAIR:
                 })
         
         if short_sections and not kwargs.get("_is_retry", False):
-            import logging
             short_titles = [f"{s.get('title')}({s.get('actual_words')}w)" for s in short_sections]
-            logging.getLogger(__name__).warning(
+            _v34_logger.warning(
                 f"[V34-Validator] {len(short_sections)} sections quá ngắn: "
                 f"{short_titles}. "
                 f"Retry với expansion prompt..."
             )
+            # V40: Khi custom mode, prompt ghi rõ WORD TARGET cụ thể từ user
+            if is_custom_words:
+                expansion_detail = (
+                    f"The USER has explicitly requested {min_words} words per section.\n"
+                    f"You MUST write AT LEAST {int(min_words * 0.8)} words for EACH section listed below.\n"
+                    f"Expand by adding MORE analytical paragraphs grounded in SOURCE FACTS.\n"
+                    f"Use multi-layer explanation: Definition → Mechanism → Analysis → Significance.\n"
+                    f"CRITICAL: Every new paragraph MUST cite at least one [ID]."
+                )
+            else:
+                expansion_detail = (
+                    "Expand these sections by:\n"
+                    "- Elaborating MORE on the SOURCE FACTS already cited\n"
+                    "- Connecting facts to show cause-effect relationships\n"
+                    "- Adding analytical depth to existing citations\n\n"
+                    "CRITICAL: Every new paragraph you add MUST cite at least one [ID] from the SOURCE FACTS.\n"
+                    "Do NOT add content without citations. Grounding is more important than length."
+                )
             # Retry lần 1 với prompt mạnh hơn — nhưng vẫn ưu tiên grounding
             expansion_retry_prompt = prompt + f"""\n\n
 ################################################################################
@@ -2974,13 +3326,7 @@ GROUNDED EXPANSION REQUIRED (AUTO-RETRY V34.1)
 The following sections are too thin:
 {json.dumps([f"{s['title']}: only {s['actual_words']} words (target {s['required_words']})" for s in short_sections], ensure_ascii=False)}
 
-Expand these sections by:
-- Elaborating MORE on the SOURCE FACTS already cited
-- Connecting facts to show cause-effect relationships
-- Adding analytical depth to existing citations
-
-CRITICAL: Every new paragraph you add MUST cite at least one [ID] from the SOURCE FACTS.
-Do NOT add content without citations. Grounding is more important than length.
+{expansion_detail}
 
 Return the COMPLETE JSON with ALL sections.
 """
@@ -3080,6 +3426,70 @@ YÊU CẦU NGHIÊM NGẶT:
         return result
     except Exception as e:
         logger.warning(f"[ChapterSummary] Failed for '{chap_title}': {e}")
+        return ""
+
+
+def sinh_bai_tap_on_tap_chuong(chu_de: str, chap_title: str, sections_content: str,
+                              api_key: str, semaphore=None, ngon_ngu: str = "vi") -> str:
+    """
+    Sinh câu hỏi ôn tập và bài tập thực hành/thảo luận cho một chương dựa trên nội dung đã biên soạn.
+    Trả về định dạng Markdown.
+    """
+    if not api_key or not sections_content.strip():
+        return ""
+
+    client = OpenAI(api_key=api_key, max_retries=0)
+    truncated = sections_content[:4000]
+    lang_dir = _lang_directive(ngon_ngu)
+
+    if ngon_ngu == "en":
+        prompt = f"""You are a university textbook editor specializing in "{chu_de}".
+Generate a "Review Questions & Exercises" section for the chapter "{chap_title}" based on this content:
+
+{truncated}
+
+STRICT REQUIREMENTS:
+1. Generate exactly two subsections:
+   - "### Review Questions": 4-5 conceptual questions to test student understanding.
+   - "### Practical Exercises": 2-3 exercises, case studies, or discussion points.
+2. Format as a clean markdown list (1., 2., 3.).
+3. Do NOT include any intro or outro text (e.g. "Here are the questions...").
+4. {lang_dir}"""
+    else:
+        prompt = f"""Bạn là biên tập viên giáo trình đại học về "{chu_de}".
+Hãy biên soạn phần "Bài tập & Câu hỏi Ôn tập" cho chương "{chap_title}" dựa trên nội dung sau:
+
+{truncated}
+
+YÊU CẦU NGHIÊM NGẶT:
+1. Tạo chính xác hai mục con bằng Markdown:
+   - "### Câu hỏi Ôn tập": 4-5 câu hỏi lý thuyết để kiểm tra hiểu biết của sinh viên.
+   - "### Bài tập Thực hành": 2-3 bài tập ứng dụng thực tế, thảo luận hoặc tình huống.
+2. Định dạng danh sách dạng số rõ ràng (1., 2., 3.).
+3. KHÔNG viết lời dẫn hay kết luận dư thừa (như "Dưới đây là...", "Chúc các bạn học tốt").
+4. {lang_dir}"""
+
+    try:
+        def _call():
+            return client.chat.completions.create(
+                model=CauHinh.WRITER_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.4,
+                max_tokens=600,
+                timeout=45.0
+            )
+
+        if semaphore:
+            with semaphore:
+                resp = _call()
+        else:
+            resp = _call()
+
+        result = resp.choices[0].message.content.strip()
+        logger.info(f"[Exercises] Generated chapter exercises for '{chap_title}' ({len(result)} chars)")
+        return result
+    except Exception as e:
+        logger.warning(f"[Exercises] Failed for '{chap_title}': {e}")
         return ""
 
 

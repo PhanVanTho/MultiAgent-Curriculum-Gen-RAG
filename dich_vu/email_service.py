@@ -77,7 +77,6 @@ Trân trọng,
         print(f"\n[EMAIL FALLBACK/LỖI SMTP] Gửi OTP đến: {to_email} | Mã OTP: {otp}\n", flush=True)
         return False, f"Không gửi được mail thật (Lỗi SMTP). Hệ thống đã tự động ghi nhận mã OTP vào log: {otp}"
 
-
 def gui_email_xoa_tai_khoan(admin_email, account_info):
     """
     Gửi thông báo yêu cầu xóa tài khoản đến email của admin.
@@ -207,4 +206,93 @@ Hệ thống Biên soạn Giáo Trình AI.
         logger.warning(f"==================================================")
         print(f"\n[EMAIL FALLBACK/LỖI SMTP] Gửi yêu cầu hỗ trợ đến: {admin_email} | Thông tin: {ticket_info}\n", flush=True)
         return False, f"Lỗi gửi email thực tế (SMTP): {str(e)}. Thông tin yêu cầu đã được ghi nhận vào logs."
+
+
+def gui_email_thanh_toan_thanh_cong(to_email, username, so_token, so_tien, ma_giao_dich, phuong_thuc):
+    """
+    Gửi email thông báo nạp token thành công đến người dùng và quản trị viên.
+    """
+    username_smtp = CauHinh.MAIL_USERNAME
+    password_smtp = CauHinh.MAIL_PASSWORD
+    server_host = CauHinh.MAIL_SERVER
+    port = CauHinh.MAIL_PORT
+    use_tls = CauHinh.MAIL_USE_TLS
+    sender = CauHinh.MAIL_DEFAULT_SENDER or username_smtp
+    admin_email = CauHinh.ADMIN_NOTIFICATION_EMAIL
+
+    subject_user = f"[Giáo Trình AI] Nạp token thành công - Giao dịch {ma_giao_dich}"
+    body_user = f"""Chào {username},
+
+Bạn đã nạp thành công {so_token} token vào tài khoản.
+Thông tin chi tiết giao dịch:
+- Mã giao dịch: {ma_giao_dich}
+- Phương thức thanh toán: {phuong_thuc}
+- Số tiền thanh toán: {so_tien:,.0f} VND
+- Số token nhận được: {so_token} token
+
+Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!
+
+Trân trọng,
+Đội ngũ phát triển Giáo Trình AI.
+"""
+
+    subject_admin = f"[Giáo Trình AI - Admin] Giao dịch nạp token thành công - {ma_giao_dich}"
+    body_admin = f"""Chào Admin,
+
+Hệ thống ghi nhận giao dịch nạp token thành công mới:
+- Tài khoản người dùng: {username}
+- Email đăng ký: {to_email}
+- Mã giao dịch: {ma_giao_dich}
+- Phương thức: {phuong_thuc}
+- Số tiền thanh toán: {so_tien:,.0f} VND
+- Số token nạp: {so_token} token
+
+Trân trọng,
+Hệ thống Biên soạn Giáo Trình AI.
+"""
+
+    # Mock fallback if SMTP is missing
+    if not username_smtp or not password_smtp:
+        logger.warning("==================================================")
+        logger.warning(f"[EMAIL MOCK] Giao dịch nạp token thành công: {ma_giao_dich}")
+        logger.warning(f"[EMAIL MOCK] Gửi tới User: {to_email} | Admin: {admin_email}")
+        logger.warning(f"[EMAIL MOCK] Số tiền: {so_tien:,.0f} VND | Token: {so_token}")
+        logger.warning("==================================================")
+        print(f"\n[EMAIL MOCK] Nạp token thành công! User: {to_email} | Admin: {admin_email} | Mã GD: {ma_giao_dich}\n", flush=True)
+        return True
+
+    # Helper function to send single email
+    def send_one(recipient, subject, body):
+        try:
+            msg = MIMEText(body, 'plain', 'utf-8')
+            msg['Subject'] = Header(subject, 'utf-8')
+            msg['From'] = sender
+            msg['To'] = recipient
+
+            if use_tls:
+                server = smtplib.SMTP(server_host, port, timeout=10)
+                server.starttls()
+            else:
+                server = smtplib.SMTP_SSL(server_host, port, timeout=10)
+
+            server.login(username_smtp, password_smtp)
+            server.sendmail(sender, [recipient], msg.as_string())
+            server.quit()
+            logger.info(f"Đã gửi email giao dịch thành công tới: {recipient}")
+            return True
+        except Exception as e:
+            logger.error(f"Lỗi gửi email giao dịch tới {recipient}: {e}")
+            return False
+
+    # Send to User
+    if to_email:
+        send_one(to_email, subject_user, body_user)
+
+    # Send to Admin
+    if admin_email:
+        send_one(admin_email, subject_admin, body_admin)
+
+    return True
+
+
 

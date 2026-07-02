@@ -21,45 +21,11 @@ def ma_hoa_key(raw_text: str) -> str:
 def giai_ma_key(cipher_text: str) -> str:
     if not cipher_text:
         return ""
-    
-    current_val = cipher_text
-    # Hỗ trợ giải mã đệ quy để tự động khôi phục nếu khóa bị mã hóa nhiều lần
-    for _ in range(5):
-        if not current_val.startswith("gAAAAA"):
-            return current_val
-            
-        decrypted = ""
-        # 1. Thử bằng FLASK_SECRET_KEY hiện tại
-        try:
-            f = Fernet(get_fernet_key())
-            decrypted = f.decrypt(current_val.encode("utf-8")).decode("utf-8")
-        except Exception:
-            pass
-            
-        if not decrypted:
-            # 2. Thử bằng dev-secret-key-123
-            try:
-                key_32 = hashlib.sha256(b"dev-secret-key-123").digest()
-                f = Fernet(base64.urlsafe_b64encode(key_32))
-                decrypted = f.decrypt(current_val.encode("utf-8")).decode("utf-8")
-            except Exception:
-                pass
-                
-        if not decrypted:
-            # 3. Thử bằng dev-secret-key mặc định
-            try:
-                key_32 = hashlib.sha256(b"dev-secret-key").digest()
-                f = Fernet(base64.urlsafe_b64encode(key_32))
-                decrypted = f.decrypt(current_val.encode("utf-8")).decode("utf-8")
-            except Exception:
-                pass
-                
-        if decrypted:
-            current_val = decrypted
-        else:
-            break
-            
-    return current_val if not current_val.startswith("gAAAAA") else ""
+    try:
+        f = Fernet(get_fernet_key())
+        return f.decrypt(cipher_text.encode("utf-8")).decode("utf-8")
+    except Exception:
+        return ""
 
 class CauHinhMeta(type):
     def lay_tu_csdl(cls, khoa):
@@ -67,16 +33,9 @@ class CauHinhMeta(type):
             from mo_hinh import CauHinhHeThong
             item = CauHinhHeThong.query.filter_by(khoa=khoa).first()
             if item and item.gia_tri:
-                api_keys_to_encrypt = ["OPENAI_API_KEY", "GEMINI_API_KEYS", "SEPAY_API_KEY", "VNPAY_HASH_SECRET"]
-                if khoa in api_keys_to_encrypt:
-                    if not item.gia_tri.startswith("gAAAAA"):
-                        return item.gia_tri
-                    decrypted = giai_ma_key(item.gia_tri)
-                    if decrypted:
-                        return decrypted
-                    # Nếu giải mã hoàn toàn thất bại, trả về None để dùng giá trị tĩnh fallback
-                    return None
-                return item.gia_tri
+                decrypted = giai_ma_key(item.gia_tri)
+                if decrypted:
+                    return decrypted
         except Exception:
             pass
         return None
@@ -118,96 +77,6 @@ class CauHinhMeta(type):
     @VNPAY_HASH_SECRET.setter
     def VNPAY_HASH_SECRET(cls, val):
         cls._VNPAY_HASH_SECRET = val
-
-    @property
-    def VNPAY_TMN_CODE(cls):
-        val = cls.lay_tu_csdl("VNPAY_TMN_CODE")
-        return val if val is not None else cls._VNPAY_TMN_CODE
-
-    @VNPAY_TMN_CODE.setter
-    def VNPAY_TMN_CODE(cls, val):
-        cls._VNPAY_TMN_CODE = val
-
-    @property
-    def VNPAY_PAYMENT_URL(cls):
-        val = cls.lay_tu_csdl("VNPAY_PAYMENT_URL")
-        return val if val is not None else cls._VNPAY_PAYMENT_URL
-
-    @VNPAY_PAYMENT_URL.setter
-    def VNPAY_PAYMENT_URL(cls, val):
-        cls._VNPAY_PAYMENT_URL = val
-
-    @property
-    def VNPAY_RETURN_URL(cls):
-        val = cls.lay_tu_csdl("VNPAY_RETURN_URL")
-        return val if val is not None else cls._VNPAY_RETURN_URL
-
-    @VNPAY_RETURN_URL.setter
-    def VNPAY_RETURN_URL(cls, val):
-        cls._VNPAY_RETURN_URL = val
-
-    @property
-    def PAYMENT_VNPAY_ACTIVE(cls):
-        val = cls.lay_tu_csdl("PAYMENT_VNPAY_ACTIVE")
-        if val is not None:
-            return val == "True"
-        return cls._PAYMENT_VNPAY_ACTIVE
-
-    @PAYMENT_VNPAY_ACTIVE.setter
-    def PAYMENT_VNPAY_ACTIVE(cls, val):
-        cls._PAYMENT_VNPAY_ACTIVE = val
-
-    @property
-    def PAYMENT_SEPAY_ACTIVE(cls):
-        val = cls.lay_tu_csdl("PAYMENT_SEPAY_ACTIVE")
-        if val is not None:
-            return val == "True"
-        return cls._PAYMENT_SEPAY_ACTIVE
-
-    @PAYMENT_SEPAY_ACTIVE.setter
-    def PAYMENT_SEPAY_ACTIVE(cls, val):
-        cls._PAYMENT_SEPAY_ACTIVE = val
-
-    @property
-    def SEPAY_ACCOUNT_NUMBER(cls):
-        val = cls.lay_tu_csdl("SEPAY_ACCOUNT_NUMBER")
-        return val if val is not None else cls._SEPAY_ACCOUNT_NUMBER
-
-    @SEPAY_ACCOUNT_NUMBER.setter
-    def SEPAY_ACCOUNT_NUMBER(cls, val):
-        cls._SEPAY_ACCOUNT_NUMBER = val
-
-    @property
-    def SEPAY_BANK_BRAND(cls):
-        val = cls.lay_tu_csdl("SEPAY_BANK_BRAND")
-        return val if val is not None else cls._SEPAY_BANK_BRAND
-
-    @SEPAY_BANK_BRAND.setter
-    def SEPAY_BANK_BRAND(cls, val):
-        cls._SEPAY_BANK_BRAND = val
-
-    @property
-    def SEPAY_WEB_NAME(cls):
-        val = cls.lay_tu_csdl("SEPAY_WEB_NAME")
-        return val if val is not None else cls._SEPAY_WEB_NAME
-
-    @SEPAY_WEB_NAME.setter
-    def SEPAY_WEB_NAME(cls, val):
-        cls._SEPAY_WEB_NAME = val
-
-    @property
-    def SEPAY_XOR_KEY(cls):
-        val = cls.lay_tu_csdl("SEPAY_XOR_KEY")
-        if val is not None:
-            try:
-                return int(val, 16) if "0x" in str(val).lower() else int(val)
-            except Exception:
-                pass
-        return cls._SEPAY_XOR_KEY
-
-    @SEPAY_XOR_KEY.setter
-    def SEPAY_XOR_KEY(cls, val):
-        cls._SEPAY_XOR_KEY = val
 
     @property
     def CONTACT_EMAIL(cls):
@@ -254,12 +123,265 @@ class CauHinhMeta(type):
     def ADMIN_NOTIFICATION_EMAIL(cls, val):
         cls._ADMIN_NOTIFICATION_EMAIL = val
 
+    @property
+    def MAC_DINH_SO_CHUONG_MAX(cls):
+        val = cls.lay_tu_csdl("MAC_DINH_SO_CHUONG_MAX")
+        if val is not None:
+            try:
+                return int(val)
+            except Exception:
+                pass
+        return cls._MAC_DINH_SO_CHUONG_MAX
+
+    @MAC_DINH_SO_CHUONG_MAX.setter
+    def MAC_DINH_SO_CHUONG_MAX(cls, val):
+        cls._MAC_DINH_SO_CHUONG_MAX = val
+
+    @property
+    def MAC_DINH_SO_TU_MAX(cls):
+        val = cls.lay_tu_csdl("MAC_DINH_SO_TU_MAX")
+        if val is not None:
+            try:
+                return int(val)
+            except Exception:
+                pass
+        return cls._MAC_DINH_SO_TU_MAX
+
+    @MAC_DINH_SO_TU_MAX.setter
+    def MAC_DINH_SO_TU_MAX(cls, val):
+        cls._MAC_DINH_SO_TU_MAX = val
+
+    @property
+    def GOOGLE_CLIENT_ID(cls):
+        val = cls.lay_tu_csdl("GOOGLE_CLIENT_ID")
+        return val if val is not None else cls._GOOGLE_CLIENT_ID
+
+    @GOOGLE_CLIENT_ID.setter
+    def GOOGLE_CLIENT_ID(cls, val):
+        cls._GOOGLE_CLIENT_ID = val
+
+    @property
+    def OPENAI_MODEL(cls):
+        val = cls.lay_tu_csdl("OPENAI_MODEL")
+        return val if val is not None else cls._OPENAI_MODEL
+
+    @OPENAI_MODEL.setter
+    def OPENAI_MODEL(cls, val):
+        cls._OPENAI_MODEL = val
+
+    @property
+    def GEMINI_MODEL(cls):
+        val = cls.lay_tu_csdl("GEMINI_MODEL")
+        return val if val is not None else cls._GEMINI_MODEL
+
+    @GEMINI_MODEL.setter
+    def GEMINI_MODEL(cls, val):
+        cls._GEMINI_MODEL = val
+
+    @property
+    def GEMINI_MODEL_LITE(cls):
+        val = cls.lay_tu_csdl("GEMINI_MODEL_LITE")
+        return val if val is not None else cls._GEMINI_MODEL_LITE
+
+    @GEMINI_MODEL_LITE.setter
+    def GEMINI_MODEL_LITE(cls, val):
+        cls._GEMINI_MODEL_LITE = val
+
+    @property
+    def WRITER_MODEL(cls):
+        val = cls.lay_tu_csdl("WRITER_MODEL")
+        return val if val is not None else cls._WRITER_MODEL
+
+    @WRITER_MODEL.setter
+    def WRITER_MODEL(cls, val):
+        cls._WRITER_MODEL = val
+
+    @property
+    def SEARCH_MODEL(cls):
+        val = cls.lay_tu_csdl("SEARCH_MODEL")
+        return val if val is not None else cls._SEARCH_MODEL
+
+    @SEARCH_MODEL.setter
+    def SEARCH_MODEL(cls, val):
+        cls._SEARCH_MODEL = val
+
+    @property
+    def SUPERVISOR_MODEL_LITE(cls):
+        val = cls.lay_tu_csdl("SUPERVISOR_MODEL_LITE")
+        return val if val is not None else cls._SUPERVISOR_MODEL_LITE
+
+    @SUPERVISOR_MODEL_LITE.setter
+    def SUPERVISOR_MODEL_LITE(cls, val):
+        cls._SUPERVISOR_MODEL_LITE = val
+
+    @property
+    def SUPERVISOR_MODEL_PRO(cls):
+        val = cls.lay_tu_csdl("SUPERVISOR_MODEL_PRO")
+        return val if val is not None else cls._SUPERVISOR_MODEL_PRO
+
+    @SUPERVISOR_MODEL_PRO.setter
+    def SUPERVISOR_MODEL_PRO(cls, val):
+        cls._SUPERVISOR_MODEL_PRO = val
+
+    @property
+    def VNPAY_TMN_CODE(cls):
+        val = cls.lay_tu_csdl("VNPAY_TMN_CODE")
+        return val if val is not None else cls._VNPAY_TMN_CODE
+
+    @VNPAY_TMN_CODE.setter
+    def VNPAY_TMN_CODE(cls, val):
+        cls._VNPAY_TMN_CODE = val
+
+    @property
+    def VNPAY_PAYMENT_URL(cls):
+        val = cls.lay_tu_csdl("VNPAY_PAYMENT_URL")
+        return val if val is not None else cls._VNPAY_PAYMENT_URL
+
+    @VNPAY_PAYMENT_URL.setter
+    def VNPAY_PAYMENT_URL(cls, val):
+        cls._VNPAY_PAYMENT_URL = val
+
+    @property
+    def VNPAY_RETURN_URL(cls):
+        val = cls.lay_tu_csdl("VNPAY_RETURN_URL")
+        return val if val is not None else cls._VNPAY_RETURN_URL
+
+    @VNPAY_RETURN_URL.setter
+    def VNPAY_RETURN_URL(cls, val):
+        cls._VNPAY_RETURN_URL = val
+
+    @property
+    def SEPAY_ACCOUNT_NUMBER(cls):
+        val = cls.lay_tu_csdl("SEPAY_ACCOUNT_NUMBER")
+        return val if val is not None else cls._SEPAY_ACCOUNT_NUMBER
+
+    @SEPAY_ACCOUNT_NUMBER.setter
+    def SEPAY_ACCOUNT_NUMBER(cls, val):
+        cls._SEPAY_ACCOUNT_NUMBER = val
+
+    @property
+    def SEPAY_BANK_BRAND(cls):
+        val = cls.lay_tu_csdl("SEPAY_BANK_BRAND")
+        return val if val is not None else cls._SEPAY_BANK_BRAND
+
+    @SEPAY_BANK_BRAND.setter
+    def SEPAY_BANK_BRAND(cls, val):
+        cls._SEPAY_BANK_BRAND = val
+
+    @property
+    def SEPAY_WEB_NAME(cls):
+        val = cls.lay_tu_csdl("SEPAY_WEB_NAME")
+        return val if val is not None else cls._SEPAY_WEB_NAME
+
+    @SEPAY_WEB_NAME.setter
+    def SEPAY_WEB_NAME(cls, val):
+        cls._SEPAY_WEB_NAME = val
+
+    @property
+    def SEPAY_XOR_KEY(cls):
+        val = cls.lay_tu_csdl("SEPAY_XOR_KEY")
+        if val is not None:
+            try:
+                if val.lower().startswith("0x"):
+                    return int(val, 16)
+                return int(val)
+            except Exception:
+                pass
+        return cls._SEPAY_XOR_KEY
+
+    @SEPAY_XOR_KEY.setter
+    def SEPAY_XOR_KEY(cls, val):
+        try:
+            if isinstance(val, str):
+                if val.lower().startswith("0x"):
+                    cls._SEPAY_XOR_KEY = int(val, 16)
+                else:
+                    cls._SEPAY_XOR_KEY = int(val)
+            else:
+                cls._SEPAY_XOR_KEY = int(val)
+        except Exception:
+            pass
+
+    @property
+    def PAYMENT_VNPAY_ACTIVE(cls):
+        val = cls.lay_tu_csdl("PAYMENT_VNPAY_ACTIVE")
+        if val is not None:
+            return val.lower() == "true"
+        return cls._PAYMENT_VNPAY_ACTIVE
+
+    @PAYMENT_VNPAY_ACTIVE.setter
+    def PAYMENT_VNPAY_ACTIVE(cls, val):
+        cls._PAYMENT_VNPAY_ACTIVE = str(val).lower() == "true" or val is True
+
+    @property
+    def PAYMENT_SEPAY_ACTIVE(cls):
+        val = cls.lay_tu_csdl("PAYMENT_SEPAY_ACTIVE")
+        if val is not None:
+            return val.lower() == "true"
+        return cls._PAYMENT_SEPAY_ACTIVE
+
+    @PAYMENT_SEPAY_ACTIVE.setter
+    def PAYMENT_SEPAY_ACTIVE(cls, val):
+        cls._PAYMENT_SEPAY_ACTIVE = str(val).lower() == "true" or val is True
+
+    @property
+    def PHI_TOKEN_AUTO(cls):
+        val = cls.lay_tu_csdl("PHI_TOKEN_AUTO")
+        if val is not None:
+            try:
+                return int(val)
+            except Exception:
+                pass
+        return cls._PHI_TOKEN_AUTO
+
+    @PHI_TOKEN_AUTO.setter
+    def PHI_TOKEN_AUTO(cls, val):
+        try:
+            cls._PHI_TOKEN_AUTO = int(val)
+        except Exception:
+            pass
+
+    @property
+    def PHI_TOKEN_EXPERT(cls):
+        val = cls.lay_tu_csdl("PHI_TOKEN_EXPERT")
+        if val is not None:
+            try:
+                return int(val)
+            except Exception:
+                pass
+        return cls._PHI_TOKEN_EXPERT
+
+    @PHI_TOKEN_EXPERT.setter
+    def PHI_TOKEN_EXPERT(cls, val):
+        try:
+            cls._PHI_TOKEN_EXPERT = int(val)
+        except Exception:
+            pass
+
+    @property
+    def PHI_TOKEN_CREATIVE(cls):
+        val = cls.lay_tu_csdl("PHI_TOKEN_CREATIVE")
+        if val is not None:
+            try:
+                return int(val)
+            except Exception:
+                pass
+        return cls._PHI_TOKEN_CREATIVE
+
+    @PHI_TOKEN_CREATIVE.setter
+    def PHI_TOKEN_CREATIVE(cls, val):
+        try:
+            cls._PHI_TOKEN_CREATIVE = int(val)
+        except Exception:
+            pass
+
 class CauHinh(metaclass=CauHinhMeta):
+
     # Flask
     KHOA_BI_MAT = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
 
     # Google OAuth
-    GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+    _GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 
     # Mail Config (SMTP)
     MAIL_SERVER = os.getenv("MAIL_SERVER", "smtp.gmail.com")
@@ -271,13 +393,13 @@ class CauHinh(metaclass=CauHinhMeta):
 
     # OpenAI (Fallback keys)
     _OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-    OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    _OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
     # Gemini (Fallback keys)
     _GEMINI_API_KEYS = [k.strip() for k in os.getenv("GEMINI_API_KEYS", os.getenv("GEMINI_API_KEY", "")).split(",") if k.strip()]
 
-    GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")           # Model mạnh — dùng cho việc cần độ chính xác cao
-    GEMINI_MODEL_LITE = os.getenv("GEMINI_MODEL_LITE", "gemini-2.5-flash-lite")  # Model nhẹ — dùng cho hầu hết Supervisor tasks
+    _GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")           # Model mạnh — dùng cho việc cần độ chính xác cao
+    _GEMINI_MODEL_LITE = os.getenv("GEMINI_MODEL_LITE", "gemini-2.5-flash-lite")  # Model nhẹ — dùng cho hầu hết Supervisor tasks
     GEMINI_EMBEDDING_MODEL = os.getenv("GEMINI_EMBEDDING_MODEL", "gemini-embedding-2")
 
     # Local Generator Config
@@ -285,10 +407,10 @@ class CauHinh(metaclass=CauHinhMeta):
     LOCAL_MODEL = os.getenv("LOCAL_MODEL", "gemma:2b")
 
     # Supervisor Architecture Config
-    SEARCH_MODEL = os.getenv("SEARCH_MODEL", "gpt-4o")  # Model thông minh dùng cho Crawler/Spider
-    WRITER_MODEL = os.getenv("WRITER_MODEL", "gpt-4o-mini")  # Model viết bài
-    SUPERVISOR_MODEL_LITE = os.getenv("SUPERVISOR_MODEL_LITE", "gemini-2.5-flash-lite")
-    SUPERVISOR_MODEL_PRO = os.getenv("SUPERVISOR_MODEL_PRO", "gemini-2.5-flash")
+    _SEARCH_MODEL = os.getenv("SEARCH_MODEL", "gpt-4o")  # Model thông minh dùng cho Crawler/Spider
+    _WRITER_MODEL = os.getenv("WRITER_MODEL", "gpt-4o-mini")  # Model viết bài
+    _SUPERVISOR_MODEL_LITE = os.getenv("SUPERVISOR_MODEL_LITE", "gemini-2.5-flash-lite")
+    _SUPERVISOR_MODEL_PRO = os.getenv("SUPERVISOR_MODEL_PRO", "gemini-2.5-flash")
 
     GEMINI_AUDIT_RATE = float(os.getenv("GEMINI_AUDIT_RATE", "1.0"))       # 100% audit (vì dùng GPT-4o-mini làm writer)
     MAX_REWRITE_ATTEMPTS = int(os.getenv("MAX_REWRITE_ATTEMPTS", "2"))     # Số lần rewrite tối đa / chương
@@ -317,7 +439,8 @@ class CauHinh(metaclass=CauHinhMeta):
 
     # UI defaults (Relaxed for dynamic generation)
     MAC_DINH_SO_CHUONG_MIN = int(os.getenv("MAC_DINH_SO_CHUONG_MIN", "3"))
-    MAC_DINH_SO_CHUONG_MAX = int(os.getenv("MAC_DINH_SO_CHUONG_MAX", "25"))
+    _MAC_DINH_SO_CHUONG_MAX = int(os.getenv("MAC_DINH_SO_CHUONG_MAX", "15"))
+    _MAC_DINH_SO_TU_MAX = int(os.getenv("MAC_DINH_SO_TU_MAX", "1000"))
 
     # Production timeouts (V23.1)
     API_TIMEOUT = 60.0
@@ -369,7 +492,7 @@ class CauHinh(metaclass=CauHinhMeta):
     _VNPAY_TMN_CODE = os.getenv("VNPAY_TMN_CODE", "V2ZFH4ZT")
     _VNPAY_HASH_SECRET = os.getenv("VNPAY_HASH_SECRET", "V830F79D7834Q4M5F9VCZY5XFCWEWWUA")
     _VNPAY_PAYMENT_URL = os.getenv("VNPAY_PAYMENT_URL", "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html")
-    _VNPAY_RETURN_URL = os.getenv("VNPAY_RETURN_URL", "http://localhost:5000/payment/callback")
+    _VNPAY_RETURN_URL = os.getenv("VNPAY_RETURN_URL", "http://127.0.0.1:5000/payment/callback")
 
     # SePay Config
     _SEPAY_API_KEY = os.getenv("SEPAY_API_KEY", "")
@@ -383,9 +506,9 @@ class CauHinh(metaclass=CauHinhMeta):
     _PAYMENT_SEPAY_ACTIVE = os.getenv("PAYMENT_SEPAY_ACTIVE", "True") == "True"
 
     # Phí token của các chế độ biên soạn
-    PHI_TOKEN_AUTO = int(os.getenv("PHI_TOKEN_AUTO", "1"))
-    PHI_TOKEN_EXPERT = int(os.getenv("PHI_TOKEN_EXPERT", "2"))
-    PHI_TOKEN_CREATIVE = int(os.getenv("PHI_TOKEN_CREATIVE", "3"))
+    _PHI_TOKEN_AUTO = int(os.getenv("PHI_TOKEN_AUTO", "1"))
+    _PHI_TOKEN_EXPERT = int(os.getenv("PHI_TOKEN_EXPERT", "2"))
+    _PHI_TOKEN_CREATIVE = int(os.getenv("PHI_TOKEN_CREATIVE", "3"))
 
     # Contact Info (Fallback)
     _CONTACT_EMAIL = os.getenv("CONTACT_EMAIL", "phanvantho082019@gmail.com")
@@ -395,4 +518,5 @@ class CauHinh(metaclass=CauHinhMeta):
 
     # Admin Notifications
     _ADMIN_NOTIFICATION_EMAIL = os.getenv("ADMIN_NOTIFICATION_EMAIL", "phanvantho082019@gmail.com")
+
 

@@ -218,9 +218,14 @@
             {% endif %}
 
             {% if google_info %}
-            <div class="alert alert-info py-2 px-3 mb-4" style="font-size:0.85rem;">
+            <div class="alert alert-info py-2 px-3 mb-3" style="font-size:0.85rem;">
                 <i class="fa-brands fa-google me-2"></i> 
                 <span data-i18n="register.google_info_prefix">Đang hoàn tất đăng ký cho tài khoản Google:</span> <strong>{{ google_info.get('email') }}</strong><span data-i18n="register.google_info_suffix">. Vui lòng tạo mật khẩu và tên đăng nhập.</span>
+            </div>
+            <div class="alert alert-warning py-2 px-3 mb-4" style="font-size:0.85rem; border-left: 4px solid #eab308;">
+                <i class="fa-solid fa-link me-2"></i> 
+                <span>Bạn đã có tài khoản trước đó?</span> 
+                <a href="{{ url_for('login') }}" class="fw-bold text-decoration-underline" style="color: #854d0e;">Đăng nhập để liên kết ngay</a>
             </div>
             {% endif %}
 

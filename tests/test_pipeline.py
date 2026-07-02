@@ -35,7 +35,9 @@ class TestPipelineAndRAG(unittest.TestCase):
             if t.name == "pipeline_thread" and t.is_alive():
                 t.join(timeout=2.0)
 
-    def test_input_validation(self):
+    @patch("ung_dung.kiem_tra_viet_tat_llm")
+    def test_input_validation(self, mock_llm_check):
+        mock_llm_check.return_value = False
         # is_valid_query
         self.assertTrue(is_valid_query("Vật lý hạt nhân"))
         self.assertTrue(is_valid_query("AI và Robotics"))
@@ -51,7 +53,8 @@ class TestPipelineAndRAG(unittest.TestCase):
         self.assertFalse(is_meaningful("zxcvbn"))
 
         # is_abbreviation
-        self.assertTrue(is_abbreviation("NSND"))
+        self.assertTrue(is_abbreviation("MSND"))
+        self.assertFalse(is_abbreviation("NSND"))  # Allowed common abbreviation
         self.assertFalse(is_abbreviation("CNTT")) # Allowed common abbreviation
         self.assertFalse(is_abbreviation("AI"))  # Allowed common abbreviation
         self.assertFalse(is_abbreviation("Vật lý học"))
@@ -89,6 +92,22 @@ class TestPipelineAndRAG(unittest.TestCase):
         self.assertEqual(res_override["classification"], "REFRAME")
         self.assertEqual(res_override["layer"], "academic_override")
 
+        # Case 4: Local Language Guard blocks Japanese locally (no AI call)
+        res_lang_local = classify_topic("機械学習", "mock-key")
+        self.assertEqual(res_lang_local["classification"], "BLOCK_LANG")
+        self.assertEqual(res_lang_local["layer"], "rule")
+
+        # Case 5: AI Language Guard blocks French
+        mock_ai.return_value = {"classification": "BLOCK_LANG", "reason": "French language detected", "layer": "ai"}
+        res_lang_ai = classify_topic("Cours de français", "mock-key")
+        self.assertEqual(res_lang_ai["classification"], "BLOCK_LANG")
+        self.assertEqual(res_lang_ai["layer"], "ai")
+
+        # Case 6: Mixed Vietnamese/English is allowed
+        mock_ai.return_value = {"classification": "SAFE", "reason": "Approved by AI", "layer": "ai"}
+        res_mixed = classify_topic("Lập trình Python", "mock-key")
+        self.assertEqual(res_mixed["classification"], "SAFE")
+
     def test_safety_block_ux_messages(self):
         # Hard block message
         hard_res = {"classification": "BLOCK", "block_type": "hard", "layer": "rule"}
@@ -103,6 +122,11 @@ class TestPipelineAndRAG(unittest.TestCase):
         # Safe should return None
         safe_res = {"classification": "SAFE"}
         self.assertIsNone(get_block_message(safe_res))
+
+        # Block language message
+        lang_res = {"classification": "BLOCK_LANG"}
+        msg_lang = get_block_message(lang_res)
+        self.assertIn("Ngôn ngữ không hỗ trợ", msg_lang["title"])
 
     @patch("dich_vu.gap_filler.tim_kiem_vector")
     def test_gap_filling_detection(self, mock_vector_search):
@@ -121,11 +145,11 @@ class TestPipelineAndRAG(unittest.TestCase):
         # First query (1.1) returns a high score (0.80) -> Safe
         # Second query (1.2) returns a low score (0.45) -> Gap
         mock_vector_search.side_effect = [
-            [{"score": 0.80}],
-            [{"score": 0.45}]
+            [{"score": 0.80, "content": "text " * 1000}],
+            [{"score": 0.45, "content": "text " * 1000}]
         ]
         
-        gaps = identify_knowledge_gaps(outline, [{"id": "doc1", "content": "text"}], "mock-key", "Trí tuệ nhân tạo")
+        gaps = identify_knowledge_gaps(outline, [{"id": "doc1", "content": "text" * 1000}], "mock-key", "Trí tuệ nhân tạo")
         
         self.assertEqual(len(gaps), 1)
         self.assertEqual(gaps[0]["chapter"], "Chương 1: Giới thiệu")
@@ -213,6 +237,9 @@ class TestPipelineAndRAG(unittest.TestCase):
             chap_total = 0
             chap_grounded = 0
             for sec in chap.get("sections", []):
+                sec_title = sec.get("title", "")
+                if sec_title in ["Bài tập & Câu hỏi Ôn tập Chương", "Review Questions & Practical Exercises"]:
+                    continue
                 content_gs = sec.get("content", "")
                 
                 review_pattern = re.compile(
@@ -399,6 +426,33 @@ class TestPipelineAndRAG(unittest.TestCase):
         # Clean up
         del CONG_VIEC[ma_cv]
 
+    def test_xac_nhan_ha_do_dai_endpoint(self):
+        from ung_dung import app, CONG_VIEC
+        app.config["TESTING"] = True
+        app.config["WTF_CSRF_ENABLED"] = False
+        client = app.test_client()
+        
+        ma_cv = "test_confirm_words_job"
+        CONG_VIEC[ma_cv] = {
+            "trang_thai": "cho_xac_nhan",
+            "loai_loi": "CUSTOM_WORDS_DOWNGRADE",
+            "xac_nhan_cho_phep": None
+        }
+        
+        # Test dong_y
+        resp = client.post(f"/xac_nhan/{ma_cv}/dong_y")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(CONG_VIEC[ma_cv]["xac_nhan_cho_phep"], True)
+        
+        # Test tu_choi
+        CONG_VIEC[ma_cv]["xac_nhan_cho_phep"] = None
+        resp = client.post(f"/xac_nhan/{ma_cv}/tu_choi")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(CONG_VIEC[ma_cv]["xac_nhan_cho_phep"], False)
+        
+        # Clean up
+        del CONG_VIEC[ma_cv]
+
     def test_dich_tai_lieu_en_sang_vi(self):
         from unittest.mock import MagicMock, patch
         from dich_vu.lay_wikipedia import dich_tai_lieu_en_sang_vi
@@ -484,7 +538,9 @@ class TestPipelineAndRAG(unittest.TestCase):
         # Clean up
         del CONG_VIEC[ma_cv]
 
-    def test_custom_chapters_validation(self):
+    @patch("ung_dung.kiem_tra_viet_tat_llm")
+    def test_custom_chapters_validation(self, mock_llm_check):
+        mock_llm_check.return_value = False
         from ung_dung import app
         app.config["TESTING"] = True
         app.config["WTF_CSRF_ENABLED"] = False
@@ -492,7 +548,7 @@ class TestPipelineAndRAG(unittest.TestCase):
         
         # Test case 1: Title contains abbreviation
         resp = client.post("/tao", json={
-            "tieu_de": "NSND",
+            "tieu_de": "MSND",
             "so_chuong_custom": 1
         })
         self.assertEqual(resp.status_code, 400)
@@ -502,7 +558,19 @@ class TestPipelineAndRAG(unittest.TestCase):
         resp = client.post("/tao", json={
             "tieu_de": "Trí tuệ nhân tạo",
             "so_chuong_custom": 2,
-            "danh_sach_chuong": ["Trí tuệ nhân tạo là gì", "NSND ứng dụng"]
+            "danh_sach_chuong": ["Trí tuệ nhân tạo là gì", "MSND ứng dụng"]
+        })
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("chứa từ viết tắt", resp.get_json()["loi"])
+
+        # Test case 2.5: Custom subsection contains abbreviation
+        resp = client.post("/tao", json={
+            "tieu_de": "Trí tuệ nhân tạo",
+            "so_chuong_custom": 1,
+            "danh_sach_chuong": [{
+                "title": "Chương 1: Giới thiệu",
+                "sections": ["MSND ứng dụng"]
+            }]
         })
         self.assertEqual(resp.status_code, 400)
         self.assertIn("chứa từ viết tắt", resp.get_json()["loi"])
@@ -555,8 +623,8 @@ class TestPipelineAndRAG(unittest.TestCase):
         # Test 2: Có truyền so_chuong_yeu_cau=3. Số chương min sẽ được đặt thành 3.
         # Số trang min mới: 30 * 3 / 7 = 13 trang.
         # Tổng ký tự thực tế: 3 chương * 2 mục * 1500 ký tự = 9000 ký tự.
-        # Estimated pages = 9000 / 1800 = 5.0 trang.
-        # Vì 5.0 trang < 13 trang, nó vẫn fail do thiếu nội dung (không fail do thiếu chương).
+        # Estimated pages = 9000 / 3000 = 3.0 trang.
+        # Vì 3.0 trang < 13 trang, nó vẫn fail do thiếu nội dung (không fail do thiếu chương).
         res_fail_page = giam_sat_quy_mo(
             chu_de="Tây Du Ký",
             final_chapters=mock_chapters,
@@ -594,6 +662,64 @@ class TestPipelineAndRAG(unittest.TestCase):
                 so_chuong_yeu_cau=3
             )
             self.assertEqual(res_pass["status"], "pass")
+
+    @patch("dich_vu.lay_wikipedia.tim_kiem_tieu_de")
+    @patch("dich_vu.lay_wikipedia.lay_noi_dung_va_lien_ket")
+    @patch("dich_vu.lay_wikipedia.extract_truth_seed")
+    def test_custom_chapters_wikipedia_search_refinement(self, mock_truth_seed, mock_lay_noi_dung, mock_tim_kiem):
+        from dich_vu.lay_wikipedia import ekre_discovery_engine
+        
+        # Mock truth seed and initial page fetch
+        mock_lay_noi_dung.return_value = ("Content of main topic", ["Link1"], "http://url")
+        mock_truth_seed.return_value = {"categories": ["Category 1"], "aliases": ["Topic alias"]}
+        
+        # Mock search queries returned by tim_kiem_tieu_de
+        # When called for custom chapter names, return relevant subtopics
+        def mock_tim_kiem_side_effect(lang, query, gioi_han=5):
+            if "Chương Custom" in query:
+                return ["Chương Custom Kết Quả"]
+            return []
+        mock_tim_kiem.side_effect = mock_tim_kiem_side_effect
+        
+        # Call discovery engine with chapter hints
+        result = ekre_discovery_engine(
+            topic="Chủ đề chính",
+            api_keys_list=["mock-gemini-key"],
+            quy_mo="can_ban",
+            api_key_openai="mock-openai-key",
+            chapter_hints=["Chương Custom"]
+        )
+        
+        # Verify that expand queries includes "Chương Custom"
+        self.assertIn("Chương Custom", result.get("xray", {}).get("expanded_queries", []))
+        # Verify that "Chủ đề chính" is not in expanded_queries (since we skip main topic search under custom chapter hints)
+        self.assertNotIn("Chủ đề chính", result.get("xray", {}).get("expanded_queries", []))
+
+    @patch("dich_vu.openai_da_buoc.OpenAI")
+    def test_chapter_exercises_generation(self, mock_openai):
+        from dich_vu.openai_da_buoc import sinh_bai_tap_on_tap_chuong
+        from unittest.mock import MagicMock
+        
+        # Setup mock OpenAI completion response
+        mock_client = MagicMock()
+        mock_openai.return_value = mock_client
+        
+        mock_choice = MagicMock()
+        mock_choice.message.content = "### Câu hỏi Ôn tập\n1. Câu hỏi 1?\n### Bài tập Thực hành\n1. Bài tập 1."
+        mock_resp = MagicMock()
+        mock_resp.choices = [mock_choice]
+        mock_client.chat.completions.create.return_value = mock_resp
+        
+        res = sinh_bai_tap_on_tap_chuong(
+            chu_de="Trí tuệ nhân tạo",
+            chap_title="Chương 1: Giới thiệu",
+            sections_content="Nội dung của chương 1...",
+            api_key="mock_key"
+        )
+        
+        self.assertIn("Câu hỏi Ôn tập", res)
+        self.assertIn("Bài tập Thực hành", res)
+        mock_client.chat.completions.create.assert_called_once()
 
 if __name__ == "__main__":
     unittest.main()

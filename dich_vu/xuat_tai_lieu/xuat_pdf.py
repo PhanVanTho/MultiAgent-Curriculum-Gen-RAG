@@ -31,28 +31,68 @@ try:
     times_path = "C:\\Windows\\Fonts\\times.ttf"
     times_bd_path = "C:\\Windows\\Fonts\\timesbd.ttf"
     times_it_path = "C:\\Windows\\Fonts\\timesi.ttf"
+    times_bi_path = "C:\\Windows\\Fonts\\timesbi.ttf"
     
     # Linux paths (example)
     if not os.path.exists(times_path):
          times_path = "/usr/share/fonts/truetype/msttcorefonts/Times_New_Roman.ttf"
          times_bd_path = "/usr/share/fonts/truetype/msttcorefonts/Times_New_Roman_Bold.ttf"
          times_it_path = "/usr/share/fonts/truetype/msttcorefonts/Times_New_Roman_Italic.ttf"
+         times_bi_path = "/usr/share/fonts/truetype/msttcorefonts/Times_New_Roman_Bold_Italic.ttf"
 
     if os.path.exists(times_path) and os.path.exists(times_bd_path) and os.path.exists(times_it_path):
         pdfmetrics.registerFont(TTFont('Times-Roman', times_path))
         pdfmetrics.registerFont(TTFont('Times-Bold', times_bd_path))
         pdfmetrics.registerFont(TTFont('Times-Italic', times_it_path))
+        
+        has_bi = os.path.exists(times_bi_path)
+        if has_bi:
+            pdfmetrics.registerFont(TTFont('Times-BoldItalic', times_bi_path))
+            
+        from reportlab.pdfbase.pdfmetrics import registerFontFamily
+        registerFontFamily(
+            'Times-Roman',
+            normal='Times-Roman',
+            bold='Times-Bold',
+            italic='Times-Italic',
+            boldItalic='Times-BoldItalic' if has_bi else 'Times-Bold'
+        )
         FONT_NAME = 'Times-Roman'
         FONT_BOLD = 'Times-Bold'
         FONT_ITALIC = 'Times-Italic'
     else:
          # Fallback to Arial if Times not found
          arial_path = "C:\\Windows\\Fonts\\arial.ttf"
-         if os.path.exists(arial_path):
-             pdfmetrics.registerFont(TTFont('Arial', arial_path))
-             FONT_NAME = 'Arial'
-             FONT_BOLD = 'Arial' # Simple fallback
-             FONT_ITALIC = 'Arial'
+         arial_bd_path = "C:\\Windows\\Fonts\\arialbd.ttf"
+         arial_it_path = "C:\\Windows\\Fonts\\ariali.ttf"
+         arial_bi_path = "C:\\Windows\\Fonts\\arialbi.ttf"
+         
+         if not os.path.exists(arial_path):
+              arial_path = "/usr/share/fonts/truetype/msttcorefonts/Arial.ttf"
+              arial_bd_path = "/usr/share/fonts/truetype/msttcorefonts/Arial_Bold.ttf"
+              arial_it_path = "/usr/share/fonts/truetype/msttcorefonts/Arial_Italic.ttf"
+              arial_bi_path = "/usr/share/fonts/truetype/msttcorefonts/Arial_Bold_Italic.ttf"
+         
+         if os.path.exists(arial_path) and os.path.exists(arial_bd_path) and os.path.exists(arial_it_path):
+              pdfmetrics.registerFont(TTFont('Arial', arial_path))
+              pdfmetrics.registerFont(TTFont('Arial-Bold', arial_bd_path))
+              pdfmetrics.registerFont(TTFont('Arial-Italic', arial_it_path))
+              
+              has_abi = os.path.exists(arial_bi_path)
+              if has_abi:
+                   pdfmetrics.registerFont(TTFont('Arial-BoldItalic', arial_bi_path))
+                   
+              from reportlab.pdfbase.pdfmetrics import registerFontFamily
+              registerFontFamily(
+                  'Arial',
+                  normal='Arial',
+                  bold='Arial-Bold',
+                  italic='Arial-Italic',
+                  boldItalic='Arial-BoldItalic' if has_abi else 'Arial-Bold'
+              )
+              FONT_NAME = 'Arial'
+              FONT_BOLD = 'Arial-Bold'
+              FONT_ITALIC = 'Arial-Italic'
 except Exception as e:
     logger.warning(f"Font setup failed: {e}")
 
@@ -70,6 +110,7 @@ style_Title = ParagraphStyle(
     spaceAfter=20,
     textColor=colors.black
 )
+
 
 # Chapter Heading (Heading 1)
 style_H1 = ParagraphStyle(
@@ -107,6 +148,26 @@ style_Normal = ParagraphStyle(
     firstLineIndent=0.5 * inch, # Thụt đầu dòng
     spaceAfter=6
 )
+
+# Cover Page Title Style (centers within the 2.5cm border given leftMargin=3cm and rightMargin=2cm)
+style_CoverTitle = ParagraphStyle(
+    'CoverTitle',
+    parent=style_Title,
+    leftIndent=0.0,
+    rightIndent=1.0*cm,
+)
+
+# Cover Page SubTitle Style
+style_CoverSubTitle = ParagraphStyle(
+    'CoverSubTitle',
+    parent=style_Normal,
+    fontName=FONT_NAME,
+    fontSize=14,
+    alignment=TA_CENTER,
+    leftIndent=0.0,
+    rightIndent=1.0*cm,
+)
+
 
 # List Items
 style_List = ParagraphStyle(
@@ -251,10 +312,9 @@ def _xay_dung_story_pdf(ket_qua: dict, page_registry: dict | None = None) -> lis
 
     # 1. TRANG BÌA
     story.append(Spacer(1, 3*inch))
-    story.append(Paragraph(f"GIÁO TRÌNH<br/>{title.upper()}", style_Title))
+    story.append(Paragraph(f"GIÁO TRÌNH<br/>{title.upper()}", style_CoverTitle))
     story.append(Spacer(1, 3*inch))
-    story.append(Paragraph("Tác giả: Hệ thống AI Biên soạn tự động<br/>Năm xuất bản: 2026", 
-                           ParagraphStyle('SubTitle', parent=style_Normal, alignment=TA_CENTER, fontName=FONT_NAME, fontSize=14)))
+    story.append(Paragraph("Tác giả: Hệ thống AI Biên soạn tự động<br/>Năm xuất bản: 2026", style_CoverSubTitle))
     story.append(PageBreak())
 
     # 2. TABLE OF CONTENTS (Dynamic via page_registry)
@@ -333,6 +393,14 @@ def _xay_dung_story_pdf(ket_qua: dict, page_registry: dict | None = None) -> lis
             story.append(PageRecorder(f"chap_{idx}", page_registry))
         story.append(Paragraph(f"CHƯƠNG {idx}: {ch.get('title','').upper()}", style_H1))
         
+        # Chapter Summary (Only for custom flow)
+        if book.get("is_custom_flow"):
+            summary = ch.get("summary", "")
+            if summary:
+                clean_sum = _clean_text(summary)
+                story.append(Paragraph(f"<b>Tóm tắt chương:</b> {clean_sum}", style_Summary))
+                story.append(Spacer(1, 0.3*cm))
+        
         for jdx, sec in enumerate(ch.get("sections", []), 1):
             # Section Title
             if page_registry is not None:
@@ -354,6 +422,8 @@ def _xay_dung_story_pdf(ket_qua: dict, page_registry: dict | None = None) -> lis
                     l_strip = line.strip()
                     if l_strip.startswith("### "):
                         title_part = l_strip[4:].strip()
+                        # Strip leading single/double digit list prefix like "1. ", "2. "
+                        title_part = re.sub(r'^\d+\.\s*', '', title_part)
                         line = f"### {idx}.{jdx}.{sub_idx}. {title_part}"
                         sub_idx += 1
                     elif l_strip in ["**Câu hỏi Ôn tập**", "**Bài tập & Ôn tập**", "**Review Questions**"]:
