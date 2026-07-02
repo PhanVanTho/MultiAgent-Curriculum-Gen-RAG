@@ -5171,6 +5171,212 @@ def kiem_tra_quyen_tai(ma_goc):
         
     return False
 
+def khoi_phuc_ket_qua_tu_html(html_content, tieu_de_fallback):
+    from bs4 import BeautifulSoup
+    import re
+    
+    soup = BeautifulSoup(html_content, 'html.parser')
+    
+    # 1. Trích xuất tiêu đề
+    title = tieu_de_fallback
+    h1 = soup.find('h1')
+    if h1:
+        text = h1.get_text()
+        if ":" in text:
+            title = text.split(":", 1)[1].strip()
+        else:
+            title = text.replace("GIÁO TRÌNH", "").replace("Giáo trình", "").strip()
+            
+    chapters = []
+    
+    # 2. Lấy các chương
+    chuong_mucs = soup.find_all(class_='chuong-muc')
+    if not chuong_mucs:
+        current_chap = None
+        current_sec = None
+        
+        container = soup.find(class_='giao-trinh-container') or soup
+        for elem in container.find_all(['h2', 'h3', 'div', 'p', 'ul', 'ol', 'hr']):
+            if elem.name == 'h2':
+                h2_text = elem.get_text().strip()
+                ch_title = h2_text
+                if "." in h2_text:
+                    parts = h2_text.split(".", 1)
+                    ch_title = parts[1].strip()
+                elif "Chương" in h2_text or "chuong" in h2_text.lower():
+                    ch_title = re.sub(r'^(?i)chương\s*\d+\s*:?\s*', '', h2_text).strip()
+                    
+                current_chap = {
+                    "title": ch_title,
+                    "summary": "",
+                    "sections": []
+                }
+                chapters.append(current_chap)
+                current_sec = None
+            elif elem.name == 'h3' and current_chap is not None:
+                h3_text = elem.get_text().strip()
+                sec_title = re.sub(r'^\d+(\.\d+)+\.?\s*', '', h3_text).strip()
+                current_sec = {
+                    "title": sec_title,
+                    "content": ""
+                }
+                current_chap["sections"].append(current_sec)
+            elif elem.name in ['div', 'p', 'ul', 'ol', 'hr'] and current_sec is not None:
+                elem_text = elem.get_text().strip()
+                if "Tóm tắt chương:" in elem_text and current_chap is not None:
+                    current_chap["summary"] = elem_text.split("Tóm tắt chương:", 1)[1].strip()
+                    continue
+                    
+                lines = []
+                if elem.name in ['ul', 'ol']:
+                    for li in elem.find_all('li'):
+                        li_text = li.get_text().strip()
+                        if li_text:
+                            lines.append(f"- {li_text}")
+                elif elem.name == 'hr':
+                    lines.append("---")
+                else:
+                    if elem_text:
+                        lines.append(elem_text)
+                        
+                if lines:
+                    content_str = "\n".join(lines)
+                    if current_sec["content"]:
+                        current_sec["content"] += "\n" + content_str
+                    else:
+                        current_sec["content"] = content_str
+    else:
+        for ch_div in chuong_mucs:
+            h2 = ch_div.find('h2')
+            if not h2:
+                continue
+            h2_text = h2.get_text().strip()
+            ch_title = h2_text
+            if "." in h2_text:
+                parts = h2_text.split(".", 1)
+                ch_title = parts[1].strip()
+            elif "Chương" in h2_text or "chuong" in h2_text.lower():
+                ch_title = re.sub(r'^(?i)chương\s*\d+\s*:?\s*', '', h2_text).strip()
+                
+            summary = ""
+            summary_div = ch_div.find('div', style=lambda s: s and 'background' in s and 'f8f9fa' in s)
+            if not summary_div:
+                for d in ch_div.find_all('div'):
+                    if "Tóm tắt chương" in d.get_text():
+                        summary_div = d
+                        break
+            if summary_div:
+                summary_text = summary_div.get_text().strip()
+                if "Tóm tắt chương:" in summary_text:
+                    summary = summary_text.split("Tóm tắt chương:", 1)[1].strip()
+                else:
+                    summary = summary_text
+                    
+            sections = []
+            muc_cons = ch_div.find_all(class_='muc-con')
+            for sec_div in muc_cons:
+                h3 = sec_div.find('h3')
+                if not h3:
+                    continue
+                h3_text = h3.get_text().strip()
+                sec_title = re.sub(r'^\d+(\.\d+)+\.?\s*', '', h3_text).strip()
+                
+                content_div = sec_div.find(class_='content')
+                if content_div:
+                    content_lines = []
+                    for child in content_div.children:
+                        if child.name in ['p', 'div']:
+                            p_text = child.get_text().strip()
+                            if p_text:
+                                content_lines.append(p_text)
+                        elif child.name in ['ul', 'ol']:
+                            for li in child.find_all('li'):
+                                li_text = li.get_text().strip()
+                                if li_text:
+                                    content_lines.append(f"- {li_text}")
+                        elif child.name in ['h4', 'h5', 'h6']:
+                            h_text = child.get_text().strip()
+                            if h_text:
+                                content_lines.append(f"### {h_text}")
+                        elif child.name == 'hr':
+                            content_lines.append("---")
+                    sec_content = "\n".join(content_lines)
+                else:
+                    sec_content = sec_div.get_text().strip()
+                    
+                sections.append({
+                    "title": sec_title,
+                    "content": sec_content
+                })
+                
+            chapters.append({
+                "title": ch_title,
+                "summary": summary,
+                "sections": sections
+            })
+            
+    # 3. Tài liệu tham khảo
+    references = []
+    ref_container = soup.find(class_='tai-lieu-tham-khao') or soup.find(id='tai-lieu-tham-khao')
+    if not ref_container:
+        for h in soup.find_all(['h2', 'h3']):
+            if "tham khảo" in h.get_text().lower():
+                parent = h.parent
+                ref_container = parent
+                break
+                
+    if ref_container:
+        p_tags = ref_container.find_all('p')
+        for p in p_tags:
+            ref_text = p.get_text().strip()
+            if "tài liệu tham khảo" in ref_text.lower():
+                continue
+            match = re.match(r'^\[(\d+)\]\s*(.*)', ref_text)
+            if match:
+                ref_id = int(match.group(1))
+                rest = match.group(2).strip()
+                year_match = re.search(r'\.\s*\(([^)]+)\)', rest)
+                if year_match:
+                    ref_title = rest[:year_match.start()].strip()
+                    ref_year_str = year_match.group(1)
+                    
+                    url_a = p.find('a')
+                    ref_url = url_a['href'] if url_a and url_a.has_attr('href') else ""
+                    if not ref_url:
+                        url_search = re.search(r'https?://[^\s]+', rest)
+                        if url_search:
+                            ref_url = url_search.group(0)
+                            
+                    references.append({
+                        "id": ref_id,
+                        "title": ref_title,
+                        "year": ref_year_str,
+                        "url": ref_url
+                    })
+                else:
+                    references.append({
+                        "id": ref_id,
+                        "title": rest,
+                        "url": ""
+                    })
+            else:
+                if ref_text:
+                    references.append({
+                        "title": ref_text,
+                        "url": ""
+                    })
+                    
+    return {
+        "topic": title,
+        "book_vi": {
+            "title": title,
+            "chapters": chapters
+        },
+        "references": references,
+        "terms": [],
+        "glossary": []
+    }
+
 def dam_bao_file_ton_tai(ma_goc, ext, is_plain, tieu_de):
     suffix = "_plain" if is_plain else ""
     folder = CauHinh.THU_MUC_PDF if ext == "pdf" else CauHinh.THU_MUC_DOCX
@@ -5197,6 +5403,28 @@ def dam_bao_file_ton_tai(ma_goc, ext, is_plain, tieu_de):
         except Exception as json_err:
             logger.error(f"Failed to download JSON from Azure Blob Storage: {json_err}")
             
+    # Phục hồi từ DB HTML nếu JSON vẫn bị thiếu
+    if not os.path.exists(p_json):
+        try:
+            from mo_hinh import LichSuGiaoTrinh
+            ls = LichSuGiaoTrinh.query.filter(LichSuGiaoTrinh.duong_dan_file.contains(ma_goc)).first()
+            if ls and ls.noi_dung_html:
+                logger.info(f"JSON missing for {ma_goc}. Reconstructing ket_qua from DB html_content...")
+                ket_qua = khoi_phuc_ket_qua_tu_html(ls.noi_dung_html, tieu_de)
+                # Lưu JSON phục hồi để tránh parse lại
+                os.makedirs(os.path.dirname(p_json), exist_ok=True)
+                with open(p_json, 'w', encoding='utf-8') as f:
+                    import json
+                    json.dump(ket_qua, f, ensure_ascii=False, indent=4)
+                # Upload lên Blob Storage để sao lưu
+                try:
+                    from dich_vu.azure_blob import upload_to_blob
+                    upload_to_blob(p_json, f"json/{ma_goc}.json")
+                except Exception as upload_err:
+                    logger.error(f"Failed to upload reconstructed JSON to Azure Blob Storage: {upload_err}")
+        except Exception as db_err:
+            logger.error(f"Failed to reconstruct ket_qua from DB HTML: {db_err}")
+
     if os.path.exists(p_json):
         try:
             import json
